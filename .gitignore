@@ -18,3 +18,12 @@ Thumbs.db
 # data / vector db artifacts
 data/index/
 data/chroma/
+
+# runtime outputs
+results/
+results/*.csv
+data/chroma/
+__pycache__/
+.venv/
+.env
+

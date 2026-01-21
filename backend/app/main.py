@@ -3,9 +3,13 @@ from pydantic import BaseModel
 from typing import Any, Dict, List
 import os
 import glob
+import time
 
 import chromadb
 from chromadb.config import Settings
+
+from .log_run import log_run  # keep relative import
+
 
 app = FastAPI(title="AI RAG Eval Platform")
 
@@ -13,19 +17,30 @@ DATA_DIR_DEFAULT = "data/sample_docs"
 CHROMA_DIR = "data/chroma"
 COLLECTION_NAME = "docs"
 
+
 class IngestRequest(BaseModel):
     path: str = DATA_DIR_DEFAULT
+
 
 class QueryRequest(BaseModel):
     question: str
     top_k: int = 4
 
+
 def get_client() -> chromadb.PersistentClient:
     os.makedirs(CHROMA_DIR, exist_ok=True)
-    return chromadb.PersistentClient(path=CHROMA_DIR, settings=Settings(allow_reset=True))
+    return chromadb.PersistentClient(
+        path=CHROMA_DIR,
+        settings=Settings(allow_reset=True),
+    )
+
 
 def get_collection(client: chromadb.PersistentClient):
-    return client.get_or_create_collection(name=COLLECTION_NAME, metadata={"hnsw:space": "cosine"})
+    return client.get_or_create_collection(
+        name=COLLECTION_NAME,
+        metadata={"hnsw:space": "cosine"},
+    )
+
 
 def read_text_files(folder: str) -> List[Dict[str, str]]:
     patterns = ["*.md", "*.txt"]
@@ -34,10 +49,11 @@ def read_text_files(folder: str) -> List[Dict[str, str]]:
         files.extend(glob.glob(os.path.join(folder, p)))
 
     out: List[Dict[str, str]] = []
-    for f in files:
-        with open(f, "r", encoding="utf-8", errors="ignore") as fh:
-            out.append({"path": f, "text": fh.read()})
+    for fpath in files:
+        with open(fpath, "r", encoding="utf-8", errors="ignore") as fh:
+            out.append({"path": fpath, "text": fh.read()})
     return out
+
 
 def chunk_text(text: str, chunk_size: int = 800, overlap: int = 120) -> List[str]:
     text = text.strip()
@@ -46,17 +62,21 @@ def chunk_text(text: str, chunk_size: int = 800, overlap: int = 120) -> List[str
     chunks: List[str] = []
     start = 0
     n = len(text)
+
     while start < n:
         end = min(start + chunk_size, n)
         chunks.append(text[start:end])
         if end == n:
             break
         start = max(0, end - overlap)
+
     return chunks
+
 
 @app.get("/health")
 def health() -> Dict[str, str]:
     return {"status": "ok"}
+
 
 @app.post("/ingest")
 def ingest(req: IngestRequest) -> Dict[str, Any]:
@@ -105,8 +125,10 @@ def ingest(req: IngestRequest) -> Dict[str, Any]:
         "collection": COLLECTION_NAME,
     }
 
+
 @app.post("/query")
 def query(req: QueryRequest) -> Dict[str, Any]:
+    t0 = time.perf_counter()
     q = (req.question or "").strip()
     if not q:
         return {"status": "error", "message": "Question is empty.", "answer": "", "citations": []}
@@ -135,10 +157,15 @@ def query(req: QueryRequest) -> Dict[str, Any]:
         snippet = doc[:300].replace("\n", " ").strip()
         context_blocks.append(f"- {os.path.basename(src)} (chunk {chunk}): {snippet}...")
 
-    answer = "Top matching context:\\n" + "\\n".join(context_blocks)
+    answer = "Top matching context:\n" + "\n".join(context_blocks)
+
+    latency_ms = int((time.perf_counter() - t0) * 1000)
+    log_run(q, req.top_k, answer, citations, latency_ms)
 
     return {"status": "ok", "question": q, "answer": answer, "citations": citations}
 
+
 @app.post("/eval/run")
 def eval_run() -> Dict[str, Any]:
+    # stub for project 2
     return {"status": "stub", "results": []}
