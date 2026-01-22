@@ -167,5 +167,62 @@ def query(req: QueryRequest) -> Dict[str, Any]:
 
 @app.post("/eval/run")
 def eval_run() -> Dict[str, Any]:
-    # stub for project 2
-    return {"status": "stub", "results": []}
+    # Minimal eval: run a small fixed set of questions through the existing /query logic
+    eval_questions = [
+        "What is the refund policy?",
+        "How long does shipping take?",
+        "What are the support hours?"
+    ]
+
+    results = []
+    for q in eval_questions:
+        # Reuse the same query pipeline by calling the existing query() handler logic indirectly:
+        # We'll simply call the same code path by using the same retrieval/generation variables already in this file.
+        t0 = time.perf_counter()
+
+        # ---- START: replicate the same logic used in /query ----
+        # NOTE: This assumes you already have `collection` available globally (as used by /query)
+        
+        client = get_client()
+        collection = get_collection(client)
+
+
+        res = collection.query(
+            query_texts=[q],
+            n_results=4,
+            include=["documents", "metadatas", "distances"]
+        )
+        docs = res.get("documents", [[]])[0]
+        metas = res.get("metadatas", [[]])[0]
+        dists = res.get("distances", [[]])[0]
+
+        if not docs:
+            answer = "No matches found."
+            citations = []
+        else:
+            citations = []
+            context_blocks = []
+            for doc, meta, dist in zip(docs, metas, dists):
+                src = meta.get("source", "")
+                chunk = meta.get("chunk", -1)
+                citations.append({"source": src, "chunk": chunk, "distance": dist})
+                snippet = doc[:300].replace("\n", " ").strip()
+                context_blocks.append(f"- {os.path.basename(src)} (chunk {chunk}): {snippet}...")
+
+            answer = "Top matching context:\n" + "\n".join(context_blocks)
+
+        latency_ms = int((time.perf_counter() - t0) * 1000)
+
+        # This is the key: log one row per question (CSV/JSON logging handled by your existing helper)
+        log_run(q, 4, answer, citations, latency_ms)
+        # ---- END ----
+
+        results.append({
+            "question": q,
+            "latency_ms": latency_ms,
+            "num_citations": len(citations),
+            "top_source": citations[0]["source"] if citations else None
+        })
+
+    return {"status": "ok", "results": results}
+
