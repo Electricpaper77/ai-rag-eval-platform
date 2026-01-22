@@ -39,6 +39,23 @@ Run an evaluation batch and return aggregate retrieval metrics:
 curl.exe -s -X POST "http://127.0.0.1:8000/eval/run" -H "accept: application/json" | Tee-Object results\latest_eval.json
 type results\latest_eval.json
 
+### Latest Eval (sample)
+
+- Hit Rate (≥1 citation): **100%** (3/3)
+- Avg Latency: **~298 ms**
+- Total Questions: **3**
+
+Sample (truncated):
+```json
+{
+  "stats": { "hit_rate_pct": 100.0, "avg_latency_ms": 297.7, "total_questions": 3 },
+  "results": [
+    { "question": "What is the refund policy?", "num_citations": 3, "top_source": "data/sample_docs/refund_policy.md" },
+    { "question": "How long does shipping take?", "num_citations": 3, "top_source": "data/sample_docs/shipping_policy.md" },
+    { "question": "What are the support hours?", "num_citations": 3, "top_source": "data/sample_docs/shipping_policy.md" }
+  ]
+}
+
 
 ## Features
 
