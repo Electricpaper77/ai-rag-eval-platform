@@ -223,6 +223,27 @@ def eval_run() -> Dict[str, Any]:
             "num_citations": len(citations),
             "top_source": citations[0]["source"] if citations else None
         })
+        # --- aggregate metrics ---
+    total = len(results)
+    hits = sum(1 for r in results if r.get("num_citations", 0) > 0)
 
-    return {"status": "ok", "results": results}
+    hit_rate_pct = round((hits / total) * 100, 1) if total else 0.0
+    avg_latency_ms = round(
+        sum(r.get("latency_ms", 0) for r in results) / total, 1
+    ) if total else 0.0
+
+    return {
+        "status": "ok",
+        "results": results,
+        "stats": {
+            "total_questions": total,
+            "questions_with_citations": hits,
+            "hit_rate_pct": hit_rate_pct,
+            "avg_latency_ms": avg_latency_ms,
+        },
+    }
+
+
+
+
 
