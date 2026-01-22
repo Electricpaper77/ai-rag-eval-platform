@@ -25,6 +25,21 @@ POST `/eval/run`
 
 The first run downloads the embedding model; subsequent runs execute in milliseconds.
 
+## Metrics (Automated)
+
+Run an evaluation batch and return aggregate retrieval metrics:
+
+- Hit Rate (questions with ≥1 citation): **100%** (3/3)
+- Avg Latency: **~298 ms**
+- Total Questions: **3**
+
+### Reproduce locally (Docker running on :8000)
+
+```powershell
+curl.exe -s -X POST "http://127.0.0.1:8000/eval/run" -H "accept: application/json" | Tee-Object results\latest_eval.json
+type results\latest_eval.json
+
+
 ## Features
 
 * 📄 Document ingestion with chunking
