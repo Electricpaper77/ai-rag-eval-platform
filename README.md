@@ -25,6 +25,40 @@ POST `/eval/run`
 
 The first run downloads the embedding model; subsequent runs execute in milliseconds.
 
+## Live Demo (Cloud Run)
+- Swagger UI: https://rag-eval-api-t7a5wdzsna-uc.a.run.app/docs
+- Health: https://rag-eval-api-t7a5wdzsna-uc.a.run.app/health
+- “Public Cloud Run deployment (FastAPI).”
+
+### Demo (Cloud Run)
+```powershell
+curl.exe https://rag-eval-api-t7a5wdzsna-uc.a.run.app/health
+start https://rag-eval-api-t7a5wdzsna-uc.a.run.app/docs
+
+
+# AI RAG Evaluation Platform
+FastAPI + ChromaDB RAG service with automated evaluation (hit rate + latency) and citation logging.
+
+## Tech Stack
+- FastAPI, Uvicorn
+- ChromaDB (vector store), sentence-transformers embeddings
+- Docker
+
+## Quickstart (Docker)
+docker build -t rag-eval-platform .
+docker run -d --name rag-eval -p 8000:8000 rag-eval-platform
+
+## Demo
+# 1) Ingest sample docs
+curl.exe -X POST "http://127.0.0.1:8000/ingest" -H "content-type: application/json" -d "{ \"path\": \"data/sample_docs\" }"
+
+# 2) Query
+curl.exe -X POST "http://127.0.0.1:8000/query" -H "content-type: application/json" -d "{ \"question\": \"What is the refund policy?\", \"top_k\": 4 }"
+
+# 3) Run eval
+curl.exe -s -X POST "http://127.0.0.1:8000/eval/run" -H "accept: application/json"
+
+
 ## Metrics (Automated)
 
 Run an evaluation batch and return aggregate retrieval metrics:
