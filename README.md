@@ -28,7 +28,7 @@ The first run downloads the embedding model; subsequent runs execute in millisec
 ## Live Demo (Cloud Run)
 - Swagger UI: https://rag-eval-api-t7a5wdzsna-uc.a.run.app/docs
 - Health: https://rag-eval-api-t7a5wdzsna-uc.a.run.app/health
-- “`Public Cloud Run deployment (FastAPI).`
+- `Public Cloud Run deployment (FastAPI).`
 
 ### Demo (Cloud Run)
 
