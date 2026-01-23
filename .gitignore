@@ -27,3 +27,12 @@ __pycache__/
 .venv/
 .env
 
+# generated/runtime artifacts (do not commit)
+backend/data/
+data/
+results/
+__pycache__/
+*.db
+*.sqlite*
+*.log
+
