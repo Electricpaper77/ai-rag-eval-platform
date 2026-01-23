@@ -31,9 +31,13 @@ The first run downloads the embedding model; subsequent runs execute in millisec
 - “Public Cloud Run deployment (FastAPI).”
 
 ### Demo (Cloud Run)
+
+Public Cloud Run deployment (FastAPI).
+
 ```powershell
 curl.exe https://rag-eval-api-t7a5wdzsna-uc.a.run.app/health
 start https://rag-eval-api-t7a5wdzsna-uc.a.run.app/docs
+
 
 
 # AI RAG Evaluation Platform
