@@ -142,3 +142,31 @@ This enables basic regression testing and latency tracking as prompts, embedding
 
 
 
+## RAG Evaluation Harness
+
+FastAPI-based RAG backend with a deterministic evaluation harness.
+
+### Features
+- ChromaDB vector store (persistent)
+- Source-grounded answers with file-level citations
+- Deterministic eval sets (JSON)
+- Metrics: citation hit-rate, average latency, citation count
+
+### Run locally
+uvicorn backend.app.main:app --reload
+
+### Ingest documents (PowerShell)
+$body = @{ path = "data\sample_docs" } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/ingest" -ContentType "application/json" -Body $body
+
+### Query (PowerShell)
+$body = @{ question = "What is the refund policy?"; top_k = 4 } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/query" -ContentType "application/json" -Body $body
+
+### Run evaluation
+Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/eval/run"
+
+### Example Metrics
+- Hit rate: 100%
+- Avg latency: ~330ms
+- Citations per answer: 4
