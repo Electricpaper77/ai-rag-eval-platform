@@ -1,4 +1,17 @@
-﻿![smoke](../../actions/workflows/smoke.yml/badge.svg)
+﻿## Run locally (2 commands)
+
+**Terminal 1 — start API**
+`powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_api.ps1
+` 
+
+**Terminal 2 — run smoke**
+`powershell
+$env:BASE="http://127.0.0.1:8002"
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke.ps1
+` 
+
+![smoke](../../actions/workflows/smoke.yml/badge.svg)
 
 CI runs a smoke test on every push (starts the FastAPI API + runs scripts/smoke.ps1).
 
@@ -184,6 +197,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke.ps1
 ```
 
 Expected output: `/docs reachable`, metrics table, `smoke passed`.
+
 
 
 
