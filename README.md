@@ -170,3 +170,13 @@ Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/eval/run"
 - Hit rate: 100%
 - Avg latency: ~330ms
 - Citations per answer: 4
+
+## Smoke Test (30s)
+
+```powershell
+$env:BASE="http://127.0.0.1:8002"
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke.ps1
+```
+
+Expected output: `/docs reachable`, metrics table, `smoke passed`.
+
