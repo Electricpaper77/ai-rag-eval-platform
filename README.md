@@ -1,11 +1,11 @@
 ## Run locally (2 commands)
 
-**Terminal 1 Ã¢â‚¬â€ start API**
+**Terminal 1 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â start API**
 `powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\run_api.ps1
 ` 
 
-**Terminal 2 Ã¢â‚¬â€ run smoke**
+**Terminal 2 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â run smoke**
 `powershell
 $env:BASE="http://127.0.0.1:8002"
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke.ps1
@@ -117,7 +117,7 @@ Sample (truncated):
 *  Document ingestion with chunking
 *  Vector search using ChromaDB (cosine similarity)
 *  Source-aware citations per query
-* ÃƒÂ¢Ã‚ÂÃ‚Â±ÃƒÂ¯Ã‚Â¸Ã‚Â Latency + retrieval metrics logging
+* ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â±ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Latency + retrieval metrics logging
 *  CSV-based evaluation output for offline analysis
 
 ## Architecture
