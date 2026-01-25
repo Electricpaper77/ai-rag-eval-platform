@@ -1,5 +1,8 @@
 ﻿![smoke](../../actions/workflows/smoke.yml/badge.svg)
 
+CI runs a smoke test on every push (starts the FastAPI API + runs scripts/smoke.ps1).
+
+
 # AI RAG Evaluation Platform
 
 A production-style Retrieval-Augmented Generation (RAG) evaluation backend built with FastAPI and ChromaDB.  
@@ -181,5 +184,6 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke.ps1
 ```
 
 Expected output: `/docs reachable`, metrics table, `smoke passed`.
+
 
 
