@@ -202,3 +202,23 @@ Expected output: `/docs reachable`, metrics table, `smoke passed`.
 
 
 
+
+
+## Latest Smoke (Local)
+
+~~~text
+BASE=http://127.0.0.1:8002
+
+1) Health check: /docs
+? /docs reachable
+
+2) Eval run: /eval/run
+
+total_questions questions_with_citations hit_rate_pct avg_latency_ms
+--------------- ------------------------ ------------ --------------
+             10                       10        100.0          675.7
+
+
+? smoke passed
+
+~~~
