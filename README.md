@@ -1,17 +1,17 @@
-## Run locally (2 commands)
+﻿## Run locally (2 commands)
 
-**Terminal 1 â€” start API**
+**Terminal 1 Ã¢â‚¬â€ start API**
 `powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\run_api.ps1
 ` 
 
-**Terminal 2 â€” run smoke**
+**Terminal 2 Ã¢â‚¬â€ run smoke**
 `powershell
 $env:BASE="http://127.0.0.1:8002"
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke.ps1
 ` 
 
-![smoke](../../actions/workflows/smoke.yml/badge.svg)
+![smoke](https://github.com/Electricpaper77/ai-rag-eval-platform/actions/workflows/smoke.yml/badge.svg)
 
 CI runs a smoke test on every push (starts the FastAPI API + runs scripts/smoke.ps1).
 
@@ -117,7 +117,7 @@ Sample (truncated):
 *  Document ingestion with chunking
 *  Vector search using ChromaDB (cosine similarity)
 *  Source-aware citations per query
-* Ã¢ÂÂ±Ã¯Â¸Â Latency + retrieval metrics logging
+* ÃƒÂ¢Ã‚ÂÃ‚Â±ÃƒÂ¯Ã‚Â¸Ã‚Â Latency + retrieval metrics logging
 *  CSV-based evaluation output for offline analysis
 
 ## Architecture
@@ -197,6 +197,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke.ps1
 ```
 
 Expected output: `/docs reachable`, metrics table, `smoke passed`.
+
 
 
 
