@@ -62,8 +62,8 @@ def read_text_files(folder: str) -> List[Dict[str, str]]:
     docs: List[Dict[str, str]] = []
     for path in paths:
         try:
-            with open(DEFAULT_EVAL_SET, "r", encoding="utf-8-sig") as f:
-                eval_blob = json.load(f)
+            with open(path, "r", encoding="utf-8") as f:
+                text = f.read()
             if text.strip():
                 docs.append({"path": path.replace("\\", "/"), "text": text})
         except Exception:
@@ -213,7 +213,7 @@ def eval_run() -> Dict[str, Any]:
     eval_cases: List[Dict[str, Any]] = []
     if os.path.isfile(DEFAULT_EVAL_SET):
         import json
-        with open(DEFAULT_EVAL_SET, "r", encoding="utf-8-sig") as f:
+        with open(DEFAULT_EVAL_SET, "r", encoding="utf-8") as f:
             eval_blob = json.load(f)
             eval_cases = eval_blob.get("cases", eval_blob) if isinstance(eval_blob, dict) else eval_blob
             
@@ -263,16 +263,6 @@ def eval_run() -> Dict[str, Any]:
             "avg_latency_ms": round(avg_latency_ms, 1),
         },
     }
-
-
-
-
-
-
-
-
-
-
 
 
 
