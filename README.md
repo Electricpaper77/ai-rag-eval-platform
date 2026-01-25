@@ -1,9 +1,11 @@
+﻿![smoke](../../actions/workflows/smoke.yml/badge.svg)
+
 # AI RAG Evaluation Platform
 
 A production-style Retrieval-Augmented Generation (RAG) evaluation backend built with FastAPI and ChromaDB.  
 Designed to ingest documents, perform vector search, and log retrieval performance metrics for LLM evaluation.
 
-## ✅ Evaluation Demo (Working)
+## âœ… Evaluation Demo (Working)
 
 This project includes a minimal RAG evaluation endpoint.
 
@@ -19,9 +21,9 @@ POST `/eval/run`
   - top_source
 
 **Example Output**
-- Refund policy → `refund_policy.md`
-- Shipping time → `shipping_policy.md`
-- Support hours → `shipping_policy.md`
+- Refund policy â†’ `refund_policy.md`
+- Shipping time â†’ `shipping_policy.md`
+- Support hours â†’ `shipping_policy.md`
 
 The first run downloads the embedding model; subsequent runs execute in milliseconds.
 
@@ -66,7 +68,7 @@ curl.exe -s -X POST "http://127.0.0.1:8000/eval/run" -H "accept: application/jso
 
 Run an evaluation batch and return aggregate retrieval metrics:
 
-- Hit Rate (questions with ≥1 citation): **100%** (3/3)
+- Hit Rate (questions with â‰¥1 citation): **100%** (3/3)
 - Avg Latency: **~298 ms**
 - Total Questions: **3**
 
@@ -78,7 +80,7 @@ type results\latest_eval.json
 
 ### Latest Eval (sample)
 
-- Hit Rate (≥1 citation): **100%** (3/3)
+- Hit Rate (â‰¥1 citation): **100%** (3/3)
 - Avg Latency: **~298 ms**
 - Total Questions: **3**
 
@@ -96,11 +98,11 @@ Sample (truncated):
 
 ## Features
 
-* 📄 Document ingestion with chunking
-* 🔍 Vector search using ChromaDB (cosine similarity)
-* 📌 Source-aware citations per query
-* ⏱️ Latency + retrieval metrics logging
-* 📊 CSV-based evaluation output for offline analysis
+* ðŸ“„ Document ingestion with chunking
+* ðŸ” Vector search using ChromaDB (cosine similarity)
+* ðŸ“Œ Source-aware citations per query
+* â±ï¸ Latency + retrieval metrics logging
+* ðŸ“Š CSV-based evaluation output for offline analysis
 
 ## Architecture
 
@@ -179,4 +181,5 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke.ps1
 ```
 
 Expected output: `/docs reachable`, metrics table, `smoke passed`.
+
 
