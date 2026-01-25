@@ -1,4 +1,4 @@
-﻿## Run locally (2 commands)
+## Run locally (2 commands)
 
 **Terminal 1 Ã¢â‚¬â€ start API**
 `powershell
