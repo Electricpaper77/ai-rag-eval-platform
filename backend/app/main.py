@@ -14,7 +14,7 @@ from chromadb.config import Settings
 # ----------------------------
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # repo root
 DATA_DIR_DEFAULT = os.path.join(PROJECT_ROOT, "data", "sample_docs")
-CHROMA_DIR = os.path.join(PROJECT_ROOT, "data", "chroma")
+CHROMA_DIR = os.getenv("CHROMA_DIR", "/tmp/chroma")
 EVAL_DIR = os.path.join(PROJECT_ROOT, "data", "eval_sets")
 DEFAULT_EVAL_SET = os.path.join(EVAL_DIR, "policy_eval.json")
 COLLECTION_NAME = "docs"
@@ -263,6 +263,7 @@ def eval_run() -> Dict[str, Any]:
             "avg_latency_ms": round(avg_latency_ms, 1),
         },
     }
+
 
 
 
