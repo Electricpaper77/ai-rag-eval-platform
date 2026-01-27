@@ -14,6 +14,42 @@ from chromadb.config import Settings
 # ----------------------------
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # repo root
 DATA_DIR_DEFAULT = os.path.join(PROJECT_ROOT, "data", "sample_docs")
+
+def resolve_ingest_path(p: str) -> str:
+# FIXED: was invalid docstring ->     \"\"\"Resolve ingest folder robustly in Cloud Run/buildpacks.\"\"\"
+    p = (p or "").strip()
+    if not p:
+        return DATA_DIR_DEFAULT
+
+    # Build candidate paths
+    candidates = []
+    if os.path.isabs(p):
+        candidates.append(p)
+    else:
+        candidates.extend([
+            p,
+            os.path.join(PROJECT_ROOT, p),
+            os.path.join(PROJECT_ROOT, "..", p),
+            os.path.join(PROJECT_ROOT, "..", "..", p),
+            os.path.join(PROJECT_ROOT, "app", p),
+        ])
+
+    # Pick first directory that exists AND has .txt/.md
+    for c in candidates:
+        c = os.path.normpath(c)
+        if os.path.isdir(c):
+            has_files = bool(glob.glob(os.path.join(c, "*.txt"))) or bool(glob.glob(os.path.join(c, "*.md")))
+            if has_files:
+                return c
+
+    # If dirs exist but no files, return first existing dir (so error message is accurate)
+    for c in candidates:
+        c = os.path.normpath(c)
+        if os.path.isdir(c):
+            return c
+
+    return os.path.normpath(p)
+
 CHROMA_DIR = os.getenv("CHROMA_DIR", "/tmp/chroma")
 EVAL_DIR = os.path.join(PROJECT_ROOT, "data", "eval_sets")
 DEFAULT_EVAL_SET = os.path.join(EVAL_DIR, "policy_eval.json")
