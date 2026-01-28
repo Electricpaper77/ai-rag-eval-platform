@@ -222,3 +222,34 @@ total_questions questions_with_citations hit_rate_pct avg_latency_ms
 ? smoke passed
 
 ~~~
+
+## Demo Script (2 minutes)
+
+### 1) Start API
+```powershell
+python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --log-level info
+```
+
+### 2) Ingest sample docs
+```powershell
+$BASE="http://127.0.0.1:8000"
+{"path":"C:\\Users\\zohai\\ai-rag-eval-platform\\data\\sample_docs"} | Set-Content -Encoding ASCII .\ingest.json
+curl.exe -s -X POST "$BASE/ingest" -H "accept: application/json" -H "content-type: application/json" --data-binary "@ingest.json" | Out-Host
+```
+
+### 3) Query with citations
+```powershell
+{"question":"What is the refund policy?","top_k":4} | Set-Content -Encoding ASCII .\query.json
+curl.exe -s -X POST "$BASE/query" -H "accept: application/json" -H "content-type: application/json" --data-binary "@query.json" | Out-Host
+```
+
+### 4) Run evaluation (metrics)
+```powershell
+curl.exe -s -X POST "$BASE/eval/run" -H "accept: application/json" | Out-Host
+```
+
+### Proof screenshots
+- API docs: `docs/screenshots/01_docs.png`
+- Query citations: `docs/screenshots/02_query_citations.png`
+- Eval metrics: `docs/screenshots/03_eval_metrics.png`
+
