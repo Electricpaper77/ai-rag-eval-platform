@@ -42,3 +42,16 @@ README.md.bak
 # eval run artifacts
 runs/*.json
 
+# local scratch / generated
+*.bak
+*.bak_*
+*.json
+runs/
+data/chroma/
+backend/app/sample_docs/
+
+# temp deploy files
+Procfile
+app.py
+Dockerfile.bak
+.gcloudignore.bak
