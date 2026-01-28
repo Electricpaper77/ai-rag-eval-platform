@@ -1,255 +1,70 @@
-## Run locally (2 commands)
+﻿# AI RAG Evaluation & Guardrails Platform
 
-**Terminal 1 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â start API**
-`powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\run_api.ps1
-` 
+## Problem
+Modern LLM applications fail silently when retrieval quality degrades or when unsafe inputs (e.g., prompt injection) reach the model.
+Teams need evaluation, observability, and safety controls before deploying RAG systems to production.
 
-**Terminal 2 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â run smoke**
-`powershell
-$env:BASE="http://127.0.0.1:8002"
-powershell -ExecutionPolicy Bypass -File .\scripts\smoke.ps1
-` 
+This project demonstrates a production-style RAG evaluation backend with automated metrics and guardrails.
 
-![smoke](https://github.com/Electricpaper77/ai-rag-eval-platform/actions/workflows/smoke.yml/badge.svg)
-
-CI runs a smoke test on every push (starts the FastAPI API + runs scripts/smoke.ps1).
-
-
-# AI RAG Evaluation Platform
-
-A production-style Retrieval-Augmented Generation (RAG) evaluation backend built with FastAPI and ChromaDB.  
-Designed to ingest documents, perform vector search, and log retrieval performance metrics for LLM evaluation.
-
-## OK Evaluation Demo (Working)
-
-This project includes a minimal RAG evaluation endpoint.
-
-**Endpoint**
-POST `/eval/run`
-
-**What it does**
-- Runs a fixed set of evaluation questions
-- Queries ChromaDB (cosine similarity)
-- Returns:
-  - latency_ms
-  - num_citations
-  - top_source
-
-**Example Output**
-- Refund policy -> `refund_policy.md`
-- Shipping time -> `shipping_policy.md`
-- Support hours -> `shipping_policy.md`
-
-The first run downloads the embedding model; subsequent runs execute in milliseconds.
-
-## Live Demo (Cloud Run)
-- Swagger UI: https://rag-eval-api-t7a5wdzsna-uc.a.run.app/docs
-- Health: https://rag-eval-api-t7a5wdzsna-uc.a.run.app/health
-- `Public Cloud Run deployment (FastAPI).`
-
-### Demo (Cloud Run)
-
-Public Cloud Run deployment (FastAPI).
-
-```powershell
-curl.exe https://rag-eval-api-t7a5wdzsna-uc.a.run.app/health
-start https://rag-eval-api-t7a5wdzsna-uc.a.run.app/docs
-
-
-# AI RAG Evaluation Platform
-FastAPI + ChromaDB RAG service with automated evaluation (hit rate + latency) and citation logging.
-
-## Tech Stack
-- FastAPI, Uvicorn
-- ChromaDB (vector store), sentence-transformers embeddings
-- Docker
-
-## Quickstart (Docker)
-docker build -t rag-eval-platform .
-docker run -d --name rag-eval -p 8000:8000 rag-eval-platform
-
-## Demo
-# 1) Ingest sample docs
-curl.exe -X POST "http://127.0.0.1:8000/ingest" -H "content-type: application/json" -d "{ \"path\": \"data/sample_docs\" }"
-
-# 2) Query
-curl.exe -X POST "http://127.0.0.1:8000/query" -H "content-type: application/json" -d "{ \"question\": \"What is the refund policy?\", \"top_k\": 4 }"
-
-# 3) Run eval
-curl.exe -s -X POST "http://127.0.0.1:8000/eval/run" -H "accept: application/json"
-
-
-## Metrics (Automated)
-
-Run an evaluation batch and return aggregate retrieval metrics:
-
-- Hit Rate (questions with >=1 citation): **100%** (3/3)
-- Avg Latency: **~298 ms**
-- Total Questions: **3**
-
-### Reproduce locally (Docker running on :8000)
-
-```powershell
-curl.exe -s -X POST "http://127.0.0.1:8000/eval/run" -H "accept: application/json" | Tee-Object results\latest_eval.json
-type results\latest_eval.json
-
-### Latest Eval (sample)
-
-- Hit Rate (>=1 citation): **100%** (3/3)
-- Avg Latency: **~298 ms**
-- Total Questions: **3**
-
-Sample (truncated):
-```json
-{
-  "stats": { "hit_rate_pct": 100.0, "avg_latency_ms": 297.7, "total_questions": 3 },
-  "results": [
-    { "question": "What is the refund policy?", "num_citations": 3, "top_source": "data/sample_docs/refund_policy.md" },
-    { "question": "How long does shipping take?", "num_citations": 3, "top_source": "data/sample_docs/shipping_policy.md" },
-    { "question": "What are the support hours?", "num_citations": 3, "top_source": "data/sample_docs/shipping_policy.md" }
-  ]
-}
-
-
-## Features
-
-*  Document ingestion with chunking
-*  Vector search using ChromaDB (cosine similarity)
-*  Source-aware citations per query
-* ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â±ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â Latency + retrieval metrics logging
-*  CSV-based evaluation output for offline analysis
+---
 
 ## Architecture
+FastAPI-based evaluation service with retrieval, metrics, and safety enforcement.
 
-\## Evaluation \& Monitoring
+Core components:
+- FastAPI REST API (/query, /query_guarded, /eval/run)
+- Vector-based retrieval (ChromaDB)
+- Evaluation harness (citation hit-rate, latency)
+- Guardrails layer (prompt-injection blocking)
+- Automated smoke tests (PowerShell)
 
+Flow:
+Request → Guardrails → Retrieval → Evaluation → JSON Response
 
+---
 
-The platform includes a lightweight evaluation harness for regression testing and performance monitoring.
+## Evaluation & Metrics
+The platform supports automated evaluation runs to measure RAG quality.
 
+Eval endpoint:
+- POST /eval/run
 
+Reported metrics:
+- Citation hit-rate
+- Average latency
+- Structured JSON results for analysis
 
-\### Run Evaluation
+---
 
-`POST /eval/run`
+## Guardrails (Prompt Injection Blocking)
+A guarded query endpoint blocks unsafe inputs before retrieval or generation.
 
+- Endpoint: POST /query_guarded
+- Behavior: detects prompt-injection attempts and returns a structured deny response
 
+Example blocked response:
+{ "status": "blocked", "reason": "prompt_injection" }
 
-This endpoint executes a fixed set of evaluation questions against the RAG pipeline and logs metrics to a CSV file.
+---
 
+## Run Locally
 
+Start the API:
+python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 
-\*\*Metrics logged (`results/evals.csv`):\*\*
+Run guardrails smoke test:
+powershell -ExecutionPolicy Bypass -File scripts/guardrails.ps1
 
-\- timestamp
+Expected output:
+{ "status": "blocked", "reason": "prompt_injection" }
 
-\- question
+---
 
-\- top\_k
+## Why This Matters
+This project demonstrates production-style RAG evaluation, safety-first API design, deterministic guardrails behavior,
+and automated validation for LLM systems.
 
-\- answer\_length
+---
 
-\- num\_citations
-
-\- latency\_ms
-
-
-
-This enables basic regression testing and latency tracking as prompts, embeddings, or retrieval logic change.
-
-
-
-## RAG Evaluation Harness
-
-FastAPI-based RAG backend with a deterministic evaluation harness.
-
-### Features
-- ChromaDB vector store (persistent)
-- Source-grounded answers with file-level citations
-- Deterministic eval sets (JSON)
-- Metrics: citation hit-rate, average latency, citation count
-
-### Run locally
-uvicorn backend.app.main:app --reload
-
-### Ingest documents (PowerShell)
-$body = @{ path = "data\sample_docs" } | ConvertTo-Json
-Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/ingest" -ContentType "application/json" -Body $body
-
-### Query (PowerShell)
-$body = @{ question = "What is the refund policy?"; top_k = 4 } | ConvertTo-Json
-Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/query" -ContentType "application/json" -Body $body
-
-### Run evaluation
-Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/eval/run"
-
-### Example Metrics
-- Hit rate: 100%
-- Avg latency: ~330ms
-- Citations per answer: 4
-
-## Smoke Test (30s)
-
-```powershell
-$env:BASE="http://127.0.0.1:8002"
-powershell -ExecutionPolicy Bypass -File .\scripts\smoke.ps1
-```
-
-Expected output: `/docs reachable`, metrics table, `smoke passed`.
-
-
-
-
-
-
-
-## Latest Smoke (Local)
-
-~~~text
-BASE=http://127.0.0.1:8002
-
-1) Health check: /docs
-? /docs reachable
-
-2) Eval run: /eval/run
-
-total_questions questions_with_citations hit_rate_pct avg_latency_ms
---------------- ------------------------ ------------ --------------
-             10                       10        100.0          675.7
-
-
-? smoke passed
-
-~~~
-
-## Demo Script (2 minutes)
-
-### 1) Start API
-```powershell
-python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --log-level info
-```
-
-### 2) Ingest sample docs
-```powershell
-$BASE="http://127.0.0.1:8000"
-{"path":"C:\\Users\\zohai\\ai-rag-eval-platform\\data\\sample_docs"} | Set-Content -Encoding ASCII .\ingest.json
-curl.exe -s -X POST "$BASE/ingest" -H "accept: application/json" -H "content-type: application/json" --data-binary "@ingest.json" | Out-Host
-```
-
-### 3) Query with citations
-```powershell
-{"question":"What is the refund policy?","top_k":4} | Set-Content -Encoding ASCII .\query.json
-curl.exe -s -X POST "$BASE/query" -H "accept: application/json" -H "content-type: application/json" --data-binary "@query.json" | Out-Host
-```
-
-### 4) Run evaluation (metrics)
-```powershell
-curl.exe -s -X POST "$BASE/eval/run" -H "accept: application/json" | Out-Host
-```
-
-### Proof screenshots
-- API docs: `docs/screenshots/01_docs.png`
-- Query citations: `docs/screenshots/02_query_citations.png`
-- Eval metrics: `docs/screenshots/03_eval_metrics.png`
-
+## Status
+Project complete.
