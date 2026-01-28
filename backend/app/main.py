@@ -2,10 +2,14 @@
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 import os
+from .guardrails import redact_pii, check_injection
 import glob
+from .guardrails import redact_pii, check_injection
 import time
+from .guardrails import redact_pii, check_injection
 
 import chromadb
+from .guardrails import redact_pii, check_injection
 from chromadb.config import Settings
 
 
@@ -299,6 +303,7 @@ def eval_run() -> Dict[str, Any]:
             "avg_latency_ms": round(avg_latency_ms, 1),
         },
     }
+
 
 
 
