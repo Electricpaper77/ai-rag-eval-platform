@@ -243,6 +243,44 @@ def query(req: QueryRequest) -> Dict[str, Any]:
     }
 
 
+
+@app.post("/query_guarded")
+def query_guarded(req: QueryRequest) -> Dict[str, Any]:
+    # Block obvious prompt-injection attempts
+    hit, reason = check_injection(req.question)
+    if hit:
+        return {"status": "blocked", "reason": reason}
+
+    # Redact PII before retrieval
+    safe_q = redact_pii(req.question)
+
+    # Reuse the same retrieval stack as /query
+    client = get_client()
+    collection = get_collection(client)
+    results = collection.query(query_texts=[safe_q], n_results=req.top_k)
+
+    docs = results.get("documents", [[]])[0]
+    metas = results.get("metadatas", [[]])[0]
+
+    citations = []
+    for i, (d, m) in enumerate(zip(docs, metas), start=1):
+        citations.append({
+            "rank": i,
+            "source": m.get("source"),
+            "chunk": m.get("chunk"),
+            "snippet": d[:300],
+        })
+
+    answer = "\n".join([c["snippet"] for c in citations]) if citations else "No results."
+    return {
+        "status": "ok",
+        "question": safe_q,
+        "answer": answer,
+        "citations": citations,
+        "num_citations": len(citations),
+        "top_source": citations[0]["source"] if citations else None,
+    }
+
 @app.post("/eval/run")
 def eval_run() -> Dict[str, Any]:
     """
@@ -303,6 +341,7 @@ def eval_run() -> Dict[str, Any]:
             "avg_latency_ms": round(avg_latency_ms, 1),
         },
     }
+
 
 
 
