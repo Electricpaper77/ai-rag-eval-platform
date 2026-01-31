@@ -1,0 +1,3 @@
+﻿#!include:.gitignore
+!data/sample_docs/
+!data/sample_docs/**
