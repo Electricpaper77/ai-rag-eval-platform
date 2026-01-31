@@ -1,5 +1,3 @@
-# Shipping Policy
-Standard shipping: 3-7 business days.
-Expedited shipping: 1-3 business days.
-Orders over $50 qualify for free standard shipping.
-
+﻿# Shipping Policy
+Orders ship in 1-2 business days.
+Delivery typically takes 3-5 business days.

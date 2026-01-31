@@ -2,10 +2,14 @@
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 import os
+from .guardrails import redact_pii, check_injection
 import glob
+from .guardrails import redact_pii, check_injection
 import time
+from .guardrails import redact_pii, check_injection
 
 import chromadb
+from .guardrails import redact_pii, check_injection
 from chromadb.config import Settings
 
 
@@ -14,7 +18,43 @@ from chromadb.config import Settings
 # ----------------------------
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # repo root
 DATA_DIR_DEFAULT = os.path.join(PROJECT_ROOT, "data", "sample_docs")
-CHROMA_DIR = os.path.join(PROJECT_ROOT, "data", "chroma")
+
+def resolve_ingest_path(p: str) -> str:
+# FIXED: was invalid docstring ->     \"\"\"Resolve ingest folder robustly in Cloud Run/buildpacks.\"\"\"
+    p = (p or "").strip()
+    if not p:
+        return DATA_DIR_DEFAULT
+
+    # Build candidate paths
+    candidates = []
+    if os.path.isabs(p):
+        candidates.append(p)
+    else:
+        candidates.extend([
+            p,
+            os.path.join(PROJECT_ROOT, p),
+            os.path.join(PROJECT_ROOT, "..", p),
+            os.path.join(PROJECT_ROOT, "..", "..", p),
+            os.path.join(PROJECT_ROOT, "app", p),
+        ])
+
+    # Pick first directory that exists AND has .txt/.md
+    for c in candidates:
+        c = os.path.normpath(c)
+        if os.path.isdir(c):
+            has_files = bool(glob.glob(os.path.join(c, "*.txt"))) or bool(glob.glob(os.path.join(c, "*.md")))
+            if has_files:
+                return c
+
+    # If dirs exist but no files, return first existing dir (so error message is accurate)
+    for c in candidates:
+        c = os.path.normpath(c)
+        if os.path.isdir(c):
+            return c
+
+    return os.path.normpath(p)
+
+CHROMA_DIR = os.getenv("CHROMA_DIR", "/tmp/chroma")
 EVAL_DIR = os.path.join(PROJECT_ROOT, "data", "eval_sets")
 DEFAULT_EVAL_SET = os.path.join(EVAL_DIR, "policy_eval.json")
 COLLECTION_NAME = "docs"
@@ -62,8 +102,8 @@ def read_text_files(folder: str) -> List[Dict[str, str]]:
     docs: List[Dict[str, str]] = []
     for path in paths:
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                text = f.read()
+            with open(DEFAULT_EVAL_SET, "r", encoding="utf-8-sig") as f:
+                eval_blob = json.load(f)
             if text.strip():
                 docs.append({"path": path.replace("\\", "/"), "text": text})
         except Exception:
@@ -203,6 +243,44 @@ def query(req: QueryRequest) -> Dict[str, Any]:
     }
 
 
+
+@app.post("/query_guarded")
+def query_guarded(req: QueryRequest) -> Dict[str, Any]:
+    # Block obvious prompt-injection attempts
+    hit, reason = check_injection(req.question)
+    if hit:
+        return {"status": "blocked", "reason": reason}
+
+    # Redact PII before retrieval
+    safe_q = redact_pii(req.question)
+
+    # Reuse the same retrieval stack as /query
+    client = get_client()
+    collection = get_collection(client)
+    results = collection.query(query_texts=[safe_q], n_results=req.top_k)
+
+    docs = results.get("documents", [[]])[0]
+    metas = results.get("metadatas", [[]])[0]
+
+    citations = []
+    for i, (d, m) in enumerate(zip(docs, metas), start=1):
+        citations.append({
+            "rank": i,
+            "source": m.get("source"),
+            "chunk": m.get("chunk"),
+            "snippet": d[:300],
+        })
+
+    answer = "\n".join([c["snippet"] for c in citations]) if citations else "No results."
+    return {
+        "status": "ok",
+        "question": safe_q,
+        "answer": answer,
+        "citations": citations,
+        "num_citations": len(citations),
+        "top_source": citations[0]["source"] if citations else None,
+    }
+
 @app.post("/eval/run")
 def eval_run() -> Dict[str, Any]:
     """
@@ -213,7 +291,7 @@ def eval_run() -> Dict[str, Any]:
     eval_cases: List[Dict[str, Any]] = []
     if os.path.isfile(DEFAULT_EVAL_SET):
         import json
-        with open(DEFAULT_EVAL_SET, "r", encoding="utf-8") as f:
+        with open(DEFAULT_EVAL_SET, "r", encoding="utf-8-sig") as f:
             eval_blob = json.load(f)
             eval_cases = eval_blob.get("cases", eval_blob) if isinstance(eval_blob, dict) else eval_blob
             
@@ -263,6 +341,19 @@ def eval_run() -> Dict[str, Any]:
             "avg_latency_ms": round(avg_latency_ms, 1),
         },
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

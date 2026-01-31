@@ -1,3 +1,9 @@
-﻿#!include:.gitignore
+﻿#include:.gitignore
+
+# unignore the whole data tree first (required if data/ is ignored upstream)
+!data/
+!data/**
+
+# ensure sample docs are included
 !data/sample_docs/
 !data/sample_docs/**
