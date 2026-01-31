@@ -55,3 +55,8 @@ Procfile
 app.py
 Dockerfile.bak
 .gcloudignore.bak
+
+# local backups
+*.bak
+main.py
+
