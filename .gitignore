@@ -65,3 +65,5 @@ main.py
 *.bak
 *.bak*
 
+*.bak
+*.bak*
