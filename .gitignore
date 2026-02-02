@@ -60,3 +60,8 @@ Dockerfile.bak
 *.bak
 main.py
 
+
+# local backups
+*.bak
+*.bak*
+
