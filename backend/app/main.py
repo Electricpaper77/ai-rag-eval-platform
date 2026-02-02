@@ -224,15 +224,11 @@ def ingest(req: IngestRequest) -> Dict[str, Any]:
 
             return {"status": "error", "message": f"GCS ingest failed: {e}"}
 
-    else:
 
-        docs = read_text_files(folder)
 
 
     if not docs:
 
-        return {"status": "error", "message": f"No .md or .txt files found in: {folder}"}
-    if not docs:
         return {"status": "error", "message": f"No .md or .txt files found in: {folder}"}
 
     client = get_client()
