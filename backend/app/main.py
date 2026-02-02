@@ -202,33 +202,21 @@ def stats() -> Dict[str, Any]:
 
 @app.post("/ingest")
 def ingest(req: IngestRequest) -> Dict[str, Any]:
-    folder = req.path
-    if not os.path.isdir(folder):
-        return {"status": "error", "message": f"Folder not found: {folder}"}
-
-    # Load docs from local folder OR GCS
-
+    # Load docs from local folder OR GCS (gs://bucket/prefix)
     docs: List[Dict[str, str]] = []
 
     if req.path.startswith("gs://"):
-
         folder = req.path
-
         try:
-
             for fname, text in iter_gcs_text_files(req.path):
-
                 docs.append({"path": fname, "text": text})
-
         except Exception as e:
-
             return {"status": "error", "message": f"GCS ingest failed: {e}"}
-
-
-
+    else:
+        folder = resolve_ingest_path(req.path)
+        docs = read_text_files(folder)
 
     if not docs:
-
         return {"status": "error", "message": f"No .md or .txt files found in: {folder}"}
 
     client = get_client()
