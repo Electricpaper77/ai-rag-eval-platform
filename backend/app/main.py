@@ -13,6 +13,50 @@ import chromadb
 from .guardrails import redact_pii, check_injection
 from chromadb.config import Settings
 
+from urllib.parse import urlparse
+
+try:
+    from google.cloud import storage
+except Exception:
+    storage = None
+
+
+def iter_gcs_text_files(gcs_uri: str):
+    """
+    Yield (filename, text) for .md/.txt objects under a gs://bucket/prefix path.
+    """
+    if storage is None:
+        raise RuntimeError("google-cloud-storage not installed in runtime")
+
+    if not gcs_uri.startswith("gs://"):
+        raise ValueError("GCS URI must start with gs://")
+
+    parsed = urlparse(gcs_uri)
+    bucket_name = parsed.netloc
+    prefix = parsed.path.lstrip("/")
+
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+
+    blobs = client.list_blobs(bucket, prefix=prefix)
+    found_any = False
+
+    for blob in blobs:
+        name = blob.name
+        if name.endswith("/") or not (name.endswith(".md") or name.endswith(".txt")):
+            continue
+        found_any = True
+        data = blob.download_as_bytes()
+        try:
+            text = data.decode("utf-8")
+        except Exception:
+            text = data.decode("utf-8", errors="ignore")
+        yield name, text
+
+    if not found_any:
+        raise FileNotFoundError(f"No .md or .txt files found in: {gcs_uri}")
+
+
 
 # ----------------------------
 # Config
@@ -162,7 +206,32 @@ def ingest(req: IngestRequest) -> Dict[str, Any]:
     if not os.path.isdir(folder):
         return {"status": "error", "message": f"Folder not found: {folder}"}
 
-    docs = read_text_files(folder)
+    # Load docs from local folder OR GCS
+
+    docs: List[Dict[str, str]] = []
+
+    if req.path.startswith("gs://"):
+
+        folder = req.path
+
+        try:
+
+            for fname, text in iter_gcs_text_files(req.path):
+
+                docs.append({"path": fname, "text": text})
+
+        except Exception as e:
+
+            return {"status": "error", "message": f"GCS ingest failed: {e}"}
+
+    else:
+
+        docs = read_text_files(folder)
+
+
+    if not docs:
+
+        return {"status": "error", "message": f"No .md or .txt files found in: {folder}"}
     if not docs:
         return {"status": "error", "message": f"No .md or .txt files found in: {folder}"}
 
@@ -342,6 +411,7 @@ def eval_run() -> Dict[str, Any]:
             "avg_latency_ms": round(avg_latency_ms, 1),
         },
     }
+
 
 
 
