@@ -116,7 +116,7 @@ class IngestRequest(BaseModel):
 
 class QueryRequest(BaseModel):
     question: str
-    top_k: int = 4
+    top_k: int = 3
 
 
 # ----------------------------
@@ -268,7 +268,7 @@ def query(req: QueryRequest) -> Dict[str, Any]:
     client = get_client()
     collection = get_collection(client)
 
-    res = collection.query(query_texts=[q], n_results = int(req.top_k or 5, include=["documents","metadatas","distances"]))
+    res = collection.query(query_texts=[q], n_results = int(req.top_k or 3), include=["documents","metadatas","distances"])
     docs = (res.get("documents") or [[]])[0]
     metas = (res.get("metadatas") or [[]])[0]
 
@@ -311,7 +311,7 @@ def query_guarded(req: QueryRequest) -> Dict[str, Any]:
     # Reuse the same retrieval stack as /query
     client = get_client()
     collection = get_collection(client)
-    results = collection.query(query_texts=[safe_q], n_results = int(req.top_k or 5, include=["documents","metadatas","distances"]))
+    results = collection.query(query_texts=[safe_q], n_results = int(req.top_k or 3), include=["documents","metadatas","distances"])
 
     docs = results.get("documents", [[]])[0]
     metas = results.get("metadatas", [[]])[0]
@@ -395,6 +395,11 @@ def eval_run() -> Dict[str, Any]:
             "avg_latency_ms": round(avg_latency_ms, 1),
         },
     }
+
+
+
+
+
 
 
 
