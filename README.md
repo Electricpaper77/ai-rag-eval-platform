@@ -74,3 +74,27 @@ Project complete.
 - Deployment: Cloud Run (us-central1)
 - Live API: https://rag-eval-api-69725201265.us-central1.run.app
 
+
+## Live Demo Proof (Cloud Run)
+
+**Base URL:** https://rag-eval-api-t7a5wdzsna-uc.a.run.app
+
+### PowerShell Smoke Test (copy/paste)
+`powershell
+$BASE="https://rag-eval-api-t7a5wdzsna-uc.a.run.app"
+
+# Health
+Invoke-RestMethod "$BASE/health"
+
+# Ingest from GCS
+$body = @{ path="gs://rag-eval-docs-124909/sample_docs" } | ConvertTo-Json
+Invoke-RestMethod -Method POST -Uri "$BASE/ingest" -ContentType "application/json" -Body $body -TimeoutSec 180
+
+# Query (default top_k = 3)
+$q = @{ question="Summarize the refund policy with citations." } | ConvertTo-Json
+$r = Invoke-RestMethod -Method POST -Uri "$BASE/query" -ContentType "application/json" -Body $q -TimeoutSec 60
+$r.status
+$r.num_citations
+$r.citations.source
+$r.latency_ms
+
