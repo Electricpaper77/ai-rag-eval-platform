@@ -68,3 +68,9 @@ and automated validation for LLM systems.
 
 ## Status
 Project complete.
+
+## Metrics (Cloud Run)
+- Health check latency (n=30): p50 124ms, p95 249ms
+- Deployment: Cloud Run (us-central1)
+- Live API: https://rag-eval-api-69725201265.us-central1.run.app
+
