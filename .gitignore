@@ -67,3 +67,6 @@ main.py
 
 *.bak
 *.bak*
+
+# Evaluation artifacts
+artifacts/eval_runs/
