@@ -5,6 +5,7 @@ pydantic
 streamlit
 chromadb
 requests
+pytest
 
 gunicorn==21.2.0
 

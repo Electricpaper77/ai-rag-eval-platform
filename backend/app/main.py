@@ -1,17 +1,13 @@
 ﻿from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 import os
-from .guardrails import redact_pii, check_injection
 import glob
-from .guardrails import redact_pii, check_injection
-import time
 from pathlib import Path
-from .guardrails import redact_pii, check_injection
 
-import chromadb
 from .guardrails import redact_pii, check_injection
-from chromadb.config import Settings
+from .rag import COLLECTION_NAME, get_client, get_collection, query_rag
+from .routes.regression_eval import router as regression_router
 
 from urllib.parse import urlparse
 
@@ -99,12 +95,11 @@ def resolve_ingest_path(p: str) -> str:
 
     return os.path.normpath(p)
 
-CHROMA_DIR = os.getenv("CHROMA_DIR", "/tmp/chroma")
 EVAL_DIR = os.path.join(PROJECT_ROOT, "data", "eval_sets")
 DEFAULT_EVAL_SET = os.path.join(EVAL_DIR, "policy_eval.json")
-COLLECTION_NAME = "docs"
 
 app = FastAPI(title="AI RAG Eval Platform")
+app.include_router(regression_router)
 
 
 # ----------------------------
@@ -122,19 +117,6 @@ class QueryRequest(BaseModel):
 # ----------------------------
 # Helpers
 # ----------------------------
-def get_client() -> chromadb.PersistentClient:
-    os.makedirs(CHROMA_DIR, exist_ok=True)
-    return chromadb.PersistentClient(
-        path=CHROMA_DIR,
-        settings=Settings(allow_reset=True),
-    )
-
-
-def get_collection(client: chromadb.PersistentClient):
-    # Create/get collection
-    return client.get_or_create_collection(name=COLLECTION_NAME)
-
-
 def read_text_files(folder: str) -> List[Dict[str, str]]:
     patterns = [
         os.path.join(folder, "*.md"),
@@ -168,17 +150,6 @@ def chunk_text(text: str, max_chars: int = 1200) -> List[str]:
             chunks.append(chunk)
         i += max_chars
     return chunks
-
-
-def make_answer_from_snippets(question: str, snippets: List[str]) -> str:
-    # Minimal “demo” answer: 1–2 best snippets joined.
-    if not snippets:
-        return "I couldn’t find an answer in the documents."
-    best = snippets[0].strip()
-    if len(snippets) > 1:
-        second = snippets[1].strip()
-        return f"{best}\n\n{second}"
-    return best
 
 
 # ----------------------------
@@ -259,42 +230,7 @@ def ingest(req: IngestRequest) -> Dict[str, Any]:
 
 @app.post("/query")
 def query(req: QueryRequest) -> Dict[str, Any]:
-    t0 = time.perf_counter()
-
-    q = (req.question or "").strip()
-    if not q:
-        return {"status": "error", "message": "Question is empty.", "answer": "", "citations": []}
-
-    client = get_client()
-    collection = get_collection(client)
-
-    res = collection.query(query_texts=[q], n_results = int(req.top_k or 3), include=["documents","metadatas","distances"])
-    docs = (res.get("documents") or [[]])[0]
-    metas = (res.get("metadatas") or [[]])[0]
-
-    citations: List[Dict[str, Any]] = []
-    for i in range(min(len(docs), len(metas))):
-        citations.append(
-            {
-                "rank": i + 1,
-                "source": metas[i].get("source"),
-                "chunk": metas[i].get("chunk"),
-                "snippet": docs[i][:240],
-            }
-        )
-
-    answer = make_answer_from_snippets(q, docs)
-
-    latency_ms = int((time.perf_counter() - t0) * 1000)
-    return {
-        "status": "ok",
-        "question": q,
-        "answer": answer,
-        "citations": citations,
-        "num_citations": len(citations),
-        "latency_ms": latency_ms,
-        "top_source": citations[0]["source"] if citations else None,
-    }
+    return query_rag(req.question, top_k=req.top_k)
 
 
 
@@ -308,32 +244,7 @@ def query_guarded(req: QueryRequest) -> Dict[str, Any]:
     # Redact PII before retrieval
     safe_q = redact_pii(req.question)
 
-    # Reuse the same retrieval stack as /query
-    client = get_client()
-    collection = get_collection(client)
-    results = collection.query(query_texts=[safe_q], n_results = int(req.top_k or 3), include=["documents","metadatas","distances"])
-
-    docs = results.get("documents", [[]])[0]
-    metas = results.get("metadatas", [[]])[0]
-
-    citations = []
-    for i, (d, m) in enumerate(zip(docs, metas), start=1):
-        citations.append({
-            "rank": i,
-            "source": m.get("source"),
-            "chunk": m.get("chunk"),
-            "snippet": d[:300],
-        })
-
-    answer = "\n".join([c["snippet"] for c in citations]) if citations else "No results."
-    return {
-        "status": "ok",
-        "question": safe_q,
-        "answer": answer,
-        "citations": citations,
-        "num_citations": len(citations),
-        "top_source": citations[0]["source"] if citations else None,
-    }
+    return query_rag(safe_q, top_k=req.top_k)
 
 @app.post("/eval/run")
 def eval_run() -> Dict[str, Any]:
@@ -395,13 +306,6 @@ def eval_run() -> Dict[str, Any]:
             "avg_latency_ms": round(avg_latency_ms, 1),
         },
     }
-
-
-
-
-
-
-
 
 
 
