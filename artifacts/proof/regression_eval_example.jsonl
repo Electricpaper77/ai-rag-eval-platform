@@ -1,0 +1,2 @@
+{"run_id":"example_run","variant":"base","question_id":"refund_1","question":"What is the refund policy?","answer":"Customers can request a refund within 30 days of delivery...","num_citations":3,"latency_ms":820}
+{"run_id":"example_run","variant":"base","question_id":"shipping_1","question":"What are shipping options?","answer":"Standard shipping 3-7 business days...","num_citations":2,"latency_ms":640}
