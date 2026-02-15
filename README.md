@@ -1,4 +1,8 @@
-﻿# AI RAG Evaluation & Guardrails Platform
+﻿## Whatnot-style Marketplace Analytics & Experimentation
+- SQL cohort analysis
+- A/B testing framework
+- Metric-driven decision dashboards
+# AI RAG Evaluation & Guardrails Platform
 
 ## Problem
 Modern LLM applications fail silently when retrieval quality degrades or when unsafe inputs (e.g., prompt injection) reach the model.
@@ -114,3 +118,4 @@ Real eval record produced by POST /eval/regression (truncated):
 
 `json
 {"run_id": "67414973d53f49b5a5a0c343df5e1031", "variant": "base", "question_id": "refund_1", "question": "What is the refund policy?", "prompted_question": "What is the refund policy?", "answer": "# Refund Policy\nCustomers can request a refund within 30 days of delivery.\nRefunds are issued to the original payment met ...
+
