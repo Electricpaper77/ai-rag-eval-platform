@@ -119,3 +119,5 @@ Real eval record produced by POST /eval/regression (truncated):
 `json
 {"run_id": "67414973d53f49b5a5a0c343df5e1031", "variant": "base", "question_id": "refund_1", "question": "What is the refund policy?", "prompted_question": "What is the refund policy?", "answer": "# Refund Policy\nCustomers can request a refund within 30 days of delivery.\nRefunds are issued to the original payment met ...
 
+- Proof: JSONL eval artifacts + metrics dashboard (latency p95, citation precision, hallucination rate)
+
