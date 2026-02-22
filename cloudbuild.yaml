@@ -4,7 +4,7 @@ steps:
     [
       "build",
       "-t",
-      "us-central1-docker.pkg.dev/$PROJECT_ID/rag-eval-repo/api:$SHORT_SHA",
+      "us-central1-docker.pkg.dev/$PROJECT_ID/rag-eval-repo/api:ci-test",
       "."
     ]
 
@@ -12,8 +12,8 @@ steps:
   args:
     [
       "push",
-      "us-central1-docker.pkg.dev/$PROJECT_ID/rag-eval-repo/api:$SHORT_SHA"
+      "us-central1-docker.pkg.dev/$PROJECT_ID/rag-eval-repo/api:ci-test"
     ]
 
 images:
-- us-central1-docker.pkg.dev/$PROJECT_ID/rag-eval-repo/api:$SHORT_SHA
+- us-central1-docker.pkg.dev/$PROJECT_ID/rag-eval-repo/api:ci-test
