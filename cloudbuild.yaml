@@ -1,0 +1,24 @@
+﻿substitutions:
+  _IMAGE: us-central1-docker.pkg.dev/ai-rag-eval-prod/rag-eval-repo/api
+
+steps:
+- name: gcr.io/cloud-builders/docker
+  args:
+    - build
+    - -t
+    - ${_IMAGE}:$BUILD_ID
+    - .
+
+- name: gcr.io/cloud-builders/docker
+  args:
+    - push
+    - ${_IMAGE}:$BUILD_ID
+
+- name: gcr.io/google.com/cloudsdktool/cloud-sdk
+  entrypoint: pwsh
+  args:
+    - -File
+    - smoke_test.ps1
+
+images:
+- ${_IMAGE}:$BUILD_ID

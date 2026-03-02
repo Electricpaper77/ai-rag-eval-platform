@@ -60,6 +60,24 @@ def query_rag(question: str, top_k: int = 3) -> Dict[str, Any]:
             }
         )
 
+    # --- Safety Guard: Keyword Overlap Refusal ---
+    query_terms = set(q.lower().split())
+    retrieved_text = " ".join([c["snippet"].lower() for c in citations]) if citations else ""
+
+    overlap = any(term in retrieved_text for term in query_terms)
+
+    if not overlap:
+        latency_ms = int((time.perf_counter() - t0) * 1000)
+        return {
+            "status": "ok",
+            "question": q,
+            "answer": "I cannot answer this question based on the available documents.",
+            "citations": [],
+            "num_citations": 0,
+            "latency_ms": latency_ms,
+            "top_source": None,
+        }
+
     answer = make_answer_from_snippets(q, docs)
 
     latency_ms = int((time.perf_counter() - t0) * 1000)
