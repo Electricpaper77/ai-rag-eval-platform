@@ -10,3 +10,4 @@ pytest
 gunicorn==21.2.0
 
 google-cloud-storage==3.8.0
+psutil
