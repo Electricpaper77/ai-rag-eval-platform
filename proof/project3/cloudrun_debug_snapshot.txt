@@ -1,0 +1,244 @@
+status:
+  conditions:
+  - lastTransitionTime: '2026-03-04T07:57:57.691682Z'
+    status: 'True'
+    type: Ready
+  - lastTransitionTime: '2026-03-04T07:57:47.771739Z'
+    status: 'True'
+    type: ConfigurationsReady
+  - lastTransitionTime: '2026-03-04T07:57:57.656116Z'
+    status: 'True'
+    type: RoutesReady
+  latestReadyRevisionName: ai-rag-eval-00012-kbp
+  traffic:
+  - latestRevision: true
+    percent: 100
+    revisionName: ai-rag-eval-00012-kbp
+  url: https://ai-rag-eval-t7a5wdzsna-uc.a.run.app
+----
+2026-03-04 08:10:45 [2026-03-04 08:10:45 +0000] [1] [CRITICAL] WORKER TIMEOUT (pid:2)
+2026-03-04 08:10:46 [2026-03-04 08:10:46 +0000] [1] [ERROR] Worker (pid:2) was sent SIGABRT!
+2026-03-04 08:10:49 [2026-03-04 08:10:49 +0000] [4] [INFO] Booting worker with pid: 4
+2026-03-04 08:11:32 GET 503 https://ai-rag-eval-t7a5wdzsna-uc.a.run.app/health
+2026-03-04 08:11:32 [2026-03-04 08:11:32 +0000] [4] [ERROR] Exception in worker process
+2026-03-04 08:11:32 Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/arbiter.py", line 609, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 134, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 146, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/app/base.py", line 67, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 58, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 48, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/util.py", line 371, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/app/backend/app/main.py", line 10, in <module>
+    from .rag import COLLECTION_NAME, get_client, get_collection, query_rag
+  File "/app/backend/app/rag.py", line 5, in <module>
+    import chromadb
+  File "/usr/local/lib/python3.11/site-packages/chromadb/__init__.py", line 3, in <module>
+    from chromadb.api.client import Client as ClientCreator
+  File "/usr/local/lib/python3.11/site-packages/chromadb/api/__init__.py", line 7, in <module>
+    from chromadb.api.models.Collection import Collection
+  File "/usr/local/lib/python3.11/site-packages/chromadb/api/models/Collection.py", line 7, in <module>
+    import chromadb.utils.embedding_functions as ef
+  File "/usr/local/lib/python3.11/site-packages/chromadb/utils/embedding_functions.py", line 7, in <module>
+    from chromadb.api.types import (
+  File "/usr/local/lib/python3.11/site-packages/chromadb/api/types.py", line 102, in <module>
+    ImageDType = Union[np.uint, np.int_, np.float_]
+                                         ^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/numpy/__init__.py", line 778, in __getattr__
+    raise AttributeError(
+AttributeError: `np.float_` was removed in the NumPy 2.0 release. Use `np.float64` instead.
+2026-03-04 08:11:32 [2026-03-04 08:11:32 +0000] [4] [INFO] Worker exiting (pid: 4)
+2026-03-04 08:11:32 [2026-03-04 08:11:32 +0000] [1] [ERROR] Worker (pid:4) exited with code 3
+2026-03-04 08:11:32 [2026-03-04 08:11:32 +0000] [1] [ERROR] Shutting down: Master
+2026-03-04 08:11:32 [2026-03-04 08:11:32 +0000] [1] [ERROR] Reason: Worker failed to boot.
+2026-03-04 08:11:33 [2026-03-04 08:11:33 +0000] [1] [INFO] Starting gunicorn 21.2.0
+2026-03-04 08:11:33 [2026-03-04 08:11:33 +0000] [1] [INFO] Listening at: http://0.0.0.0:8080 (1)
+2026-03-04 08:11:33 [2026-03-04 08:11:33 +0000] [1] [INFO] Using worker: uvicorn.workers.UvicornWorker
+2026-03-04 08:11:33 [2026-03-04 08:11:33 +0000] [2] [INFO] Booting worker with pid: 2
+2026-03-04 08:11:40 GET 503 https://ai-rag-eval-t7a5wdzsna-uc.a.run.app/
+2026-03-04 08:11:41 [2026-03-04 08:11:41 +0000] [2] [ERROR] Exception in worker process
+2026-03-04 08:11:41 Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/arbiter.py", line 609, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 134, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 146, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/app/base.py", line 67, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 58, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 48, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/util.py", line 371, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/app/backend/app/main.py", line 10, in <module>
+    from .rag import COLLECTION_NAME, get_client, get_collection, query_rag
+  File "/app/backend/app/rag.py", line 5, in <module>
+    import chromadb
+  File "/usr/local/lib/python3.11/site-packages/chromadb/__init__.py", line 3, in <module>
+    from chromadb.api.client import Client as ClientCreator
+  File "/usr/local/lib/python3.11/site-packages/chromadb/api/__init__.py", line 7, in <module>
+    from chromadb.api.models.Collection import Collection
+  File "/usr/local/lib/python3.11/site-packages/chromadb/api/models/Collection.py", line 7, in <module>
+    import chromadb.utils.embedding_functions as ef
+  File "/usr/local/lib/python3.11/site-packages/chromadb/utils/embedding_functions.py", line 7, in <module>
+    from chromadb.api.types import (
+  File "/usr/local/lib/python3.11/site-packages/chromadb/api/types.py", line 102, in <module>
+    ImageDType = Union[np.uint, np.int_, np.float_]
+                                         ^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/numpy/__init__.py", line 778, in __getattr__
+    raise AttributeError(
+AttributeError: `np.float_` was removed in the NumPy 2.0 release. Use `np.float64` instead.
+2026-03-04 08:11:41 [2026-03-04 08:11:41 +0000] [2] [INFO] Worker exiting (pid: 2)
+2026-03-04 08:11:41 [2026-03-04 08:11:41 +0000] [1] [ERROR] Worker (pid:2) exited with code 3
+2026-03-04 08:11:41 [2026-03-04 08:11:41 +0000] [1] [ERROR] Shutting down: Master
+2026-03-04 08:11:41 [2026-03-04 08:11:41 +0000] [1] [ERROR] Reason: Worker failed to boot.
+2026-03-04 08:11:42 [2026-03-04 08:11:42 +0000] [1] [INFO] Starting gunicorn 21.2.0
+2026-03-04 08:11:42 [2026-03-04 08:11:42 +0000] [1] [INFO] Listening at: http://0.0.0.0:8080 (1)
+2026-03-04 08:11:42 [2026-03-04 08:11:42 +0000] [1] [INFO] Using worker: uvicorn.workers.UvicornWorker
+2026-03-04 08:11:42 [2026-03-04 08:11:42 +0000] [2] [INFO] Booting worker with pid: 2
+2026-03-04 08:11:42 GET 503 https://ai-rag-eval-t7a5wdzsna-uc.a.run.app/favicon.ico
+2026-03-04 08:11:42 [2026-03-04 08:11:42 +0000] [2] [ERROR] Exception in worker process
+2026-03-04 08:11:42 Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/arbiter.py", line 609, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 134, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 146, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/app/base.py", line 67, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 58, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 48, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/util.py", line 371, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/app/backend/app/main.py", line 10, in <module>
+    from .rag import COLLECTION_NAME, get_client, get_collection, query_rag
+  File "/app/backend/app/rag.py", line 5, in <module>
+    import chromadb
+  File "/usr/local/lib/python3.11/site-packages/chromadb/__init__.py", line 3, in <module>
+    from chromadb.api.client import Client as ClientCreator
+  File "/usr/local/lib/python3.11/site-packages/chromadb/api/__init__.py", line 7, in <module>
+    from chromadb.api.models.Collection import Collection
+  File "/usr/local/lib/python3.11/site-packages/chromadb/api/models/Collection.py", line 7, in <module>
+    import chromadb.utils.embedding_functions as ef
+  File "/usr/local/lib/python3.11/site-packages/chromadb/utils/embedding_functions.py", line 7, in <module>
+    from chromadb.api.types import (
+  File "/usr/local/lib/python3.11/site-packages/chromadb/api/types.py", line 102, in <module>
+    ImageDType = Union[np.uint, np.int_, np.float_]
+                                         ^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/numpy/__init__.py", line 778, in __getattr__
+    raise AttributeError(
+AttributeError: `np.float_` was removed in the NumPy 2.0 release. Use `np.float64` instead.
+2026-03-04 08:11:42 [2026-03-04 08:11:42 +0000] [2] [INFO] Worker exiting (pid: 2)
+2026-03-04 08:11:43 [2026-03-04 08:11:43 +0000] [1] [ERROR] Worker (pid:2) exited with code 3
+2026-03-04 08:11:43 [2026-03-04 08:11:43 +0000] [1] [ERROR] Shutting down: Master
+2026-03-04 08:11:43 [2026-03-04 08:11:43 +0000] [1] [ERROR] Reason: Worker failed to boot.
+2026-03-04 08:11:44 [2026-03-04 08:11:44 +0000] [1] [INFO] Starting gunicorn 21.2.0
+2026-03-04 08:11:44 [2026-03-04 08:11:44 +0000] [1] [INFO] Listening at: http://0.0.0.0:8080 (1)
+2026-03-04 08:11:44 [2026-03-04 08:11:44 +0000] [1] [INFO] Using worker: uvicorn.workers.UvicornWorker
+2026-03-04 08:11:44 [2026-03-04 08:11:44 +0000] [2] [INFO] Booting worker with pid: 2
+2026-03-04 08:13:22 [2026-03-04 08:13:21 +0000] [2] [ERROR] Exception in worker process
+2026-03-04 08:13:22 Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/arbiter.py", line 609, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 134, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 146, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/app/base.py", line 67, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 58, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 48, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/gunicorn/util.py", line 371, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/app/backend/app/main.py", line 10, in <module>
+    from .rag import COLLECTION_NAME, get_client, get_collection, query_rag
+  File "/app/backend/app/rag.py", line 5, in <module>
+    import chromadb
+  File "/usr/local/lib/python3.11/site-packages/chromadb/__init__.py", line 3, in <module>
+    from chromadb.api.client import Client as ClientCreator
+  File "/usr/local/lib/python3.11/site-packages/chromadb/api/__init__.py", line 7, in <module>
+    from chromadb.api.models.Collection import Collection
+  File "/usr/local/lib/python3.11/site-packages/chromadb/api/models/Collection.py", line 7, in <module>
+    import chromadb.utils.embedding_functions as ef
+  File "/usr/local/lib/python3.11/site-packages/chromadb/utils/embedding_functions.py", line 7, in <module>
+    from chromadb.api.types import (
+  File "/usr/local/lib/python3.11/site-packages/chromadb/api/types.py", line 102, in <module>
+    ImageDType = Union[np.uint, np.int_, np.float_]
+                                         ^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/numpy/__init__.py", line 778, in __getattr__
+    raise AttributeError(
+AttributeError: `np.float_` was removed in the NumPy 2.0 release. Use `np.float64` instead.
+2026-03-04 08:13:22 [2026-03-04 08:13:22 +0000] [2] [INFO] Worker exiting (pid: 2)
+2026-03-04 08:13:44 [2026-03-04 08:13:44 +0000] [1] [CRITICAL] WORKER TIMEOUT (pid:2)
+2026-03-04 08:13:45 [2026-03-04 08:13:45 +0000] [1] [ERROR] Worker (pid:2) was sent SIGABRT!
+2026-03-04 08:13:49 [2026-03-04 08:13:48 +0000] [4] [INFO] Booting worker with pid: 4

@@ -1,9 +1,10 @@
-﻿from fastapi import FastAPI
+from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Any, Dict, List
 import os
 import glob
 from pathlib import Path
+import psutil
 
 from .guardrails import redact_pii, check_injection
 from .rag import COLLECTION_NAME, get_client, get_collection, query_rag
@@ -325,3 +326,36 @@ def eval_run() -> Dict[str, Any]:
 
 
 
+
+# --- Project 3: Structured Logging ---
+import time
+import json
+import logging
+from datetime import datetime
+
+logger = logging.getLogger('uvicorn.access')
+logger.setLevel(logging.INFO)
+
+@app.middleware('http')
+async def log_requests(request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    latency_ms = (time.time() - start_time) * 1000
+
+    log_payload = {
+        'event': 'request_log',
+        'path': request.url.path,
+        'method': request.method,
+        'status_code': response.status_code,
+        'latency_ms': round(latency_ms, 2),
+        'timestamp': datetime.utcnow().isoformat()
+    }
+
+    process = psutil.Process()
+    memory_mb = process.memory_info().rss / 1024 / 1024
+    cpu_percent = psutil.cpu_percent(interval=None)
+    log_payload['memory_mb'] = round(memory_mb, 2)
+    log_payload['cpu_percent'] = cpu_percent
+    logger.info(json.dumps(log_payload))
+
+    return response
