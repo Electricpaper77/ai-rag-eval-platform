@@ -8,67 +8,45 @@ $ErrorActionPreference = "Stop"
 $endpoint = "/query"
 $url = ($BaseUrl.TrimEnd("/") + $endpoint)
 
-# Basic request body (adjust if your API requires different schema)
 $body = @{ query = "load test" } | ConvertTo-Json -Compress
 $headers = @{ "Content-Type" = "application/json" }
 
-$latencies = New-Object System.Collections.Concurrent.ConcurrentBag[double]
-$errors = New-Object System.Collections.Concurrent.ConcurrentBag[string]
-
 $swTotal = [System.Diagnostics.Stopwatch]::StartNew()
 
-# Simple worker: each worker loops until global counter reaches Requests
-$counter = [System.Threading.Interlocked]::Read([ref]0) # placeholder
-$global:i = 0
+# Run N requests in parallel with throttling = concurrency
+$results = 1..$Requests | ForEach-Object -Parallel {
+  param($url,$body,$headers)
 
-$scriptBlock = {
-  param($url,$body,$headers,$latencies,$errors,[ref]$globalI,$Requests)
-
-  while ($true) {
-    $n = [System.Threading.Interlocked]::Increment($globalI.Value)
-    if ($n -gt $Requests) { break }
-
-    $sw = [System.Diagnostics.Stopwatch]::StartNew()
-    try {
-      $resp = Invoke-WebRequest -Uri $url -Method POST -Headers $headers -Body $body -TimeoutSec 60
-      if ($resp.StatusCode -lt 200 -or $resp.StatusCode -ge 300) {
-        $errors.Add("HTTP $($resp.StatusCode)")
-      }
-    } catch {
-      $errors.Add($_.Exception.Message)
-    } finally {
-      $sw.Stop()
-      $latencies.Add([double]$sw.Elapsed.TotalMilliseconds)
-    }
+  $sw = [System.Diagnostics.Stopwatch]::StartNew()
+  $ok = $true
+  try {
+    $resp = Invoke-WebRequest -Uri $url -Method POST -Headers $headers -Body $body -TimeoutSec 60
+    if ($resp.StatusCode -lt 200 -or $resp.StatusCode -ge 300) { $ok = $false }
+  } catch {
+    $ok = $false
+  } finally {
+    $sw.Stop()
   }
-}
 
-$jobs = @()
-$globalRef = [ref]$global:i
+  [pscustomobject]@{
+    ok = $ok
+    latency_ms = [double]$sw.Elapsed.TotalMilliseconds
+  }
 
-for ($k=1; $k -le $Concurrency; $k++) {
-  $jobs += Start-Job -ScriptBlock $scriptBlock -ArgumentList $url,$body,$headers,$latencies,$errors,$globalRef,$Requests
-}
-
-$jobs | Wait-Job | Out-Null
-$jobs | Receive-Job | Out-Null
-$jobs | Remove-Job | Out-Null
+} -ThrottleLimit $Concurrency -ArgumentList $url,$body,$headers
 
 $swTotal.Stop()
 
-# Metrics
-$lat = $latencies.ToArray() | Sort-Object
+$lat = $results.latency_ms | Sort-Object
 $total = $lat.Count
 if ($total -eq 0) { throw "No latency samples collected." }
 
-# p95 index (0-based)
 $idx = [math]::Ceiling(0.95 * $total) - 1
 if ($idx -lt 0) { $idx = 0 }
 $p95 = [math]::Round($lat[$idx], 2)
 
-$errCount = $errors.Count
+$errCount = ($results | Where-Object { -not $_.ok }).Count
 $errRate = [math]::Round(($errCount / $Requests) * 100, 2)
-
 $rps = [math]::Round(($Requests / $swTotal.Elapsed.TotalSeconds), 2)
 
 Write-Host "URL: $url"
