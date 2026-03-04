@@ -1,3 +1,4 @@
+![Eval Gate](https://github.com/Electricpaper77/ai-rag-eval-platform/actions/workflows/eval-gate.yml/badge.svg)
 ﻿## Whatnot-style Marketplace Analytics & Experimentation
 - SQL cohort analysis
 - A/B testing framework
@@ -20,6 +21,12 @@ This project demonstrates a production-style RAG evaluation backend with automat
 - PR checks start the FastAPI backend, wait for `/health`, run `scripts/ci_eval.py`, and upload artifacts:
   - `runs/ci_metrics.json` (metrics output)
   - `runs/uvicorn.log` (server log for debugging)
+
+## Proof & Demos (Recruiter Quick-Scan)
+- **CI Eval Gate:** PR checks start backend, wait for `/health`, run `scripts/ci_eval.py`, and upload artifacts (`runs/ci_metrics.json`, `runs/uvicorn.log`).
+- **Cloud Run Hardening Proof:** `proof/project3/cloudrun_debug_snapshot.txt`
+- **Key signals:** Docker + gunicorn ($PORT binding), CI gating, metrics artifacts, structured logs.
+
 ## Architecture
 FastAPI-based evaluation service with retrieval, metrics, and safety enforcement.
 
