@@ -121,3 +121,10 @@ Real eval record produced by POST /eval/regression (truncated):
 
 - Proof: JSONL eval artifacts + metrics dashboard (latency p95, citation precision, hallucination rate)
 
+
+## Guardrails Proof
+- Injection detection + deterministic blocklist
+- Report: `runs/guardrail_report.json` (local) and `artifacts/guardrail_report.json` (proof copy)
+- Run: `python guardrails/test_guardrails.py`
+- Latest metrics: injections_detected=3, blocked=3, allowed=2, accuracy_pct=100
+
