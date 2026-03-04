@@ -52,6 +52,8 @@ Reported metrics:
 - Citation hit-rate
 - Average latency
 - Structured JSON results for analysis
+- **Eval pass rate:** 100% (N=10)
+- **Latency:** p95 522 ms
 
 ---
 
