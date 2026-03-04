@@ -128,3 +128,34 @@ Real eval record produced by POST /eval/regression (truncated):
 - Run: `python guardrails/test_guardrails.py`
 - Latest metrics: injections_detected=3, blocked=3, allowed=2, accuracy_pct=100
 
+## Infrastructure Load Testing
+
+Service deployed on Google Cloud Run.
+
+Custom PowerShell load testing framework used to validate service stability and performance under concurrent workloads.
+
+Test Configurations
+
+Concurrency Levels
+10 requests
+25 requests
+50 requests
+
+Metrics Collected
+
+Requests per second (RPS)
+p95 latency
+error rate
+
+Artifacts
+
+docs/artifacts/load_test_results.json
+runs/load_c10.txt
+runs/load_c25.txt
+runs/load_c50.txt
+
+Example Metrics
+
+p95 latency: ~350 ms
+error rate: <1%
+
