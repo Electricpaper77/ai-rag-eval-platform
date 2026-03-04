@@ -6,6 +6,7 @@ import glob
 from pathlib import Path
 import psutil
 
+from .guardrail_report import new_report, finalize_and_save
 from .guardrails import redact_pii, check_injection
 from .rag import COLLECTION_NAME, get_client, get_collection, query_rag
 from .routes.regression_eval import router as regression_router
@@ -237,15 +238,30 @@ def query(req: QueryRequest) -> Dict[str, Any]:
 
 @app.post("/query_guarded")
 def query_guarded(req: QueryRequest) -> Dict[str, Any]:
-    # Block obvious prompt-injection attempts
+    report = new_report(req.question)
+
+    # deterministic injection block
     hit, reason = check_injection(req.question)
     if hit:
-        return {"status": "blocked", "reason": reason}
+        report["decision"] = "block"
+        report["injection_detected"] = True
+        report["injection_reason"] = reason
+        report["reasons"].append(f"injection:{reason}")
+        path = finalize_and_save(report)
+        return {"status": "blocked", "reason": reason, "guardrail_report_path": path}
 
-    # Redact PII before retrieval
+    # deterministic PII redaction signal
     safe_q = redact_pii(req.question)
+    if safe_q != req.question:
+        report["pii_redacted"] = True
+        report["pii_types"] = ["unknown"]
+        report["reasons"].append("pii:redacted")
 
-    return query_rag(safe_q, top_k=req.top_k)
+    out = query_rag(safe_q, top_k=req.top_k)
+    report["decision"] = "allow"
+    path = finalize_and_save(report)
+    out["guardrail_report_path"] = path
+    return out
 
 @app.post("/eval/run")
 def eval_run() -> Dict[str, Any]:
