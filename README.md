@@ -11,7 +11,15 @@ Teams need evaluation, observability, and safety controls before deploying RAG s
 This project demonstrates a production-style RAG evaluation backend with automated metrics and guardrails.
 
 ---
+## Production Hardening (Cloud Run)
+- Containerized FastAPI service with Docker + gunicorn (UvicornWorker) and correct Cloud Run PORT binding (0.0.0.0:$PORT).
+- Cloud Run autoscaling controls: minScale=1, maxScale=2, CPU boost enabled.
+- Debug artifacts captured during rollout: `proof/project3/cloudrun_debug_snapshot.txt`.
 
+## CI Eval Gate (GitHub Actions)
+- PR checks start the FastAPI backend, wait for `/health`, run `scripts/ci_eval.py`, and upload artifacts:
+  - `runs/ci_metrics.json` (metrics output)
+  - `runs/uvicorn.log` (server log for debugging)
 ## Architecture
 FastAPI-based evaluation service with retrieval, metrics, and safety enforcement.
 
