@@ -27,5 +27,5 @@
                      "log_file":  "load_c50.txt"
                  }
              ],
-    "notes":  "Auto-extracted from runs/load_c*.txt; null means metric string not found in log output."
+    "notes":  "Parsed from stable metric lines in runs/load_c*.txt"
 }
