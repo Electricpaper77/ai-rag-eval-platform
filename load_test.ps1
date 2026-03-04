@@ -49,10 +49,10 @@ $errCount = ($results | Where-Object { -not $_.ok }).Count
 $errRate = [math]::Round(($errCount / $Requests) * 100, 2)
 $rps = [math]::Round(($Requests / $swTotal.Elapsed.TotalSeconds), 2)
 
-Write-Host "URL: $url"
-Write-Host "CONCURRENCY: $Concurrency"
-Write-Host "REQUESTS: $Requests"
-Write-Host "RPS: $rps"
-Write-Host "P95_MS: $p95"
-Write-Host "ERRORS: $errCount"
-Write-Host "ERROR_RATE_PCT: $errRate"
+Write-Output "URL: $url"
+Write-Output "CONCURRENCY: $Concurrency"
+Write-Output "REQUESTS: $Requests"
+Write-Output "RPS: $rps"
+Write-Output "P95_MS: $p95"
+Write-Output "ERRORS: $errCount"
+Write-Output "ERROR_RATE_PCT: $errRate"
