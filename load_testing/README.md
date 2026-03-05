@@ -32,3 +32,19 @@ success rate: ~99%
 Artifact:
 docs/artifacts/load_test_50vus.json
 
+
+## System Architecture
+
+```mermaid
+flowchart TD
+  U[User / Client] -->|HTTP| CR[Cloud Run: FastAPI Service]
+  CR --> H[/health]
+  CR --> D[/docs]
+  CR --> M[/metrics (Prometheus)]
+  CR --> E[Evaluation Harness (Regression Suite)]
+  E --> A[Artifacts: JSONL runs + docs/artifacts/*]
+  CR --> R[Retriever / Vector DB (ChromaDB / Pinecone)]
+  R --> CR
+  CR --> L[LLM Inference (model endpoint)]
+  L --> CR
+
