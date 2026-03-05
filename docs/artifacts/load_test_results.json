@@ -1,4 +1,4 @@
-﻿{
+{
     "service":  "cloud-run",
     "endpoint":  "/query",
     "runs":  [

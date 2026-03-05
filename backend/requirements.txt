@@ -1,5 +1,6 @@
 fastapi
 uvicorn[standard]
-chromadb==0.5.5
+chromadb==0.4.24
 
 google-cloud-storage==3.8.0
+numpy==1.26.4

@@ -1,161 +1,76 @@
-﻿## Whatnot-style Marketplace Analytics & Experimentation
-- SQL cohort analysis
-- A/B testing framework
-- Metric-driven decision dashboards
 # AI RAG Evaluation & Guardrails Platform
 
 ## Problem
-Modern LLM applications fail silently when retrieval quality degrades or when unsafe inputs (e.g., prompt injection) reach the model.
-Teams need evaluation, observability, and safety controls before deploying RAG systems to production.
+Modern LLM applications fail silently when retrieval quality degrades or when unsafe inputs (e.g., prompt injection) reach the model. Teams need evaluation, observability, and safety controls before deploying RAG systems to production.
 
 This project demonstrates a production-style RAG evaluation backend with automated metrics and guardrails.
-
----
 
 ## Architecture
 FastAPI-based evaluation service with retrieval, metrics, and safety enforcement.
 
 Core components:
-- FastAPI REST API (/query, /query_guarded, /eval/run)
+- FastAPI REST API (`/query`, `/query_guarded`, `/eval/run`)
 - Vector-based retrieval (ChromaDB)
 - Evaluation harness (citation hit-rate, latency)
 - Guardrails layer (prompt-injection blocking)
-- Automated smoke tests (PowerShell)
+- Prometheus metrics endpoint (`/metrics`)
 
 Flow:
 Request → Guardrails → Retrieval → Evaluation → JSON Response
 
----
-
-## Evaluation & Metrics
-The platform supports automated evaluation runs to measure RAG quality.
-
-Eval endpoint:
-- POST /eval/run
-
-Reported metrics:
-- Citation hit-rate
-- Average latency
-- Structured JSON results for analysis
-
----
-
-## Guardrails (Prompt Injection Blocking)
-A guarded query endpoint blocks unsafe inputs before retrieval or generation.
-
-- Endpoint: POST /query_guarded
-- Behavior: detects prompt-injection attempts and returns a structured deny response
-
-Example blocked response:
-{ "status": "blocked", "reason": "prompt_injection" }
-
----
-
 ## Run Locally
-
-Start the API:
-python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
-
-Run guardrails smoke test:
-powershell -ExecutionPolicy Bypass -File scripts/guardrails.ps1
-
-Expected output:
-{ "status": "blocked", "reason": "prompt_injection" }
-
----
-
-## Why This Matters
-This project demonstrates production-style RAG evaluation, safety-first API design, deterministic guardrails behavior,
-and automated validation for LLM systems.
-
----
-
-## Status
-Project complete.
-
-## Metrics (Cloud Run)
-- Health check latency (n=30): p50 124ms, p95 249ms
-- Deployment: Cloud Run (us-central1)
-- Live API: https://rag-eval-api-69725201265.us-central1.run.app
-
-
-## Live Demo Proof (Cloud Run)
-
-**Base URL:** https://rag-eval-api-t7a5wdzsna-uc.a.run.app
-
-### PowerShell Smoke Test (copy/paste)
-`powershell
-$BASE="https://rag-eval-api-t7a5wdzsna-uc.a.run.app"
-
-# Health
-Invoke-RestMethod "$BASE/health"
-
-# Ingest from GCS
-$body = @{ path="gs://rag-eval-docs-124909/sample_docs" } | ConvertTo-Json
-Invoke-RestMethod -Method POST -Uri "$BASE/ingest" -ContentType "application/json" -Body $body -TimeoutSec 180
-
-# Query (default top_k = 3)
-$q = @{ question="Summarize the refund policy with citations." } | ConvertTo-Json
-$r = Invoke-RestMethod -Method POST -Uri "$BASE/query" -ContentType "application/json" -Body $q -TimeoutSec 60
-$r.status
-$r.num_citations
-$r.citations.source
-$r.latency_ms
-
-
-## Quickstart (Run Regression Eval)
-
-### Local
-`powershell
+```bash
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+source .venv/bin/activate  # Windows: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-uvicorn backend.app.main:app --reload --port 8000
+python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+```
 
-## Proof: Regression Eval Output (JSONL)
+Guardrails smoke test:
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/guardrails.ps1
+```
 
-Real eval record produced by POST /eval/regression (truncated):
+## Dependency Pinning Verification
+Pinned dependencies are maintained for deterministic builds:
+- `chromadb==0.4.24`
+- `numpy==1.26.4`
 
-`json
-{"run_id": "67414973d53f49b5a5a0c343df5e1031", "variant": "base", "question_id": "refund_1", "question": "What is the refund policy?", "prompted_question": "What is the refund policy?", "answer": "# Refund Policy\nCustomers can request a refund within 30 days of delivery.\nRefunds are issued to the original payment met ...
+Both root and backend requirements files are aligned to the same pinned ChromaDB version.
 
-- Proof: JSONL eval artifacts + metrics dashboard (latency p95, citation precision, hallucination rate)
+## Cloud Run Deploy Instructions
+```bash
+PROJECT_ID="<gcp-project-id>"
+REGION="us-central1"
+REPO="rag-eval-repo"
+IMAGE="api"
+SERVICE="ai-rag-eval"
 
+# Build and push container
 
-## Guardrails Proof
-- Injection detection + deterministic blocklist
-- Report: `runs/guardrail_report.json` (local) and `artifacts/guardrail_report.json` (proof copy)
-- Run: `python guardrails/test_guardrails.py`
-- Latest metrics: injections_detected=3, blocked=3, allowed=2, accuracy_pct=100
+gcloud builds submit \
+  --config cloudbuild.yaml \
+  --project "$PROJECT_ID"
 
-## Infrastructure Load Testing
+# Deploy latest image to Cloud Run
 
-Service deployed on Google Cloud Run.
+gcloud run deploy "$SERVICE" \
+  --image "$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$IMAGE:ci-test" \
+  --region "$REGION" \
+  --platform managed \
+  --allow-unauthenticated \
+  --port 8080
+```
 
-Custom PowerShell load testing framework used to validate service stability and performance under concurrent workloads.
+Post-deploy verification:
+```bash
+BASE_URL="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')"
+curl -sS "$BASE_URL/health"
+curl -sS "$BASE_URL/metrics" | head -n 20
+```
 
-Test Configurations
-
-Concurrency Levels
-10 requests
-25 requests
-50 requests
-
-Metrics Collected
-
-Requests per second (RPS)
-p95 latency
-error rate
-
-Artifacts
-
-docs/artifacts/load_test_results.json
-runs/load_c10.txt
-runs/load_c25.txt
-runs/load_c50.txt
-
-Example Metrics
-
-p95 latency: ~350 ms
-error rate: <1%
-
+## Proof Artifacts
+- [Load Test Summary JSON](docs/artifacts/load_test_results.json)
+- [Raw Load Test Runs](docs/artifacts/runs/)
+- [Prometheus Metrics Sample](docs/artifacts/metrics_sample.txt)
+- [Observability Notes](docs/artifacts/observability.md)

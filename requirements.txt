@@ -8,3 +8,4 @@ google-cloud-storage==3.8.0
 psutil
 chromadb==0.4.24
 prometheus-client==0.20.0
+numpy==1.26.4
