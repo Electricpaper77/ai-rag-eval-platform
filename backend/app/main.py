@@ -369,3 +369,12 @@ async def log_requests(request, call_next):
     logger.info(json.dumps(log_payload))
 
     return response
+
+# Prometheus metrics endpoint
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from starlette.responses import Response
+
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
