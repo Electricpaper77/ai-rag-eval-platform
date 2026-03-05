@@ -1,10 +1,9 @@
-from fastapi import FastAPI
+﻿from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Any, Dict, List
 import os
 import glob
 from pathlib import Path
-import psutil
 
 from .guardrails import redact_pii, check_injection
 from .rag import COLLECTION_NAME, get_client, get_collection, query_rag
@@ -351,11 +350,6 @@ async def log_requests(request, call_next):
         'timestamp': datetime.utcnow().isoformat()
     }
 
-    process = psutil.Process()
-    memory_mb = process.memory_info().rss / 1024 / 1024
-    cpu_percent = psutil.cpu_percent(interval=None)
-    log_payload['memory_mb'] = round(memory_mb, 2)
-    log_payload['cpu_percent'] = cpu_percent
     logger.info(json.dumps(log_payload))
 
     return response
