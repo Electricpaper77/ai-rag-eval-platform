@@ -165,3 +165,15 @@ docs/artifacts/cost_per_request.md
 Notes:
 - Cloud Run costs vary with CPU/memory allocation, concurrency, and cold starts.
 - Use this metric to compare configs (min instances, concurrency) and keep budgets stable.
+
+## Reliability Tuning (Cloud Run)
+
+To reduce cold-start impact and stabilize latency under burst traffic, the service is configured with:
+- Min instances: 1
+- Concurrency: 10
+- Billing: request-based
+
+Verification:
+- /health (200)
+- /metrics (Prometheus)
+
