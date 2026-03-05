@@ -132,3 +132,23 @@ curl -sS "$BASE_URL/metrics" | head -n 20
 - [Raw Load Test Runs](docs/artifacts/runs/)
 - [Prometheus Metrics Sample](docs/artifacts/metrics_sample.txt)
 - [Observability Notes](docs/artifacts/observability.md)
+
+## Observability (Prometheus Metrics)
+
+The AI RAG Evaluation Platform exposes runtime metrics for infrastructure monitoring.
+
+Endpoint:
+https://ai-rag-eval-69725201265.us-central1.run.app/metrics
+
+Example metrics exported:
+- process_cpu_seconds_total
+- process_virtual_memory_bytes
+- process_resident_memory_bytes
+- python_gc_collections_total
+- process_open_fds
+
+Proof Artifact:
+docs/artifacts/metrics_live_sample.txt
+
+These metrics allow monitoring of service health, CPU usage, memory usage, and runtime behavior for the deployed Cloud Run service.
+
