@@ -70,3 +70,5 @@ main.py
 
 # Evaluation artifacts
 artifacts/eval_runs/
+
+!docs/artifacts/**
