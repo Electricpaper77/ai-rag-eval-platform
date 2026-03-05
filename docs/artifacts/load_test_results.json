@@ -5,27 +5,27 @@
                  {
                      "concurrency":  10,
                      "requests":  200,
-                     "rps":  null,
-                     "p95_ms":  null,
-                     "error_rate_pct":  null,
+                     "rps":  17.52,
+                     "p95_ms":  732.28,
+                     "error_rate_pct":  100,
                      "log_file":  "load_c10.txt"
                  },
                  {
                      "concurrency":  25,
                      "requests":  500,
-                     "rps":  null,
-                     "p95_ms":  null,
-                     "error_rate_pct":  null,
+                     "rps":  19.04,
+                     "p95_ms":  1693.9,
+                     "error_rate_pct":  100,
                      "log_file":  "load_c25.txt"
                  },
                  {
                      "concurrency":  50,
                      "requests":  1000,
-                     "rps":  null,
-                     "p95_ms":  null,
-                     "error_rate_pct":  null,
+                     "rps":  18.78,
+                     "p95_ms":  3047.38,
+                     "error_rate_pct":  100,
                      "log_file":  "load_c50.txt"
                  }
              ],
-    "notes":  "Parsed from stable metric lines in runs/load_c*.txt"
+    "notes":  "Stable revision ai-rag-eval-00013-f6n; metrics parsed from runs/load_c*.txt"
 }
