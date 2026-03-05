@@ -29,18 +29,21 @@ for ($i=1; $i -le $Requests; $i++) {
   [void]$ps.AddScript({
     param($url,$body,$headers)
 
-    $sw = [System.Diagnostics.Stopwatch]::StartNew()
-    $ok = $true
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $ok = $false
     try {
-      $resp = Invoke-WebRequest -Uri $url -Method POST -Headers $headers -Body $body -TimeoutSec 60
-      if ($resp.StatusCode -lt 200 -or $resp.StatusCode -ge 300) { $ok = $false }
+      $resp = Invoke-WebRequest -Uri $url -Method POST -Headers $headers -Body $body -TimeoutSec 60 -UseBasicParsing
+      if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 300) { $ok = $true }
     } catch {
       $ok = $false
     } finally {
       $sw.Stop()
     }
 
-    [pscustomobject]@{ ok = $ok; latency_ms = [double]$sw.Elapsed.TotalMilliseconds }
+    [pscustomobject]@{
+      ok = $ok
+      latency_ms = [double]$sw.Elapsed.TotalMilliseconds
+    }
   }).AddArgument($url).AddArgument($body).AddArgument($headers)
 
   $handle = $ps.BeginInvoke()
@@ -77,3 +80,4 @@ Write-Output "RPS: $rps"
 Write-Output "P95_MS: $p95"
 Write-Output "ERRORS: $errCount"
 Write-Output "ERROR_RATE_PCT: $errRate"
+
