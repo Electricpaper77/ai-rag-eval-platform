@@ -8,32 +8,53 @@ $ErrorActionPreference = "Stop"
 $endpoint = "/query"
 $url = ($BaseUrl.TrimEnd("/") + $endpoint)
 
-$body = @{ query = "load test" } | ConvertTo-Json -Compress
+$body = @{ question = "load test" } | ConvertTo-Json -Compress
 $headers = @{ "Content-Type" = "application/json" }
+
+# Ensure runs dir exists
+if (!(Test-Path ".\runs")) { New-Item -ItemType Directory -Path ".\runs" | Out-Null }
 
 $swTotal = [System.Diagnostics.Stopwatch]::StartNew()
 
-# Run N requests in parallel with throttling = concurrency
-$results = 1..$Requests | ForEach-Object -Parallel {
-  param($url,$body,$headers)
+# Create runspaces (thread pool)
+$pool = [runspacefactory]::CreateRunspacePool(1, $Concurrency)
+$pool.Open()
 
-  $sw = [System.Diagnostics.Stopwatch]::StartNew()
-  $ok = $true
-  try {
-    $resp = Invoke-WebRequest -Uri $url -Method POST -Headers $headers -Body $body -TimeoutSec 60
-    if ($resp.StatusCode -lt 200 -or $resp.StatusCode -ge 300) { $ok = $false }
-  } catch {
-    $ok = $false
-  } finally {
-    $sw.Stop()
-  }
+$tasks = New-Object System.Collections.Generic.List[object]
 
-  [pscustomobject]@{
-    ok = $ok
-    latency_ms = [double]$sw.Elapsed.TotalMilliseconds
-  }
+for ($i=1; $i -le $Requests; $i++) {
+  $ps = [powershell]::Create()
+  $ps.RunspacePool = $pool
 
-} -ThrottleLimit $Concurrency -ArgumentList $url,$body,$headers
+  [void]$ps.AddScript({
+    param($url,$body,$headers)
+
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $ok = $true
+    try {
+      $resp = Invoke-WebRequest -Uri $url -Method POST -Headers $headers -Body $body -TimeoutSec 60
+      if ($resp.StatusCode -lt 200 -or $resp.StatusCode -ge 300) { $ok = $false }
+    } catch {
+      $ok = $false
+    } finally {
+      $sw.Stop()
+    }
+
+    [pscustomobject]@{ ok = $ok; latency_ms = [double]$sw.Elapsed.TotalMilliseconds }
+  }).AddArgument($url).AddArgument($body).AddArgument($headers)
+
+  $handle = $ps.BeginInvoke()
+  $tasks.Add([pscustomobject]@{ ps=$ps; handle=$handle })
+}
+
+$results = @()
+foreach ($t in $tasks) {
+  $results += $t.ps.EndInvoke($t.handle)
+  $t.ps.Dispose()
+}
+
+$pool.Close()
+$pool.Dispose()
 
 $swTotal.Stop()
 
