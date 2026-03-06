@@ -74,3 +74,36 @@ curl -sS "$BASE_URL/metrics" | head -n 20
 - [Raw Load Test Runs](docs/artifacts/runs/)
 - [Prometheus Metrics Sample](docs/artifacts/metrics_sample.txt)
 - [Observability Notes](docs/artifacts/observability.md)
+
+## Inference Cost Monitoring
+To monitor production inference spend, this repository includes a cost analysis utility that estimates:
+- **cost per request**
+- **cost per 1000 requests**
+- **cost per evaluation (regression) run**
+
+The script uses average token volume and model pricing to estimate expected spend before large regression runs.
+
+Run the analyzer:
+```bash
+python scripts/cost_analysis.py \
+  --avg_tokens_per_request 850 \
+  --price_per_1k_tokens 0.002 \
+  --requests_per_eval_run 30
+```
+
+This writes structured output to:
+- `docs/artifacts/cost_analysis.json`
+
+Example output:
+```json
+{
+  "avg_tokens_per_request": 850,
+  "price_per_1k_tokens": 0.002,
+  "requests_per_eval_run": 30,
+  "cost_per_request": 0.0017,
+  "cost_per_1000_requests": 1.7,
+  "cost_per_eval_run": 0.051
+}
+```
+
+Use this artifact in CI/CD evaluation jobs to track cost drift as prompt size, retrieval context, or model pricing changes over time.
