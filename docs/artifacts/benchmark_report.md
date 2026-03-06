@@ -9,10 +9,10 @@ Test stages:
 - ramp down (10s)
 
 Key metrics:
-- p50 latency: <fill>
-- p95 latency: <fill>
-- error rate: <fill>
-- throughput (req/s): <fill>
+- p50 latency (ms): 38.452759
+- p95 latency (ms): 155.4432545499999
+- error rate: 1
+- throughput (req/s): 396.95229137587074
 
-Notes:
-- Any failure >1% is treated as a release blocker for production readiness.
+Result: FAIL
+Policy: failure rate >1% is treated as a release blocker for production readiness.
