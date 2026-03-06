@@ -1,0 +1,125 @@
+{"prompt_id": 0, "prompt": "What is Kubernetes?", "latency_ms": 74, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 1, "prompt": "Explain vector databases", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 2, "prompt": "What is hallucination in LLMs?", "latency_ms": 78, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 3, "prompt": "Explain retrieval augmented generation", "latency_ms": 77, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 4, "prompt": "What is container orchestration?", "latency_ms": 77, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 5, "prompt": "What is Kubernetes?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 6, "prompt": "Explain vector databases", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 7, "prompt": "What is hallucination in LLMs?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 8, "prompt": "Explain retrieval augmented generation", "latency_ms": 68, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 9, "prompt": "What is container orchestration?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 10, "prompt": "What is Kubernetes?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 11, "prompt": "Explain vector databases", "latency_ms": 70, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 12, "prompt": "What is hallucination in LLMs?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 13, "prompt": "Explain retrieval augmented generation", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 14, "prompt": "What is container orchestration?", "latency_ms": 68, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 15, "prompt": "What is Kubernetes?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 16, "prompt": "Explain vector databases", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 17, "prompt": "What is hallucination in LLMs?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 18, "prompt": "Explain retrieval augmented generation", "latency_ms": 77, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 19, "prompt": "What is container orchestration?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 20, "prompt": "What is Kubernetes?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 21, "prompt": "Explain vector databases", "latency_ms": 70, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 22, "prompt": "What is hallucination in LLMs?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 23, "prompt": "Explain retrieval augmented generation", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 24, "prompt": "What is container orchestration?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 25, "prompt": "What is Kubernetes?", "latency_ms": 68, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 26, "prompt": "Explain vector databases", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 27, "prompt": "What is hallucination in LLMs?", "latency_ms": 70, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 28, "prompt": "Explain retrieval augmented generation", "latency_ms": 67, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 29, "prompt": "What is container orchestration?", "latency_ms": 68, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 30, "prompt": "What is Kubernetes?", "latency_ms": 69, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 31, "prompt": "Explain vector databases", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 32, "prompt": "What is hallucination in LLMs?", "latency_ms": 69, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 33, "prompt": "Explain retrieval augmented generation", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 34, "prompt": "What is container orchestration?", "latency_ms": 68, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 35, "prompt": "What is Kubernetes?", "latency_ms": 68, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 36, "prompt": "Explain vector databases", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 37, "prompt": "What is hallucination in LLMs?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 38, "prompt": "Explain retrieval augmented generation", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 39, "prompt": "What is container orchestration?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 40, "prompt": "What is Kubernetes?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 41, "prompt": "Explain vector databases", "latency_ms": 69, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 42, "prompt": "What is hallucination in LLMs?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 43, "prompt": "Explain retrieval augmented generation", "latency_ms": 77, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 44, "prompt": "What is container orchestration?", "latency_ms": 68, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 45, "prompt": "What is Kubernetes?", "latency_ms": 70, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 46, "prompt": "Explain vector databases", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 47, "prompt": "What is hallucination in LLMs?", "latency_ms": 69, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 48, "prompt": "Explain retrieval augmented generation", "latency_ms": 69, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 49, "prompt": "What is container orchestration?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 50, "prompt": "What is Kubernetes?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 51, "prompt": "Explain vector databases", "latency_ms": 77, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 52, "prompt": "What is hallucination in LLMs?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 53, "prompt": "Explain retrieval augmented generation", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 54, "prompt": "What is container orchestration?", "latency_ms": 69, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 55, "prompt": "What is Kubernetes?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 56, "prompt": "Explain vector databases", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 57, "prompt": "What is hallucination in LLMs?", "latency_ms": 74, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 58, "prompt": "Explain retrieval augmented generation", "latency_ms": 77, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 59, "prompt": "What is container orchestration?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 60, "prompt": "What is Kubernetes?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 61, "prompt": "Explain vector databases", "latency_ms": 69, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 62, "prompt": "What is hallucination in LLMs?", "latency_ms": 69, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 63, "prompt": "Explain retrieval augmented generation", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 64, "prompt": "What is container orchestration?", "latency_ms": 69, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 65, "prompt": "What is Kubernetes?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 66, "prompt": "Explain vector databases", "latency_ms": 69, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 67, "prompt": "What is hallucination in LLMs?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 68, "prompt": "Explain retrieval augmented generation", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 69, "prompt": "What is container orchestration?", "latency_ms": 68, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 70, "prompt": "What is Kubernetes?", "latency_ms": 77, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 71, "prompt": "Explain vector databases", "latency_ms": 77, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 72, "prompt": "What is hallucination in LLMs?", "latency_ms": 69, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 73, "prompt": "Explain retrieval augmented generation", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 74, "prompt": "What is container orchestration?", "latency_ms": 68, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 75, "prompt": "What is Kubernetes?", "latency_ms": 71, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 76, "prompt": "Explain vector databases", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 77, "prompt": "What is hallucination in LLMs?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 78, "prompt": "Explain retrieval augmented generation", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 79, "prompt": "What is container orchestration?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 80, "prompt": "What is Kubernetes?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 81, "prompt": "Explain vector databases", "latency_ms": 68, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 82, "prompt": "What is hallucination in LLMs?", "latency_ms": 71, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 83, "prompt": "Explain retrieval augmented generation", "latency_ms": 69, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 84, "prompt": "What is container orchestration?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 85, "prompt": "What is Kubernetes?", "latency_ms": 70, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 86, "prompt": "Explain vector databases", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 87, "prompt": "What is hallucination in LLMs?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 88, "prompt": "Explain retrieval augmented generation", "latency_ms": 67, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 89, "prompt": "What is container orchestration?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 90, "prompt": "What is Kubernetes?", "latency_ms": 74, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 91, "prompt": "Explain vector databases", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 92, "prompt": "What is hallucination in LLMs?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 93, "prompt": "Explain retrieval augmented generation", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 94, "prompt": "What is container orchestration?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 95, "prompt": "What is Kubernetes?", "latency_ms": 68, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 96, "prompt": "Explain vector databases", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 97, "prompt": "What is hallucination in LLMs?", "latency_ms": 68, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 98, "prompt": "Explain retrieval augmented generation", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 99, "prompt": "What is container orchestration?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 100, "prompt": "What is Kubernetes?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 101, "prompt": "Explain vector databases", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 102, "prompt": "What is hallucination in LLMs?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 103, "prompt": "Explain retrieval augmented generation", "latency_ms": 67, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 104, "prompt": "What is container orchestration?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 105, "prompt": "What is Kubernetes?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 106, "prompt": "Explain vector databases", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 107, "prompt": "What is hallucination in LLMs?", "latency_ms": 74, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 108, "prompt": "Explain retrieval augmented generation", "latency_ms": 74, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 109, "prompt": "What is container orchestration?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 110, "prompt": "What is Kubernetes?", "latency_ms": 69, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 111, "prompt": "Explain vector databases", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 112, "prompt": "What is hallucination in LLMs?", "latency_ms": 74, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 113, "prompt": "Explain retrieval augmented generation", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 114, "prompt": "What is container orchestration?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 115, "prompt": "What is Kubernetes?", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 116, "prompt": "Explain vector databases", "latency_ms": 69, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 117, "prompt": "What is hallucination in LLMs?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 118, "prompt": "Explain retrieval augmented generation", "latency_ms": 76, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 119, "prompt": "What is container orchestration?", "latency_ms": 68, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 120, "prompt": "What is Kubernetes?", "latency_ms": 75, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 121, "prompt": "Explain vector databases", "latency_ms": 70, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 122, "prompt": "What is hallucination in LLMs?", "latency_ms": 77, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 123, "prompt": "Explain retrieval augmented generation", "latency_ms": 77, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
+{"prompt_id": 124, "prompt": "What is container orchestration?", "latency_ms": 70, "hallucination_flag": false, "citation_count": 0, "eval_pass": true}
