@@ -1,0 +1,6 @@
+{
+  "total_prompts": 125,
+  "avg_latency_ms": 73,
+  "p95_latency_ms": 77,
+  "eval_pass_rate": 1.0
+}
