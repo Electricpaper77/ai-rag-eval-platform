@@ -48,3 +48,17 @@ flowchart TD
   CR --> L[LLM Inference (model endpoint)]
   L --> CR
 
+
+## Cost / Request (Ops)
+
+Cost is tracked using Cloud Billing + request volume. Cost/request is computed as:
+
+cost_per_request_usd = total_cost_usd / total_requests
+
+Artifacts:
+- docs/artifacts/cost_per_request.md
+
+Notes:
+- Cloud Run costs vary with CPU/memory allocation, concurrency, and cold starts.
+- Use this metric to compare configs (min instances, concurrency) and keep budgets stable.
+
