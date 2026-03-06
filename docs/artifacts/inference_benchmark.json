@@ -1,0 +1,8 @@
+{
+  "requests_sent": 30,
+  "p50_latency_ms": 76.45,
+  "p95_latency_ms": 87.96,
+  "avg_latency_ms": 75.82,
+  "error_rate": 1.0,
+  "requests_per_second": 13.19
+}
