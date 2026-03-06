@@ -177,3 +177,26 @@ Verification:
 - /health (200)
 - /metrics (Prometheus)
 
+
+---
+
+## Production Deployment Evidence
+
+This GenAI evaluation platform is deployed on **Google Kubernetes Engine (GKE)**.
+
+### Public API Endpoint
+
+http://34.121.205.47/docs
+
+### Deployment Verification
+
+Artifacts generated from the running cluster:
+
+- docs/artifacts/gke_pods.txt
+- docs/artifacts/gke_service.txt
+- docs/artifacts/swagger_response.txt
+
+### Verification Command
+
+curl http://34.121.205.47/docs
+
