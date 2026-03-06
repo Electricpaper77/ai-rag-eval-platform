@@ -1,0 +1,3 @@
+NAME                          READY   STATUS    RESTARTS   AGE
+genai-eval-7cb67cc8d5-gs6xv   1/1     Running   0          63m
+genai-eval-7cb67cc8d5-xktd2   1/1     Running   0          64m
