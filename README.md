@@ -1,11 +1,3 @@
-<<<<<<< HEAD
-![Eval Gate](https://github.com/Electricpaper77/ai-rag-eval-platform/actions/workflows/eval-gate.yml/badge.svg)
-﻿## Whatnot-style Marketplace Analytics & Experimentation
-- SQL cohort analysis
-- A/B testing framework
-- Metric-driven decision dashboards
-=======
->>>>>>> origin/project3-infra-observability
 # AI RAG Evaluation & Guardrails Platform
 
 ## Problem
@@ -13,25 +5,6 @@ Modern LLM applications fail silently when retrieval quality degrades or when un
 
 This project demonstrates a production-style RAG evaluation backend with automated metrics and guardrails.
 
-<<<<<<< HEAD
----
-## Production Hardening (Cloud Run)
-- Containerized FastAPI service with Docker + gunicorn (UvicornWorker) and correct Cloud Run PORT binding (0.0.0.0:$PORT).
-- Cloud Run autoscaling controls: minScale=1, maxScale=2, CPU boost enabled.
-- Debug artifacts captured during rollout: `proof/project3/cloudrun_debug_snapshot.txt`.
-
-## CI Eval Gate (GitHub Actions)
-- PR checks start the FastAPI backend, wait for `/health`, run `scripts/ci_eval.py`, and upload artifacts:
-  - `runs/ci_metrics.json` (metrics output)
-  - `runs/uvicorn.log` (server log for debugging)
-
-## Proof & Demos (Recruiter Quick-Scan)
-- **CI Eval Gate:** PR checks start backend, wait for `/health`, run `scripts/ci_eval.py`, and upload artifacts (`runs/ci_metrics.json`, `runs/uvicorn.log`).
-- **Cloud Run Hardening Proof:** `proof/project3/cloudrun_debug_snapshot.txt`
-- **Key signals:** Docker + gunicorn ($PORT binding), CI gating, metrics artifacts, structured logs.
-
-=======
->>>>>>> origin/project3-infra-observability
 ## Architecture
 FastAPI-based evaluation service with retrieval, metrics, and safety enforcement.
 
@@ -45,37 +18,6 @@ Core components:
 Flow:
 Request → Guardrails → Retrieval → Evaluation → JSON Response
 
-<<<<<<< HEAD
----
-
-## Evaluation & Metrics
-The platform supports automated evaluation runs to measure RAG quality.
-
-Eval endpoint:
-- POST /eval/run
-
-Reported metrics:
-- Citation hit-rate
-- Average latency
-- Structured JSON results for analysis
-- **Eval pass rate:** 100% (N=10)
-- **Latency:** p95 522 ms
-
----
-
-## Guardrails (Prompt Injection Blocking)
-A guarded query endpoint blocks unsafe inputs before retrieval or generation.
-
-- Endpoint: POST /query_guarded
-- Behavior: detects prompt-injection attempts and returns a structured deny response
-
-Example blocked response:
-{ "status": "blocked", "reason": "prompt_injection" }
-
----
-
-=======
->>>>>>> origin/project3-infra-observability
 ## Run Locally
 ```bash
 python -m venv .venv
