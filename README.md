@@ -207,3 +207,17 @@ Client Request
 
 This flow demonstrates how the platform validates model outputs, monitors runtime performance, and provides production-style observability for GenAI services.
 
+
+---
+
+## Architecture Diagram
+
+This platform evaluates and validates GenAI responses before deployment.
+
+System pipeline:
+
+Client → FastAPI API → Guardrails → Vector Retrieval (ChromaDB) →  
+LLM Generation → Evaluation Harness → Prometheus Metrics → Grafana Monitoring
+
+![Architecture Diagram](docs/architecture-diagram.png)
+
