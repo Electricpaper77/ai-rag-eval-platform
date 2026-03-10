@@ -200,3 +200,28 @@ Artifacts generated from the running cluster:
 
 curl http://34.121.205.47/docs
 
+
+## Infrastructure Artifacts
+
+This project demonstrates production-style AI infrastructure practices including container orchestration, observability, and evaluation pipelines.
+
+### Kubernetes Deployment
+The GenAI evaluation API was deployed to Kubernetes using `kubectl` deployments and services.
+
+Evidence:
+- Container deployment created
+- Pods scheduled successfully
+- LoadBalancer service exposed
+
+Artifact:
+artifacts/kubernetes-deployment-proof.pdf
+
+### Observability Stack
+Prometheus metrics are exposed via `/metrics` and visualized using Grafana dashboards.
+
+Metrics monitored:
+- p50 latency
+- p95 latency
+- request throughput
+- error rate
+
