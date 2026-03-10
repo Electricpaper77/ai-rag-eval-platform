@@ -225,3 +225,30 @@ Metrics monitored:
 - request throughput
 - error rate
 
+
+## Infrastructure & Observability Artifacts
+
+This repository includes operational artifacts demonstrating production-style GenAI infrastructure, observability, and deployment validation.
+
+### Grafana Observability Dashboard
+Location: `artifacts/grafana-dashboard.png`
+
+Screenshot showing the Grafana dashboard used to visualize Prometheus metrics from the GenAI evaluation API.
+
+### Kubernetes Deployment Manifest
+Location: `artifacts/k8s-deployment.yaml`
+
+Infrastructure definition used to deploy the evaluation service in a containerized environment.
+
+### Prometheus Metrics Sample
+Location: `artifacts/metrics_sample.txt`
+
+Example runtime metrics exposed by the `/metrics` endpoint.
+
+### Load Testing Results
+Location: `artifacts/load_test_results.json`
+
+k6 benchmark output validating service latency and reliability under load.
+
+These artifacts demonstrate infrastructure readiness, observability instrumentation, and deployment reproducibility for AI service platforms.
+
