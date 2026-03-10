@@ -260,3 +260,8 @@ LLM Generation → Evaluation Harness → Prometheus Metrics → Grafana Monitor
 ## Quick Start
 
 Clone the repository
+
+## Problem
+
+Teams deploying LLM applications need automated evaluation, observability, and regression testing to detect hallucinations and performance degradation before production release.
+
