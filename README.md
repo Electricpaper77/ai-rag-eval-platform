@@ -194,3 +194,16 @@ k6 benchmark output validating service latency and reliability under load.
 
 These artifacts demonstrate infrastructure readiness, observability instrumentation, and deployment reproducibility for AI service platforms.
 
+
+## System Flow
+
+Client Request  
+→ Guardrails Layer (prompt injection detection, input validation)  
+→ Retrieval Engine (ChromaDB vector search)  
+→ LLM Response Generation  
+→ Evaluation Harness (metrics, regression validation)  
+→ Prometheus Metrics Export (/metrics endpoint)  
+→ Grafana Dashboard Visualization  
+
+This flow demonstrates how the platform validates model outputs, monitors runtime performance, and provides production-style observability for GenAI services.
+
