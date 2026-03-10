@@ -221,3 +221,42 @@ LLM Generation → Evaluation Harness → Prometheus Metrics → Grafana Monitor
 
 ![Architecture Diagram](docs/architecture-diagram.png)
 
+## Tech Stack
+
+**Backend**
+- Python
+- FastAPI
+- ChromaDB (vector retrieval)
+
+**AI Evaluation**
+- RAG pipeline
+- LLM-as-judge scoring
+- Regression testing harness
+
+**Infrastructure**
+- Docker
+- Google Cloud Run
+- GitHub Actions CI/CD
+
+**Observability**
+- Prometheus metrics
+- Grafana dashboards
+
+**Performance Testing**
+- k6 load testing
+
+
+## Key Metrics
+
+• Hallucination reduction: **18% → 6%**
+
+• Evaluation pass rate: **87% across 120 prompts**
+
+• Load testing validated service reliability with **k6**
+
+• Runtime telemetry exposed through **Prometheus `/metrics` endpoint**
+
+
+## Quick Start
+
+Clone the repository
