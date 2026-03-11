@@ -289,3 +289,22 @@ Example output:
 api_requests_total{endpoint="/evaluate",method="POST",http_status="200"} 1
 \`\`\`
 
+
+### Observability Proof
+
+Prometheus metrics exposed from the evaluation API.
+
+![Metrics Endpoint](proof/metrics_endpoint.png)
+
+### API Documentation
+
+FastAPI automatically generated interactive documentation.
+
+![API Docs](proof/api_docs.png)
+
+### Batch Evaluation Example
+
+Example batch inference request processed by the evaluation API.
+
+![Batch Output](proof/batch_inference.png)
+
