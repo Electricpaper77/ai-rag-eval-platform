@@ -265,3 +265,27 @@ Clone the repository
 
 Teams deploying LLM applications need automated evaluation, observability, and regression testing to detect hallucinations and performance degradation before production release.
 
+
+## Observability
+
+The evaluation service exposes Prometheus metrics for monitoring API performance and evaluation workload behavior.
+
+Endpoint:
+/metrics
+
+Exported metrics include:
+
+- api_requests_total
+- api_request_latency_seconds
+- python runtime metrics
+
+These metrics enable monitoring of evaluation throughput, request latency, and service reliability.
+
+Example output:
+
+\`\`\`
+# HELP api_requests_total Total API Requests
+# TYPE api_requests_total counter
+api_requests_total{endpoint="/evaluate",method="POST",http_status="200"} 1
+\`\`\`
+
