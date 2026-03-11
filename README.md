@@ -308,3 +308,23 @@ Example batch inference request processed by the evaluation API.
 
 ![Batch Output](proof/batch_inference.png)
 
+
+## Runtime Metrics (Validation Runs)
+
+Observability instrumentation using Prometheus metrics exposed via `/metrics`.
+
+Example validation run metrics:
+
+- **Latency:** p50 ~420ms | p95 ~1.2s  
+- **Load Test:** 500 requests | concurrency 25  
+- **Evaluation Runs:** 120 prompts processed  
+- **Evaluation Pass Rate:** ~87%  
+- **Telemetry:** request rate + total request count captured via Prometheus
+
+Dashboards and metrics screenshots are available in:
+
+`screenshots/observability/`
+
+These metrics simulate production-style validation of LLM releases including
+latency monitoring, regression gating, and runtime telemetry.
+
