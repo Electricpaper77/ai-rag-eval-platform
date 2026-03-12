@@ -484,3 +484,16 @@ Artifacts generated:
 benchmarks/
 benchmark_*.json
 
+
+## Live Demo
+
+Public API endpoint:
+
+https://ai-rag-eval-api-69725201265.us-central1.run.app
+
+Example request:
+
+curl -X POST https://ai-rag-eval-api-69725201265.us-central1.run.app/eval/run \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"What is the capital of France?"}'
+
