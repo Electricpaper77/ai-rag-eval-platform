@@ -446,3 +446,41 @@ Benchmark runner simulates evaluation load and measures:
 
 This validates inference performance and system stability under load.
 
+
+## API Test Example
+
+Start the evaluation server:
+
+python main.py
+
+Then test the API:
+
+curl -X POST http://localhost:8000/evaluate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"What is the capital of France?"}'
+
+Expected response format:
+
+{
+  "answer": "...",
+  "latency_ms": "...",
+  "evaluation_score": "..."
+}
+
+---
+
+## Quick Validation
+
+Run regression tests:
+
+python scripts/run_regression_tests.py
+
+Run benchmark suite:
+
+./scripts/run_benchmarks.sh
+
+Artifacts generated:
+
+benchmarks/
+benchmark_*.json
+
