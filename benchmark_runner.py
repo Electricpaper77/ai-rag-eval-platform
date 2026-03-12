@@ -56,3 +56,17 @@ print(json.dumps(summary, indent=2))
 timestamp = int(time.time())
 with open(f"benchmark_{timestamp}.json", "w") as f:
     json.dump(summary, f, indent=2)
+
+# ---- Save benchmark artifact ----
+import os, time
+
+os.makedirs("benchmarks", exist_ok=True)
+timestamp = int(time.time())
+
+try:
+    with open(f"benchmarks/benchmark_{timestamp}.json", "w") as f:
+        json.dump(summary, f, indent=2)
+    print(f"[artifact] benchmarks/benchmark_{timestamp}.json written")
+except Exception as e:
+    print(f"[artifact-error] {e}")
+# ---------------------------------
