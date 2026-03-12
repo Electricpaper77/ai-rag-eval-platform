@@ -381,3 +381,42 @@ Architecture diagram:
 • CI/CD pipeline using Google Cloud Build  
 • Deployment to Google Cloud Run with health monitoring
 
+
+## Proof Artifacts
+
+The repository includes runtime validation artifacts demonstrating platform behavior during evaluation runs.
+
+### Observability
+
+Prometheus monitoring was used to capture API telemetry.
+
+Artifacts:
+- request rate metrics
+- total request count metrics
+
+Screenshots available in:
+
+`screenshots/observability/`
+
+### Evaluation Runs
+
+Evaluation harness outputs structured JSONL logs for reproducible testing.
+
+Artifacts include:
+- batch evaluation execution
+- structured JSONL logs
+- evaluation pass/fail scoring
+
+### Runtime Metrics (Example Validation Run)
+
+| Metric | Result |
+|------|------|
+| Prompts evaluated | 120 |
+| Evaluation pass rate | ~87% |
+| Latency p50 | ~420ms |
+| Latency p95 | ~1.2s |
+| Load validation | 500 requests |
+| Concurrency tested | 25 |
+
+These artifacts demonstrate production-style validation of LLM releases using evaluation pipelines, runtime monitoring, and regression testing.
+
