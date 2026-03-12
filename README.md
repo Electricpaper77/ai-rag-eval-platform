@@ -497,3 +497,34 @@ curl -X POST https://ai-rag-eval-api-69725201265.us-central1.run.app/eval/run \
   -H "Content-Type: application/json" \
   -d '{"prompt":"What is the capital of France?"}'
 
+
+## Execution Proof
+
+This platform has been deployed and validated in production on Google Cloud Run.
+
+Evidence artifacts:
+
+- Full execution report:  
+  proof/ai_rag_eval_proof_artifacts.pdf
+
+Observability screenshots:
+
+- API endpoints (Swagger UI)  
+  screenshots/observability/api_endpoints_swagger.png
+
+- Successful evaluation run  
+  screenshots/observability/eval_run_success.png
+
+- API health check  
+  screenshots/observability/api_health_check.png
+
+- Benchmark latency and throughput metrics  
+  screenshots/observability/benchmark_metrics.png
+
+These artifacts demonstrate:
+
+- Public API deployment
+- Working evaluation pipeline
+- Health monitoring endpoints
+- Performance validation through benchmark testing
+
