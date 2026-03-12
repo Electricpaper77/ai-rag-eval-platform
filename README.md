@@ -420,3 +420,29 @@ Artifacts include:
 
 These artifacts demonstrate production-style validation of LLM releases using evaluation pipelines, runtime monitoring, and regression testing.
 
+
+## Benchmark Results
+
+Automated benchmarking executed using `scripts/run_benchmarks.sh`.
+
+Example results:
+
+| Prompts | p50 latency | p95 latency | Throughput |
+|--------|-------------|-------------|-----------|
+| 10 | ~3.1 ms | ~5.0 ms | ~308 rps |
+| 200 | ~3.9 ms | ~5.1 ms | ~261 rps |
+
+Artifacts stored in:
+
+benchmarks/
+benchmark_*.json
+
+Benchmark runner simulates evaluation load and measures:
+
+- p50 latency
+- p95 latency
+- throughput (requests/sec)
+- evaluation pass rate
+
+This validates inference performance and system stability under load.
+
