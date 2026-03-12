@@ -370,3 +370,14 @@ Architecture diagram:
 
 `/screenshots/system_architecture.png`
 
+
+## Key Features
+
+• FastAPI-based LLM evaluation API for automated prompt testing  
+• Retrieval-Augmented Generation (RAG) validation pipeline  
+• JSONL evaluation logs for reproducible batch evaluation runs  
+• Prometheus observability metrics exposed via `/metrics` endpoint  
+• Containerized inference service using Docker  
+• CI/CD pipeline using Google Cloud Build  
+• Deployment to Google Cloud Run with health monitoring
+
