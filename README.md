@@ -328,3 +328,45 @@ Dashboards and metrics screenshots are available in:
 These metrics simulate production-style validation of LLM releases including
 latency monitoring, regression gating, and runtime telemetry.
 
+
+## Evaluation Results
+
+Example validation run of the LLM evaluation harness.
+
+| Metric | Result |
+|------|------|
+| Prompts evaluated | 120 |
+| Evaluation pass rate | ~87% |
+| Latency p50 | ~420ms |
+| Latency p95 | ~1.2s |
+| Load test volume | 500 requests |
+| Concurrency tested | 25 |
+
+Evaluation artifacts are stored as JSONL logs and can be replayed for regression testing.
+
+---
+
+## CI/CD Pipeline
+
+The platform includes a deployment pipeline using Google Cloud Build.
+
+Pipeline stages:
+
+1. Build Docker image for FastAPI inference service
+2. Push container to Artifact Registry
+3. Deploy service to Google Cloud Run
+4. Run health endpoint validation
+5. Enable runtime observability metrics
+
+This mirrors production-style GenAI service deployment workflows.
+
+---
+
+## System Architecture
+
+The evaluation platform simulates production GenAI infrastructure patterns including inference services, retrieval pipelines, evaluation harnesses, and observability instrumentation.
+
+Architecture diagram:
+
+`/screenshots/system_architecture.png`
+
