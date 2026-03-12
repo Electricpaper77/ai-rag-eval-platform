@@ -1,0 +1,30 @@
+name: AI Evaluation Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  evaluation-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Run regression evaluation
+      run: |
+        python scripts/run_regression_tests.py
+
+    - name: Run benchmark validation
+      run: |
+        python benchmark_runner.py --dataset eval/prompts.jsonl --batch-size 50
