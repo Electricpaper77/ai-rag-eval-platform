@@ -560,3 +560,18 @@ Example metrics:
 
 These metrics allow monitoring request throughput, latency distribution, and runtime health of the GenAI evaluation service.
 
+
+## System Architecture
+
+The evaluation platform runs as a containerized FastAPI service deployed on Google Cloud Run.
+
+Architecture flow:
+
+Client → FastAPI API → Evaluation Engine → JSONL Artifact Logs → Prometheus Metrics → Grafana Dashboards.
+
+This architecture enables:
+
+• automated LLM evaluation regression testing  
+• latency and throughput monitoring  
+• observability instrumentation for GenAI systems
+
