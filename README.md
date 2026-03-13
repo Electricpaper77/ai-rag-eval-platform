@@ -1,3 +1,5 @@
+Production-style GenAI evaluation platform with regression testing, load validation, and observability instrumentation.
+
 # AI RAG Evaluation & Guardrails Platform
 
 ## Problem
@@ -589,4 +591,7 @@ Example validation run from the GenAI evaluation platform.
 | load test | 500 requests, concurrency 25 |
 
 These benchmarks were generated using the evaluation harness and benchmark runner included in the repository.
+
+
+Production-style GenAI evaluation platform with regression testing, load validation, and observability instrumentation.
 
