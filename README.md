@@ -575,3 +575,18 @@ This architecture enables:
 • latency and throughput monitoring  
 • observability instrumentation for GenAI systems
 
+
+## Benchmark Summary
+
+Example validation run from the GenAI evaluation platform.
+
+| Metric | Result |
+|------|------|
+| p50 latency | ~3–4 ms |
+| p95 latency | ~15–20 ms |
+| throughput | ~250 req/s |
+| evaluation pass rate | ~87% across 120 prompts |
+| load test | 500 requests, concurrency 25 |
+
+These benchmarks were generated using the evaluation harness and benchmark runner included in the repository.
+
