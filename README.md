@@ -1,3 +1,5 @@
+FastAPI • Cloud Run • Prometheus • RAG evaluation harness
+
 Production-style GenAI evaluation platform with regression testing, load validation, and observability instrumentation.
 
 # AI RAG Evaluation & Guardrails Platform
