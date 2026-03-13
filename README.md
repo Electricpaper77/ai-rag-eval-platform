@@ -528,3 +528,21 @@ These artifacts demonstrate:
 - Health monitoring endpoints
 - Performance validation through benchmark testing
 
+
+## Deployment Proof
+
+Cloud Run production service:
+
+![Cloud Run Deployment](screenshots/deployment/cloud_run_service.png)
+
+Prompt injection guardrail response:
+
+![Guardrail Block](screenshots/deployment/guardrail_prompt_block.png)
+
+Example response:
+
+{
+  "blocked": true,
+  "reason": "prompt_injection"
+}
+
