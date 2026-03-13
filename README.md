@@ -597,3 +597,11 @@ These benchmarks were generated using the evaluation harness and benchmark runne
 
 Production-style GenAI evaluation platform with regression testing, load validation, and observability instrumentation.
 
+
+## Key Features
+- Production-style FastAPI service deployed on Cloud Run
+- LLM evaluation harness with regression testing
+- Prometheus metrics endpoint for observability
+- Guardrails layer blocking prompt injection attempts
+- Benchmark validation and load testing
+
