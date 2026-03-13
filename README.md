@@ -546,3 +546,17 @@ Example response:
   "reason": "prompt_injection"
 }
 
+
+### Metrics Endpoint Example
+
+The FastAPI service exposes Prometheus metrics for observability.
+
+Example metrics:
+
+- http_requests_total
+- request_latency_seconds
+- process_open_fds
+- process_max_fds
+
+These metrics allow monitoring request throughput, latency distribution, and runtime health of the GenAI evaluation service.
+
