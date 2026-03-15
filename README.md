@@ -605,3 +605,12 @@ Production-style GenAI evaluation platform with regression testing, load validat
 - Guardrails layer blocking prompt injection attempts
 - Benchmark validation and load testing
 
+
+## Cost Governance
+
+Deployment uses Cloud Run autoscaling with:
+
+min_instances = 0  
+max_instances = 10  
+
+This ensures idle services scale to zero and avoid unnecessary compute cost.
