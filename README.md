@@ -614,3 +614,10 @@ min_instances = 0
 max_instances = 10  
 
 This ensures idle services scale to zero and avoid unnecessary compute cost.
+
+## GitHub Actions
+
+The repository includes automated CI validation for lightweight smoke testing on every push.
+
+![GitHub Actions](screenshots/github_actions_green.png)
+
