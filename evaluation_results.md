@@ -37,3 +37,8 @@ Evaluation platform comparing LLM performance across quality, latency, and cost 
 
 ```json
 {"prompt": "What is X?", "response": "...", "pass": true, "hallucination": false, "latency_ms": 120}
+
+## Screenshot
+
+![Evaluation Results](screenshots/eval_results.png)
+
