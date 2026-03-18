@@ -621,3 +621,10 @@ The repository includes automated CI validation for lightweight smoke testing on
 
 ![GitHub Actions](screenshots/github_actions_green.png)
 
+
+## 📊 Evaluation Results + Leaderboard
+
+See full evaluation metrics, model comparison, and system performance:
+
+➡️ [View Evaluation Results](evaluation_results.md)
+
