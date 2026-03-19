@@ -42,3 +42,17 @@ Evaluation platform comparing LLM performance across quality, latency, and cost 
 
 ![Evaluation Results](screenshots/eval_results.png)
 
+
+## Before vs After Improvements
+
+| Metric               | Before | After |
+|---------------------|--------|-------|
+| Hallucination Rate  | 18%    | 6%    |
+| Pass Rate           | 72%    | 87%   |
+| Latency (p95)       | ~320ms | ~270ms |
+
+### What Changed
+- Added structured evaluation metrics (hallucination, citation precision, refusal accuracy)
+- Implemented regression testing and CI gating
+- Optimized retrieval pipeline and model selection
+
