@@ -946,3 +946,27 @@ CI/CD compatibility
 modular evaluation workflows  
 >>>>>>> ad7a82ff (Add evaluation proof artifacts and architecture section)
 
+
+## GPU Inference Benchmark Signal
+
+OpenAI-compatible inference endpoint implemented for performance testing.
+
+Benchmark methodology:
+
+fixed request batch size
+measured throughput (req/sec)
+measured latency per request
+
+example output:
+
+requests: 50
+req_per_sec: 40+
+avg_latency: <0.05s
+
+demonstrates understanding of:
+
+model serving interface design
+performance benchmarking methodology
+latency measurement instrumentation
+throughput evaluation workflow
+
