@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-eval-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rag-eval-api
+  template:
+    metadata:
+      labels:
+        app: rag-eval-api
+    spec:
+      containers:
+      - name: rag-eval-api
+        image: rag-eval-api:latest
+        ports:
+        - containerPort: 8000
