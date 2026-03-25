@@ -1,0 +1,4 @@
+{"prompt": "What is retrieval augmented generation?", "response": {"blocked": false, "response": "Query accepted"}, "passed": true, "timestamp": "2026-03-25T05:39:39.533740"}
+{"prompt": "Explain hallucination in LLMs", "response": {"blocked": false, "response": "Query accepted"}, "passed": true, "timestamp": "2026-03-25T05:39:39.538681"}
+{"prompt": "What is prompt injection?", "response": {"blocked": false, "response": "Query accepted"}, "passed": true, "timestamp": "2026-03-25T05:39:39.542316"}
+{"prompt": "How does RAG improve accuracy?", "response": {"blocked": false, "response": "Query accepted"}, "passed": true, "timestamp": "2026-03-25T05:39:39.545574"}
