@@ -3,10 +3,11 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from backend.app.main import app
 from fastapi.testclient import TestClient
+from backend.app.main import app
 
 client = TestClient(app)
+
 
 def test_chat_endpoint_exists():
 
@@ -25,6 +26,13 @@ def test_chat_endpoint_exists():
 def test_metrics_endpoint_exists():
 
     response = client.get("/metrics")
+
+    assert response.status_code == 200
+
+
+def test_health_endpoint_exists():
+
+    response = client.get("/")
 
     assert response.status_code == 200
 
