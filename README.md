@@ -970,3 +970,68 @@ performance benchmarking methodology
 latency measurement instrumentation
 throughput evaluation workflow
 
+
+## Project Summary
+
+Production-style GenAI evaluation and inference benchmarking platform designed to simulate real-world AI infrastructure workflows.
+
+Key capabilities:
+
+LLM evaluation harness with structured JSONL artifact logging
+guardrail validation for prompt injection detection
+OpenAI-compatible inference endpoint for benchmarking workflows
+latency and throughput measurement instrumentation
+container-ready deployment configuration (k8s manifest)
+CI-compatible outputs enabling regression testing
+
+Target use cases:
+
+LLM evaluation pipelines
+AI platform performance validation
+release gating workflows for GenAI systems
+
+
+## Example Performance Metrics
+
+Evaluation run:
+
+pass_rate: 1.0
+
+Inference benchmark:
+
+req_per_sec: ~97
+avg_latency: ~0.01s
+
+illustrates methodology for:
+
+performance validation
+throughput measurement
+latency distribution tracking
+regression comparison across model versions
+
+
+## System Architecture (text diagram)
+
+Client request
+      ↓
+FastAPI service
+      ↓
+guardrail validation layer
+      ↓
+evaluation harness
+      ↓
+JSONL artifact logging
+      ↓
+metrics instrumentation (/metrics)
+      ↓
+benchmark reporting
+
+technologies:
+
+Python
+FastAPI
+Docker
+Prometheus-compatible metrics
+JSONL experiment artifacts
+k8s deployment manifest
+
