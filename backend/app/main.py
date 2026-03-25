@@ -378,3 +378,89 @@ from starlette.responses import Response
 def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
+
+
+@app.post("/v1/chat/completions")
+def chat_completions_openai_compatible(request: dict):
+
+    try:
+
+        messages = request.get("messages", [])
+
+        if not messages:
+            return {
+                "error": "messages field required"
+            }
+
+        user_prompt = messages[-1]["content"]
+
+        # call existing guarded pipeline
+        result = query_guarded(
+            question=user_prompt,
+            top_k=1
+        )
+
+        return {
+            "id": "chatcmpl-simulated",
+            "object": "chat.completion",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": result.get("response", "")
+                    }
+                }
+            ]
+        }
+
+    except Exception as e:
+
+        return {
+            "error": str(e)
+        }
+
+
+
+
+@app.post("/v1/chat/completions")
+def chat_completions_openai_compatible(request: dict):
+
+    try:
+
+        messages = request.get("messages", [])
+
+        if not messages:
+            return {
+                "error": "messages field required"
+            }
+
+        user_prompt = messages[-1]["content"]
+
+        # reuse guarded pipeline
+        result = query_guarded(
+            question=user_prompt,
+            top_k=1
+        )
+
+        return {
+            "id": "chatcmpl-simulated",
+            "object": "chat.completion",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": result.get("response", "")
+                    }
+                }
+            ]
+        }
+
+    except Exception as e:
+
+        return {
+            "error": str(e)
+        }
+
+

@@ -9,7 +9,40 @@ from backend.app.main import app
 client = TestClient(app)
 
 
-def test_chat_endpoint_exists():
+def test_query_guarded_endpoint():
+
+    response = client.post(
+        "/query_guarded",
+        json={
+            "question":"ping",
+            "top_k":1
+        }
+    )
+
+    assert response.status_code == 200
+
+
+def test_metrics_endpoint():
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+
+
+def test_evaluate_endpoint():
+
+    response = client.post(
+        "/evaluate",
+        json={
+            "prompt":"ping"
+        }
+    )
+
+    assert response.status_code == 200
+
+
+
+def test_openai_wrapper():
 
     response = client.post(
         "/v1/chat/completions",
@@ -19,20 +52,6 @@ def test_chat_endpoint_exists():
             ]
         }
     )
-
-    assert response.status_code in [200,422]
-
-
-def test_metrics_endpoint_exists():
-
-    response = client.get("/metrics")
-
-    assert response.status_code == 200
-
-
-def test_health_endpoint_exists():
-
-    response = client.get("/")
 
     assert response.status_code == 200
 
