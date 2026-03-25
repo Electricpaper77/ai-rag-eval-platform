@@ -1202,3 +1202,17 @@ The system uses a pluggable inference runtime interface compatible with GPU-back
 
 Current implementation simulates token generation latency while preserving metric structure required for real GPU deployments.
 
+
+### Performance instrumentation
+
+The system tracks:
+
+- latency_ms (p50 / p95)
+- tokens_generated
+- tokens/sec throughput metric
+- request success rate
+
+Metrics exposed via Prometheus endpoint:
+
+/metrics
+
