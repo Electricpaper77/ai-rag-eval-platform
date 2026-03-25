@@ -8,7 +8,7 @@ RUNS_DIR = os.getenv("RUNS_DIR", "/tmp/runs")
 RUNS_DIR = os.path.normpath(RUNS_DIR)
 
 def _now_iso() -> str:
-    return datetime.utcnow().isoformat() + "Z"
+    return datetime.now(timezone.utc).isoformat() + "Z"
 
 def _hash_text(s: str) -> str:
     return hashlib.sha256((s or "").encode("utf-8")).hexdigest()[:16]
@@ -32,7 +32,7 @@ def new_report(question: str) -> Dict[str, Any]:
 
 def finalize_and_save(report: Dict[str, Any]) -> str:
     os.makedirs(RUNS_DIR, exist_ok=True)
-    fname = f"guardrail_report_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+    fname = f"guardrail_report_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
     path = os.path.join(RUNS_DIR, fname)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, sort_keys=True)
