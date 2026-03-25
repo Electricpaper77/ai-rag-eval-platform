@@ -9,6 +9,7 @@ from .guardrail_report import new_report, finalize_and_save
 from .guardrails import redact_pii, check_injection
 from .rag import COLLECTION_NAME, get_client, get_collection, query_rag
 from .routes.regression_eval import router as regression_router
+from .inference_runtime import SimulatedRuntime
 
 from urllib.parse import urlparse
 
@@ -372,14 +373,20 @@ async def log_requests(request, call_next):
 
 # Prometheus metrics endpoint
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import Counter
 from starlette.responses import Response
+
+TOKENS_GENERATED = Counter(
+    "tokens_generated_total",
+    "Total tokens generated"
+)
+runtime = SimulatedRuntime()
 
 @app.get("/metrics")
 def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
-
 @app.post("/v1/chat/completions")
 def chat_completions_openai_compatible(request: dict):
 
@@ -394,10 +401,19 @@ def chat_completions_openai_compatible(request: dict):
 
         user_prompt = messages[-1]["content"]
 
-        # call existing guarded pipeline
-        result = query_guarded(
-            question=user_prompt,
-            top_k=1
+        result = runtime.generate(user_prompt)
+        TOKENS_GENERATED.inc(result["tokens_generated"])
+        latency_seconds = max(result["latency_ms"] / 1000.0, 1e-9)
+        tokens_per_second = result["tokens_generated"] / latency_seconds
+        logger.info(
+            json.dumps(
+                {
+                    "event": "inference_metrics",
+                    "tokens_generated": result["tokens_generated"],
+                    "latency_ms": round(result["latency_ms"], 3),
+                    "tokens_per_second": round(tokens_per_second, 3),
+                }
+            )
         )
 
         return {
@@ -408,7 +424,7 @@ def chat_completions_openai_compatible(request: dict):
                     "index": 0,
                     "message": {
                         "role": "assistant",
-                        "content": result.get("response", "")
+                        "content": result["response"]
                     }
                 }
             ]
@@ -419,48 +435,3 @@ def chat_completions_openai_compatible(request: dict):
         return {
             "error": str(e)
         }
-
-
-
-
-@app.post("/v1/chat/completions")
-def chat_completions_openai_compatible(request: dict):
-
-    try:
-
-        messages = request.get("messages", [])
-
-        if not messages:
-            return {
-                "error": "messages field required"
-            }
-
-        user_prompt = messages[-1]["content"]
-
-        # reuse guarded pipeline
-        result = query_guarded(
-            question=user_prompt,
-            top_k=1
-        )
-
-        return {
-            "id": "chatcmpl-simulated",
-            "object": "chat.completion",
-            "choices": [
-                {
-                    "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": result.get("response", "")
-                    }
-                }
-            ]
-        }
-
-    except Exception as e:
-
-        return {
-            "error": str(e)
-        }
-
-
