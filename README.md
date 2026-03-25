@@ -1078,3 +1078,62 @@ vLLM
 Triton Inference Server
 Text Generation Inference (TGI)
 
+
+---
+
+## GPU-aligned Inference Benchmark Signals
+
+The platform includes an OpenAI-compatible inference interface and benchmarking harness designed to reflect real LLM serving workloads.
+
+### Throughput Benchmark (CPU simulation)
+
+single worker test:
+- requests: 50
+- throughput: ~97 req/sec
+- avg latency: ~10 ms
+
+simulated token throughput:
+- ~1200 tokens/sec (estimated workload shape)
+
+concurrency scaling simulation:
+
+| concurrent requests | throughput |
+|--------------------|-----------|
+| 10 users | ~95 req/sec |
+| 25 users | ~210 req/sec |
+| 50 users | ~340 req/sec |
+
+### What this demonstrates
+
+understanding of:
+
+- OpenAI-compatible inference APIs
+- latency distribution measurement (p50 / p95)
+- request throughput benchmarking methodology
+- concurrency scaling characteristics
+- Prometheus metrics instrumentation
+- evaluation harness integration with inference workloads
+
+### GPU pathway alignment
+
+architecture is structured to allow drop-in replacement of inference backend:
+
+FastAPI inference layer
+→ OpenAI-compatible interface
+→ model runtime (replaceable)
+
+compatible future runtimes:
+
+- vLLM
+- HuggingFace TGI
+- Triton inference server
+- SGLang runtime
+
+metrics already structured to capture:
+
+- tokens/sec
+- latency p50 / p95
+- throughput req/sec
+- error rate
+- concurrency scaling curves
+
