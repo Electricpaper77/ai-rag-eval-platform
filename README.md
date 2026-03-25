@@ -1216,3 +1216,20 @@ Metrics exposed via Prometheus endpoint:
 
 /metrics
 
+
+### GPU deployment readiness
+
+Architecture supports GPU-backed inference runtimes such as:
+
+- vLLM
+- HuggingFace TGI
+- Triton Inference Server
+
+Example Kubernetes deployment:
+
+k8s/gpu-inference.yaml
+
+Runtime selection configurable via environment variable:
+
+LLM_RUNTIME=vllm
+

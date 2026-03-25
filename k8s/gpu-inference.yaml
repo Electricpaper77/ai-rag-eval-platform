@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-inference-gpu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llm-gpu
+  template:
+    metadata:
+      labels:
+        app: llm-gpu
+    spec:
+      containers:
+      - name: llm-server
+        image: vllm/vllm-openai:latest
+
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+
+        env:
+        - name: LLM_RUNTIME
+          value: "vllm"
+
+        ports:
+        - containerPort: 8000
