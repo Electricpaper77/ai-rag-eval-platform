@@ -1191,3 +1191,14 @@ metrics already structured to capture:
 - throughput req/sec
 - concurrency scaling curves
 
+
+### Inference runtime abstraction
+
+The system uses a pluggable inference runtime interface compatible with GPU-backed serving stacks such as:
+
+- vLLM
+- HuggingFace TGI
+- Triton inference server
+
+Current implementation simulates token generation latency while preserving metric structure required for real GPU deployments.
+
