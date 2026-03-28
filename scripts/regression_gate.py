@@ -29,6 +29,8 @@ def load_metrics(jsonl_path: Path):
     passes = 0
     hallucinations = 0
     latencies = []
+    token_counts = []
+    tokens_per_second = []
 
     with jsonl_path.open("r", encoding="utf-8") as f:
         for line in f:
@@ -53,17 +55,44 @@ def load_metrics(jsonl_path: Path):
             if latency is not None:
                 latencies.append(float(latency))
 
+            tokens_generated = row.get("tokens_generated")
+            if tokens_generated is not None:
+                try:
+                    token_counts.append(int(tokens_generated))
+                except (TypeError, ValueError):
+                    pass
+
+            tps = row.get("tokens_per_second")
+            if tps is not None:
+                try:
+                    tokens_per_second.append(float(tps))
+                except (TypeError, ValueError):
+                    pass
+            elif latency is not None and tokens_generated is not None:
+                try:
+                    latency_value = float(latency)
+                    token_value = float(tokens_generated)
+                except (TypeError, ValueError):
+                    latency_value = 0.0
+                    token_value = 0.0
+                if latency_value > 0:
+                    tokens_per_second.append(token_value / (latency_value / 1000.0))
+
     if total == 0:
         raise ValueError("No evaluation rows found in JSONL file.")
 
     pass_rate = passes / total
     avg_latency_ms = sum(latencies) / len(latencies) if latencies else 0.0
     hallucination_rate = hallucinations / total
+    avg_tokens_generated = sum(token_counts) / len(token_counts) if token_counts else 0.0
+    avg_tokens_per_second = sum(tokens_per_second) / len(tokens_per_second) if tokens_per_second else 0.0
 
     return {
         "pass_rate": pass_rate,
         "avg_latency_ms": avg_latency_ms,
         "hallucination_rate": hallucination_rate,
+        "avg_tokens_generated": avg_tokens_generated,
+        "avg_tokens_per_second": avg_tokens_per_second,
     }
 
 
@@ -80,6 +109,8 @@ def main():
     summary = {
         "pass_rate": metrics["pass_rate"],
         "avg_latency_ms": metrics["avg_latency_ms"],
+        "avg_tokens_generated": metrics["avg_tokens_generated"],
+        "avg_tokens_per_second": metrics["avg_tokens_per_second"],
         "status": status,
     }
 

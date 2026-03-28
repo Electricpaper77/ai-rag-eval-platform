@@ -73,6 +73,37 @@ def _rate(count: int, total: int) -> float:
     return count / total
 
 
+def _extract_total_tokens(response: Dict[str, Any]) -> int:
+    usage = response.get("usage")
+    if isinstance(usage, dict):
+        total_tokens = usage.get("total_tokens")
+        try:
+            value = int(total_tokens)
+            if value >= 0:
+                return value
+        except (TypeError, ValueError):
+            pass
+
+    fallback = response.get("tokens_generated")
+    try:
+        value = int(fallback)
+        return max(value, 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _extract_tokens_per_second(response: Dict[str, Any]) -> Optional[float]:
+    direct = response.get("tokens_per_second")
+    try:
+        if direct is not None:
+            value = float(direct)
+            if value >= 0:
+                return value
+    except (TypeError, ValueError):
+        return None
+    return None
+
+
 def run_regression_eval(
     query_fn: Callable[[str, int], Dict[str, Any]],
     dataset: Optional[List[Dict[str, Any]]] = None,
@@ -115,20 +146,26 @@ def run_regression_eval(
             for case in dataset:
                 question = case["question"]
                 prompted_question = _apply_prompt(prompt_prefix, question)
+                start = time.perf_counter()
                 response = query_fn(prompted_question, top_k)
+                latency_ms = (time.perf_counter() - start) * 1000.0
                 answer = response.get("answer", "")
                 citations = response.get("citations", [])
-                latency_ms = int(response.get("latency_ms") or 0)
+                total_tokens = _extract_total_tokens(response)
+                tokens_per_second = _extract_tokens_per_second(response)
+                if tokens_per_second is None and latency_ms > 0:
+                    tokens_per_second = total_tokens / (latency_ms / 1000.0)
 
                 coverage = bool(citations)
                 refusal = _is_refusal(answer)
                 hallucination = _is_hallucination(answer, citations)
+                eval_pass = coverage and not refusal and not hallucination
 
                 counts["coverage"] += int(coverage)
                 counts["refusal"] += int(refusal)
                 counts["hallucination"] += int(hallucination)
-                latencies.append(latency_ms)
-                overall_latencies.append(latency_ms)
+                latencies.append(int(latency_ms))
+                overall_latencies.append(int(latency_ms))
 
                 total_cases += 1
                 overall_counts["coverage"] += int(coverage)
@@ -146,7 +183,10 @@ def run_regression_eval(
                     "citation_coverage": coverage,
                     "refusal": refusal,
                     "hallucination": hallucination,
-                    "latency_ms": latency_ms,
+                    "latency_ms": round(latency_ms, 3),
+                    "tokens_generated": total_tokens,
+                    "tokens_per_second": round(tokens_per_second, 3) if tokens_per_second is not None else None,
+                    "eval_pass": eval_pass,
                     "timestamp": created_at,
                 }
                 handle.write(json.dumps(record) + "\n")
