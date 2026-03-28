@@ -15,12 +15,12 @@ def _stub_query(question: str, top_k: int):
         return {
             "answer": "Refunds are available within 30 days.",
             "citations": [{"source": "docs/refunds.md"}],
-            "latency_ms": 12,
+            "usage": {"total_tokens": 42},
         }
     return {
         "answer": "I couldn’t find an answer in the documents.",
         "citations": [],
-        "latency_ms": 34,
+        "usage": {"total_tokens": 7},
     }
 
 
@@ -58,7 +58,11 @@ def test_run_regression_eval_writes_jsonl(tmp_path: Path):
     sample = json.loads(lines[0])
     assert sample["run_id"] == "test-run"
     assert "variant" in sample
-    assert "latency_ms" in sample
+    assert isinstance(sample["latency_ms"], float)
+    assert isinstance(sample["tokens_generated"], int)
+    assert isinstance(sample["eval_pass"], bool)
+    assert "tokens_per_second" in sample
+    assert sample["tokens_per_second"] is None or isinstance(sample["tokens_per_second"], float)
 
 
 @pytest.mark.xfail(reason="TODO: detect hallucinations even when citations are present")
