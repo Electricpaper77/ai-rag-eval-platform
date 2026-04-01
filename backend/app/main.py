@@ -157,15 +157,10 @@ def _format_eval_output(result, start_time):
         "latency_ms": latency_ms,
         "tokens_used": tokens_used
     }
-<<<<<<< Updated upstream
-
-    logger.info(json.dumps(log_payload))
-
-    return response
-
 # Prometheus metrics endpoint
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from starlette.responses import Response
+
 
 @app.get("/metrics")
 def metrics():
@@ -174,14 +169,7 @@ def metrics():
 
 @app.post("/v1/chat/completions")
 def chat_completions_openai_compatible(request: dict):
-
     try:
         return handle_chat_completions(request)
-
     except Exception as e:
-
-        return {
-            "error": str(e)
-        }
-=======
->>>>>>> Stashed changes
+        return {"error": str(e)}

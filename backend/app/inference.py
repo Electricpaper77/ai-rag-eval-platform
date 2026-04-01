@@ -5,32 +5,43 @@ import logging
 from typing import Any, Dict
 
 from .metrics import record_inference_metrics
-from .routing import DEFAULT_ROUTER
+from .router import run_inference
 
 logger = logging.getLogger("uvicorn.access")
 
+DEFAULT_RUNTIME = "openai"
+
 
 def handle_chat_completions(request_body: Dict[str, Any]) -> Dict[str, Any]:
+    """Route chat inference through a runtime-agnostic layer for multi-backend evaluation."""
     messages = request_body.get("messages", [])
     if not messages:
         return {"error": "messages field required"}
 
     user_prompt = messages[-1]["content"]
-    requested_model = request_body.get("model")
-    model_name, result = DEFAULT_ROUTER.generate(requested_model, user_prompt)
+    requested_runtime = request_body.get("model") or DEFAULT_RUNTIME
 
-    tokens_generated = int(result.tokens_generated or 0)
-    latency_ms = float(result.latency_ms or 0.0)
-    record_inference_metrics(model_name, tokens_generated, latency_ms, model_label=model_name)
+    try:
+        result = run_inference(requested_runtime, user_prompt)
+        resolved_runtime = (requested_runtime or "").strip().lower()
+    except ValueError:
+        # Backward compatibility: unknown runtimes fall back to mock baseline behavior.
+        resolved_runtime = "mock"
+        result = run_inference(resolved_runtime, user_prompt)
+
+    tokens_out = int(result.get("tokens_out", 0) or 0)
+    latency_ms = float(result.get("latency_ms", 0.0) or 0.0)
+
+    record_inference_metrics(resolved_runtime, tokens_out, latency_ms, model_label=resolved_runtime)
 
     latency_seconds = max(latency_ms / 1000.0, 1e-9)
-    tokens_per_second = tokens_generated / latency_seconds
+    tokens_per_second = tokens_out / latency_seconds
     logger.info(
         json.dumps(
             {
                 "event": "inference_metrics",
-                "runtime": model_name,
-                "tokens_generated": tokens_generated,
+                "runtime": resolved_runtime,
+                "tokens_out": tokens_out,
                 "latency_ms": round(latency_ms, 3),
                 "tokens_per_second": round(tokens_per_second, 3),
             }
@@ -38,14 +49,17 @@ def handle_chat_completions(request_body: Dict[str, Any]) -> Dict[str, Any]:
     )
 
     return {
-        "id": f"chatcmpl-{model_name}",
+        "id": f"chatcmpl-{resolved_runtime}",
         "object": "chat.completion",
+        "model_runtime": resolved_runtime,
+        "latency_ms": latency_ms,
+        "tokens_out": tokens_out,
         "choices": [
             {
                 "index": 0,
                 "message": {
                     "role": "assistant",
-                    "content": result.response,
+                    "content": result.get("output", ""),
                 },
             }
         ],
