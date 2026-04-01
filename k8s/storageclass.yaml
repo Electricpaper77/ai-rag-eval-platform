@@ -1,0 +1,33 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ai-persistence
+  labels:
+    app.kubernetes.io/name: ai-rag-eval-platform
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: ai-platform
+    app.kubernetes.io/managed-by: kubectl
+    environment: production
+provisioner: csi.example.com
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+parameters:
+  type: ssd
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ai-workload-data
+  labels:
+    app.kubernetes.io/name: ai-rag-eval-platform
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: ai-platform
+    environment: production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: ai-persistence
