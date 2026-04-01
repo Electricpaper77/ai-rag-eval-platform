@@ -21,7 +21,7 @@ def handle_chat_completions(request_body: Dict[str, Any]) -> Dict[str, Any]:
 
     tokens_generated = int(result.tokens_generated or 0)
     latency_ms = float(result.latency_ms or 0.0)
-    record_inference_metrics(model_name, tokens_generated, latency_ms)
+    record_inference_metrics(model_name, tokens_generated, latency_ms, model_label=model_name)
 
     latency_seconds = max(latency_ms / 1000.0, 1e-9)
     tokens_per_second = tokens_generated / latency_seconds
