@@ -20,23 +20,14 @@ resource "google_artifact_registry_repository" "inference" {
   format        = "DOCKER"
 }
 
-resource "google_cloud_run_service" "inference" {
+resource "google_cloud_run_v2_service" "inference" {
   name     = "inference-service"
   location = var.region
   project  = var.project_id
 
   template {
-    spec {
-      containers {
-        image = var.image_name
-      }
+    containers {
+      image = var.image_name
     }
   }
-
-  traffic {
-    percent         = 100
-    latest_revision = true
-  }
-
-  autogenerate_revision_name = true
 }
