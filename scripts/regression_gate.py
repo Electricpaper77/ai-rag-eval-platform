@@ -32,7 +32,7 @@ def load_metrics(jsonl_path: Path):
     token_counts = []
     tokens_per_second = []
 
-    with jsonl_path.open("r", encoding="utf-8") as f:
+    with jsonl_path.open("r", encoding="utf-8-sig") as f:
         for line in f:
             line = line.strip()
             if not line:

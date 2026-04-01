@@ -1,9 +1,10 @@
-﻿from fastapi import FastAPI
+from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Any, Dict, List
 import os
 import glob
 from pathlib import Path
+import time
 
 from .guardrail_report import new_report, finalize_and_save
 from .guardrails import redact_pii, check_injection
@@ -64,7 +65,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 DATA_DIR_DEFAULT = os.path.join(PROJECT_ROOT, "data", "sample_docs")
 
 def resolve_ingest_path(p: str) -> str:
-# FIXED: was invalid docstring ->     \"\"\"Resolve ingest folder robustly in Cloud Run/buildpacks.\"\"\"
+# FIXED: was invalid docstring ->     """Resolve ingest folder robustly in Cloud Run/buildpacks."""
     p = (p or "").strip()
     if not p:
         return DATA_DIR_DEFAULT
@@ -132,242 +133,31 @@ def read_text_files(folder: str) -> List[Dict[str, str]]:
 
     docs: List[Dict[str, str]] = []
     for path in paths:
-        try:
-            with open(DEFAULT_EVAL_SET, "r", encoding="utf-8-sig") as f:
-                eval_blob = json.load(f)
-            if text.strip():
-                docs.append({"path": path.replace("\\", "/"), "text": text})
-        except Exception:
-            continue
+        with open(path, "r", encoding="utf-8-sig") as f:
+            text = f.read()
+        if text.strip():
+            docs.append({"path": path, "text": text})
     return docs
 
-
-def chunk_text(text: str, max_chars: int = 1200) -> List[str]:
-    t = (text or "").strip()
-    if not t:
-        return []
-    chunks: List[str] = []
-    i = 0
-    while i < len(t):
-        chunk = t[i : i + max_chars].strip()
-        if chunk:
-            chunks.append(chunk)
-        i += max_chars
-    return chunks
-
-
-# ----------------------------
-# Routes
-# ----------------------------
-@app.get("/health")
-def health() -> Dict[str, str]:
-    return {"status": "ok"}
-
-
-@app.get("/stats")
-def stats() -> Dict[str, Any]:
-    client = get_client()
-    collection = get_collection(client)
-    try:
-        count = collection.count()
-    except Exception:
-        count = 0
-    return {"status": "ok", "collection": COLLECTION_NAME, "count": count}
-
-
-@app.post("/ingest")
-def ingest(req: IngestRequest) -> Dict[str, Any]:
-    # Load docs from local folder OR GCS (gs://bucket/prefix)
-    docs: List[Dict[str, str]] = []
-
-    if req.path.startswith("gs://"):
-        folder = req.path
-        try:
-            for fname, text in iter_gcs_text_files(req.path):
-                docs.append({"path": fname, "text": text})
-        except Exception as e:
-            return {"status": "error", "message": f"GCS ingest failed: {e}"}
-    else:
-        folder = resolve_ingest_path(req.path)
-        docs = read_text_files(folder)
-
-    if not docs:
-        return {"status": "error", "message": f"No .md or .txt files found in: {folder}"}
-
-    client = get_client()
-
-    # reset collection for deterministic demo runs
-    try:
-        client.delete_collection(COLLECTION_NAME)
-    except Exception:
-        pass
-
-    collection = get_collection(client)
-
-    ids: List[str] = []
-    metadatas: List[Dict[str, Any]] = []
-    documents: List[str] = []
-
-    doc_count = 0
-    chunk_count = 0
-
-    for d in docs:
-        doc_count += 1
-        chunks = chunk_text(d["text"])
-        for i, c in enumerate(chunks):
-            chunk_id = f"{os.path.basename(d['path'])}::chunk_{i}"
-            ids.append(chunk_id)
-            documents.append(c)
-            metadatas.append({"source": d["path"], "chunk": i})
-            chunk_count += 1
-
-    collection.add(ids=ids, documents=documents, metadatas=metadatas)
-
-    return {
-        "status": "ok",
-        "ingested_folder": folder.replace("\\", "/"),
-        "documents": doc_count,
-        "chunks": chunk_count,
-        "collection": COLLECTION_NAME,
-    }
-
-
-@app.post("/query")
-def query(req: QueryRequest) -> Dict[str, Any]:
-    return query_rag(req.question, top_k=req.top_k)
-
-
-
-@app.post("/query_guarded")
-def query_guarded(req: QueryRequest) -> Dict[str, Any]:
-    report = new_report(req.question)
-
-    # deterministic injection block
-    hit, reason = check_injection(req.question)
-    if hit:
-        report["decision"] = "block"
-        report["injection_detected"] = True
-        report["injection_reason"] = reason
-        report["reasons"].append(f"injection:{reason}")
-        path = finalize_and_save(report)
-        return {"status": "blocked", "reason": reason, "guardrail_report_path": path}
-
-    # deterministic PII redaction signal
-    safe_q = redact_pii(req.question)
-    if safe_q != req.question:
-        report["pii_redacted"] = True
-        report["pii_types"] = ["unknown"]
-        report["reasons"].append("pii:redacted")
-
-    out = query_rag(safe_q, top_k=req.top_k)
-    report["decision"] = "allow"
-    path = finalize_and_save(report)
-    out["guardrail_report_path"] = path
-    return out
-
-@app.post("/eval/run")
-def eval_run() -> Dict[str, Any]:
-    """
-    Minimal eval: runs 3 questions and reports citation hit-rate + avg latency.
-    If backend/data/eval_sets/policy_eval.json exists, uses that file.
-    """
-    # load eval set if present
-    eval_cases: List[Dict[str, Any]] = []
-    if os.path.isfile(DEFAULT_EVAL_SET):
-        import json
-        with open(DEFAULT_EVAL_SET, "r", encoding="utf-8-sig") as f:
-            eval_blob = json.load(f)
-            eval_cases = eval_blob.get("cases", eval_blob) if isinstance(eval_blob, dict) else eval_blob
-            
-    # fallback eval
-    if not eval_cases:
-        eval_cases = [
-            {"id": "refund_1", "question": "What is the refund policy?"},
-            {"id": "ship_1", "question": "How long does shipping take?"},
-            {"id": "support_1", "question": "What are the support hours?"},
-        ]
-
-    results_out: List[Dict[str, Any]] = []
-    questions_with_citations = 0
-    total_latency = 0
-
-    for case in eval_cases:
-        q = case["question"]
-        r = query(QueryRequest(question=q, top_k=4))
-        total_latency += int(r.get("latency_ms") or 0)
-
-        num_citations = int(r.get("num_citations") or 0)
-        if num_citations > 0:
-            questions_with_citations += 1
-
-        results_out.append(
-            {
-                "id": case.get("id"),
-                "question": q,
-                "latency_ms": r.get("latency_ms"),
-                "num_citations": num_citations,
-                "top_source": r.get("top_source"),
-                "answer": r.get("answer"),
-            }
-        )
-
-    total_questions = len(eval_cases)
-    hit_rate_pct = (questions_with_citations / total_questions * 100.0) if total_questions else 0.0
-    avg_latency_ms = (total_latency / total_questions) if total_questions else 0.0
-
-    return {
-        "status": "ok",
-        "results": results_out,
-        "stats": {
-            "total_questions": total_questions,
-            "questions_with_citations": questions_with_citations,
-            "hit_rate_pct": round(hit_rate_pct, 1),
-            "avg_latency_ms": round(avg_latency_ms, 1),
-        },
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# --- Project 3: Structured Logging ---
-import time
-import json
-import logging
-from datetime import datetime
-
-logger = logging.getLogger('uvicorn.access')
-logger.setLevel(logging.INFO)
-
-@app.middleware('http')
-async def log_requests(request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
+def _format_eval_output(result, start_time):
     latency_ms = (time.time() - start_time) * 1000
 
-    log_payload = {
-        'event': 'request_log',
-        'path': request.url.path,
-        'method': request.method,
-        'status_code': response.status_code,
-        'latency_ms': round(latency_ms, 2),
-        'timestamp': datetime.utcnow().isoformat()
+    if isinstance(result, dict):
+        answer = result.get("answer") or result.get("response") or str(result)
+        citations = result.get("citations", [])
+        tokens_used = result.get("usage", {}).get("total_tokens")
+    else:
+        answer = str(result)
+        citations = []
+        tokens_used = None
+
+    return {
+        "answer": answer,
+        "citations": citations,
+        "latency_ms": latency_ms,
+        "tokens_used": tokens_used
     }
+<<<<<<< Updated upstream
 
     logger.info(json.dumps(log_payload))
 
@@ -393,3 +183,5 @@ def chat_completions_openai_compatible(request: dict):
         return {
             "error": str(e)
         }
+=======
+>>>>>>> Stashed changes
