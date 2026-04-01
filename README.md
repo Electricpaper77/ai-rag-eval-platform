@@ -1233,3 +1233,36 @@ Runtime selection configurable via environment variable:
 
 LLM_RUNTIME=vllm
 
+
+## Architecture Overview
+
+```text
+Client
+  |
+  v
+FastAPI inference layer  -->  /metrics (Prometheus scrape)
+  |
+  v
+Multi-model router (policy + fallback)
+  |
+  +--> Model backend A
+  +--> Model backend B
+  +--> Model backend C
+  |
+  v
+Evaluation comparison endpoint
+  |
+  v
+JSONL artifact logging
+  |
+  v
+Kubernetes GPU workload template (deployment profile)
+```
+
+The request path enters the FastAPI inference layer, where routing policy selects an available backend (with fallback) before returning inference output. Evaluation requests are handled through the comparison workflow, which scores and contrasts model outputs while emitting operational metrics and persisted JSONL run artifacts for reproducibility.
+
+Implemented modules and platform artifacts:
+- Routing logic: `backend/app/routing/router.py` (requested reference: `app/routing/router.py`)
+- Evaluation compare workflow: `backend/app/eval/compare.py` (requested reference: `app/eval/compare.py`)
+- Metrics exposure: `/metrics` endpoint
+- GPU workload template: `k8s/gpu-inference.yaml`
