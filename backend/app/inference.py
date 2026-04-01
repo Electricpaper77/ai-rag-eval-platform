@@ -5,7 +5,7 @@ import logging
 from typing import Any, Dict
 
 from .metrics import record_inference_metrics
-from .runtime_router import resolve_runtime
+from .routing import DEFAULT_ROUTER
 
 logger = logging.getLogger("uvicorn.access")
 
@@ -16,13 +16,12 @@ def handle_chat_completions(request_body: Dict[str, Any]) -> Dict[str, Any]:
         return {"error": "messages field required"}
 
     user_prompt = messages[-1]["content"]
-    model_name = request_body.get("model")
-    runtime_label, runtime = resolve_runtime(model_name)
-    result = runtime.generate(user_prompt)
+    requested_model = request_body.get("model")
+    model_name, result = DEFAULT_ROUTER.generate(requested_model, user_prompt)
 
-    tokens_generated = int(result.get("tokens_generated") or 0)
-    latency_ms = float(result.get("latency_ms") or 0.0)
-    record_inference_metrics(runtime_label, tokens_generated, latency_ms)
+    tokens_generated = int(result.tokens_generated or 0)
+    latency_ms = float(result.latency_ms or 0.0)
+    record_inference_metrics(model_name, tokens_generated, latency_ms)
 
     latency_seconds = max(latency_ms / 1000.0, 1e-9)
     tokens_per_second = tokens_generated / latency_seconds
@@ -30,7 +29,7 @@ def handle_chat_completions(request_body: Dict[str, Any]) -> Dict[str, Any]:
         json.dumps(
             {
                 "event": "inference_metrics",
-                "runtime": runtime_label,
+                "runtime": model_name,
                 "tokens_generated": tokens_generated,
                 "latency_ms": round(latency_ms, 3),
                 "tokens_per_second": round(tokens_per_second, 3),
@@ -39,14 +38,14 @@ def handle_chat_completions(request_body: Dict[str, Any]) -> Dict[str, Any]:
     )
 
     return {
-        "id": f"chatcmpl-{runtime_label}",
+        "id": f"chatcmpl-{model_name}",
         "object": "chat.completion",
         "choices": [
             {
                 "index": 0,
                 "message": {
                     "role": "assistant",
-                    "content": result["response"],
+                    "content": result.response,
                 },
             }
         ],
