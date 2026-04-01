@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-rag-eval-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ai-rag-eval-api
+  template:
+    metadata:
+      labels:
+        app: ai-rag-eval-api
+    spec:
+      containers:
+      - name: api
+        image: us-central1-docker.pkg.dev/ai-rag-eval-prod/rag-eval-repo/ai-rag-eval-api:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: "8080"
