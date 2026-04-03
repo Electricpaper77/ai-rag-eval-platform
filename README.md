@@ -1229,9 +1229,14 @@ Example Kubernetes deployment:
 
 k8s/gpu-inference.yaml
 
-Runtime selection configurable via environment variable:
+Runtime selection configurable via environment variables:
 
 LLM_RUNTIME=vllm
+
+Provider routing example (OpenAI-compatible vLLM adapter):
+
+PROVIDER=vllm
+VLLM_BASE_URL=http://localhost:8000
 
 
 ## Architecture Overview
