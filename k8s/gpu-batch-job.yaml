@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gpu-batch-inference
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: inference-job
+          image: vllm/vllm-openai:latest
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+          command:
+            - python
+            - scripts/run_gpu_benchmark.py
