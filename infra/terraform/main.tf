@@ -1,33 +1,22 @@
-terraform {
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = ">= 5.0"
-    }
-  }
-}
-
 provider "google" {
-  project = var.project_id
-  region  = var.region
+  project = "ai-rag-eval-prod"
+  region  = "us-central1"
 }
 
-resource "google_artifact_registry_repository" "inference" {
-  project       = var.project_id
-  location      = var.region
-  repository_id = "inference-service"
-  description   = "Container images for inference service"
-  format        = "DOCKER"
-}
-
-resource "google_cloud_run_v2_service" "inference" {
-  name     = "inference-service"
-  location = var.region
-  project  = var.project_id
+resource "google_cloud_run_v2_service" "gpu_inference_api" {
+  name     = "gpu-inference-api"
+  location = "us-central1"
 
   template {
     containers {
-      image = var.image_name
+      image = "us-central1-docker.pkg.dev/project/repo/gpu-inference:latest"
+
+      resources {
+        limits = {
+          cpu    = "2"
+          memory = "4Gi"
+        }
+      }
     }
   }
 }
