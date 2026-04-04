@@ -253,3 +253,13 @@ python -m vllm.entrypoints.openai.api_server \\
   --model mistralai/Mistral-7B-Instruct-v0.2 \\
   --tensor-parallel-size 1
 ```
+
+## Online Inference Router
+
+The platform now supports online inference routing via `POST /platform/chat`.
+
+- **Evaluation-driven routing:** the router scores candidate backends (`vllm`, `openai`, `mock`) using weighted quality and performance metrics (`pass_rate`, `hallucination_rate`, `p95_latency_ms`, `tokens_per_sec_avg`).
+- **Cache-aware backend selection:** repeated system/prefix prompts trigger a prefix-cache heuristic that gives a routing bonus to `vllm`.
+- **Shadow evaluation workflow:** 10% of requests are mirrored to an alternate backend for side-by-side latency/score comparison, and summary output is written to `artifacts/proof/shadow_eval_summary.json`.
+
+Every online routing decision is appended to `artifacts/platform_jobs/routing_decisions.jsonl`, and `/platform/chat` returns routing metadata (`selected_backend`, `routing_score`, `cache_hint_used`) for observability.

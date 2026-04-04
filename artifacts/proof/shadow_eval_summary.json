@@ -1,0 +1,15 @@
+{
+  "total_comparisons": 1,
+  "avg_latency_delta_ms": 116.0,
+  "comparisons": [
+    {
+      "request_id": "seed-shadow-000",
+      "selected_backend": "vllm",
+      "shadow_backend": "openai",
+      "selected_latency_ms": 804.0,
+      "shadow_latency_ms": 920.0,
+      "selected_score": 0.347,
+      "shadow_score": 0.2773
+    }
+  ]
+}
