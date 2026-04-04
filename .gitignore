@@ -74,3 +74,6 @@ artifacts/eval_runs/
 !docs/artifacts/**
 
 !artifacts/proof/benchmark_comparison.json
+
+!dashboard/app.py
+!artifacts/proof/eval_dashboard_summary.json
