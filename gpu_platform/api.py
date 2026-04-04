@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from .benchmark_summary import load_distributed_summary
 from .gpu_job import GPUJobSpec
 from .job_manager import get_job_status, list_jobs, submit_job
 from .model_selector import select_best_model
@@ -47,6 +48,11 @@ def get_job(job_id: str) -> dict:
 @router.get("/best-model")
 def get_best_model() -> dict:
     return select_best_model()
+
+
+@router.get("/benchmark-summary")
+def get_benchmark_summary() -> dict:
+    return load_distributed_summary()
 
 
 app = FastAPI(title="GPU Platform Orchestration API")

@@ -83,6 +83,14 @@ This project now includes a Kubernetes-style GPU job orchestration simulation fo
 
 These APIs are mounted on the existing FastAPI app and can be used to simulate internal platform workflows for GPU inference orchestration.
 
+## Distributed Benchmark Runner
+
+Use `scripts/run_distributed_benchmark.py` to execute a multi-config benchmark matrix from `configs/benchmark_matrix.yaml`.
+
+- **Multi-config benchmarking:** iterates model, batch size, and GPU count combinations and submits each run via `POST /platform/jobs`.
+- **Parallel workload simulation:** models a distributed GPU benchmark workflow by tracking run IDs, waiting for completion, and recording run artifacts in `artifacts/proof/*.jsonl`.
+- **Performance comparison workflow:** aggregates p95 latency and tokens/sec across all matrix runs into `artifacts/proof/distributed_benchmark_summary.json`, retrievable via `GET /platform/benchmark-summary`.
+
 ## Kubernetes GPU Batch Job
 
 For workloads that do not need to stay online continuously, you can run GPU inference or evaluation as a Kubernetes `Job`.
