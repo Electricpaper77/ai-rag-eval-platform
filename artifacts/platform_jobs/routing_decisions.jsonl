@@ -1,0 +1,1 @@
+{"request_id": "seed-shadow-000", "selected_backend": "vllm", "routing_score": 0.347, "cache_hint_used": false, "latency_budget_ms": 1500, "quality_tier": "balanced", "timestamp": 1775286922.2078896}

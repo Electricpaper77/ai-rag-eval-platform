@@ -3,6 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from gpu_platform.request_router import route_request
+
 from .benchmark_summary import load_distributed_summary
 from .vllm_benchmark_summary import load_vllm_benchmark_summary
 from .gpu_job import GPUJobSpec
@@ -19,6 +21,13 @@ class GPUJobPayload(BaseModel):
     container_image: str
     env: dict[str, str] = Field(default_factory=dict)
     resources: dict = Field(default_factory=dict)
+
+
+
+class PlatformChatRequest(BaseModel):
+    messages: list[dict]
+    latency_budget_ms: int = Field(default=1500, gt=0)
+    quality_tier: str = Field(default="balanced")
 
 
 router = APIRouter(prefix="/platform", tags=["platform-jobs"])
@@ -71,6 +80,15 @@ def get_benchmark_summary() -> dict:
 @router.get("/vllm-benchmark")
 def get_vllm_benchmark() -> dict:
     return load_vllm_benchmark_summary()
+
+
+@router.post("/chat")
+def platform_chat(payload: PlatformChatRequest) -> dict:
+    return route_request(
+        messages=payload.messages,
+        latency_budget_ms=payload.latency_budget_ms,
+        quality_tier=payload.quality_tier,
+    )
 
 
 app = FastAPI(title="GPU Platform Orchestration API")
