@@ -92,6 +92,8 @@ def get_job_status(job_id: str) -> Dict[str, Any] | None:
         "status": record["status"],
         "gpu_count": record["spec"]["gpu_count"],
         "health": record["health"],
+        "submitted_at": record["submitted_at"],
+        "duration_seconds": max(time.time() - record["submitted_at"], 0.0),
     }
 
 
@@ -109,6 +111,8 @@ def list_jobs() -> List[Dict[str, Any]]:
                 "job_id": hydrated["job_id"],
                 "status": hydrated["status"],
                 "gpu_count": hydrated["spec"]["gpu_count"],
+                "submitted_at": hydrated["submitted_at"],
+                "duration_seconds": max(time.time() - hydrated["submitted_at"], 0.0),
             }
         )
 
