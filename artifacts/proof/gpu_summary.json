@@ -1,0 +1,7 @@
+{
+  "runtime": "vllm",
+  "p50_latency_ms": 2.13,
+  "p95_latency_ms": 5.5,
+  "avg_tokens_per_sec": 41624.01,
+  "avg_completion_tokens": 128.0
+}
