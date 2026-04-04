@@ -112,12 +112,41 @@ def run_regression_eval(
             counts = {"coverage": 0, "refusal": 0, "hallucination": 0}
 
             logger.info("Evaluating variant=%s", name)
-            for case in dataset:
+            for case_index, case in enumerate(dataset):
                 question = case["question"]
+                case_id = case.get("id", f"case_{case_index}")
                 prompted_question = _apply_prompt(prompt_prefix, question)
                 start = time.perf_counter()
-                response = query_fn(prompted_question, top_k)
+                fallback_used = False
+                error_type = None
+                error_message = None
+                try:
+                    response = query_fn(prompted_question, top_k)
+                except Exception as exc:  # noqa: BLE001
+                    fallback_used = True
+                    error_type = type(exc).__name__
+                    error_message = str(exc)
+                    logger.exception(
+                        "Regression eval query failure run_id=%s variant=%s case_id=%s",
+                        run_id,
+                        name,
+                        case_id,
+                    )
+                    response = {
+                        "answer": "Unable to generate response due to runtime failure.",
+                        "citations": [],
+                        "usage": {"total_tokens": 0},
+                    }
                 latency_ms = (time.perf_counter() - start) * 1000.0
+                if not isinstance(response, dict):
+                    fallback_used = True
+                    error_type = "TypeError"
+                    error_message = "query_fn returned non-dict response"
+                    response = {
+                        "answer": "Unable to generate response due to invalid runtime payload.",
+                        "citations": [],
+                        "usage": {"total_tokens": 0},
+                    }
                 answer_text = response.get("answer", "")
                 citations = response.get("citations", [])
                 tokens_generated = response.get("usage", {}).get("total_tokens", 0)
@@ -146,11 +175,21 @@ def run_regression_eval(
                 overall_counts["hallucination"] += int(hallucination)
 
                 row = {
+                    "run_id": run_id,
+                    "created_at": created_at,
+                    "variant": name,
+                    "case_id": case_id,
                     "prompt": question,
+                    "prompted_query": prompted_question,
                     "answer": answer_text,
+                    "top_k": top_k,
+                    "citation_count": len(citations),
                     "latency_ms": round(latency_ms, 3),
                     "tokens_generated": tokens_generated,
                     "tokens_per_second": round(tokens_per_second, 3),
+                    "fallback_used": fallback_used,
+                    "error_type": error_type,
+                    "error_message": error_message,
                     "eval_pass": eval_pass,
                 }
                 handle.write(json.dumps(row) + "\n")
