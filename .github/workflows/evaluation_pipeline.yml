@@ -25,6 +25,10 @@ jobs:
       run: |
         python scripts/run_regression_tests.py
 
+    - name: Enforce eval thresholds
+      run: |
+        python scripts/check_eval_thresholds.py
+
     - name: Run benchmark validation
       run: |
         python benchmark_runner.py --dataset eval/prompts.jsonl --batch-size 50
