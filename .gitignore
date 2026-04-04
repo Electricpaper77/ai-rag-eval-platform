@@ -72,3 +72,5 @@ main.py
 artifacts/eval_runs/
 
 !docs/artifacts/**
+
+!artifacts/proof/benchmark_comparison.json
