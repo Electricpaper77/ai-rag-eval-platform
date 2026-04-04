@@ -69,3 +69,16 @@ Example run summary JSON:
   "tokens_per_sec_avg": 41624.01
 }
 ```
+
+## GPU Platform Orchestration Layer
+
+This project now includes a Kubernetes-style GPU job orchestration simulation for AI inference workloads.
+
+- **Pre-flight validation** verifies GPU jobs before submission (GPU/replica counts, image format, env shape, and resource limits).
+- **Job lifecycle tracking** simulates job state transitions (`pending -> running -> completed`) with persisted metadata in `artifacts/platform_jobs/job_status.json`.
+- **Platform API endpoints** expose orchestration operations:
+  - `POST /platform/jobs`
+  - `GET /platform/jobs`
+  - `GET /platform/jobs/{job_id}`
+
+These APIs are mounted on the existing FastAPI app and can be used to simulate internal platform workflows for GPU inference orchestration.
