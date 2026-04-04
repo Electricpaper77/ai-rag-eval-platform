@@ -144,3 +144,17 @@ helm template helm/gpu-inference
 ```
 
 This chart deploys `vllm/vllm-openai:latest` with `MODEL_NAME=mistralai/Mistral-7B-Instruct-v0.2` and requests one GPU via `nvidia.com/gpu: 1`.
+
+## Network Isolation Model
+
+Use `k8s/network-policy.yaml` to enforce default-deny ingress behavior for GPU inference pods while still permitting trusted platform traffic.
+
+- **Default deny for external ingress:** The policy applies to pods labeled `app.kubernetes.io/name: gpu-inference-service` and only defines explicit allow rules, which blocks all other inbound traffic by default.
+- **Allowed internal namespace:** Ingress is allowed only from the Kubernetes namespace `internal-platform`.
+- **Restricted ports:** Only TCP `8000` (inference API) and TCP `9090` (metrics/sidecar style traffic) are opened.
+
+Apply with:
+
+```bash
+kubectl apply -f k8s/network-policy.yaml
+```
