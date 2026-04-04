@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from .gpu_job import GPUJobSpec
 from .job_manager import get_job_status, list_jobs, submit_job
+from .model_selector import select_best_model
 
 
 class GPUJobPayload(BaseModel):
@@ -41,6 +42,11 @@ def get_job(job_id: str) -> dict:
     if not result:
         raise HTTPException(status_code=404, detail=f"Job not found: {job_id}")
     return result
+
+
+@router.get("/best-model")
+def get_best_model() -> dict:
+    return select_best_model()
 
 
 app = FastAPI(title="GPU Platform Orchestration API")

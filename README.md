@@ -92,3 +92,17 @@ For workloads that do not need to stay online continuously, you can run GPU infe
 - **Training-style orchestration pattern:** Use queue-and-run job patterns similar to model training pipelines, where work is scheduled, processed, and terminated automatically.
 
 See `k8s/gpu-batch-job.yaml` for a template job manifest that runs `scripts/run_gpu_benchmark.py` with `nvidia.com/gpu: 1`.
+
+## Automatic Model Selection
+
+The platform now supports evaluation-driven model routing by selecting the best model run from `artifacts/proof/eval_dashboard_summary.json` using a weighted score:
+
+- `pass_rate * 0.5`
+- `- hallucination_rate * 0.3`
+- `- normalized_p95_latency * 0.2`
+
+Selection output is persisted to `artifacts/platform_jobs/best_model.json`, and can be retrieved via:
+
+- `GET /platform/best-model`
+
+This optimization logic simulates dynamic production routing by balancing quality signals and latency performance.
