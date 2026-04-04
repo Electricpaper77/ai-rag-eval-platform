@@ -1,0 +1,29 @@
+{
+  "jobs": {
+    "eval-benchmark-001": {
+      "job_id": "eval-benchmark-001",
+      "status": "pending",
+      "submitted_at": 1775276984.2138646,
+      "updated_at": 1775276984.2138646,
+      "spec": {
+        "job_id": "eval-benchmark-001",
+        "model_name": "mistral-7b",
+        "gpu_count": 1,
+        "replicas": 1,
+        "container_image": "vllm/vllm-openai:latest",
+        "env": {},
+        "resources": {
+          "limits": {
+            "nvidia.com/gpu": 1
+          }
+        }
+      },
+      "health": {
+        "timestamp": 1775276984,
+        "startup_latency_ms": 494,
+        "readiness_status": false,
+        "gpu_allocated": false
+      }
+    }
+  }
+}
