@@ -2,35 +2,35 @@
 
 Production-style GenAI evaluation platform for serving, regression validation, and performance benchmarking.
 
-## Architecture Diagram
+## Architecture Overview
 
 ```mermaid
 flowchart TD
-    C[Client]
-    API[FastAPI API Layer]
-    Router[Runtime Router]
-    Eval[Evaluation Harness]
-    JSONL[JSONL Artifacts]
-    Orchestrator[GPU Job Orchestration Layer]
-    Bench[Distributed Benchmark Runner]
-    Prom[Prometheus Metrics]
-    ModelSel[Model Selection Logic]
-    Infra[Kubernetes / Helm / Terraform]
 
-    C --> API
-    API --> Router
-    Router --> Orchestrator
-    Router --> Eval
-    Eval --> JSONL
-    JSONL --> ModelSel
-    Orchestrator --> Bench
-    Bench --> JSONL
-    API --> Prom
-    Orchestrator --> Prom
-    Bench --> Prom
-    API --> Infra
-    Orchestrator --> Infra
-    Bench --> Infra
+A[Client / Evaluation Requests] --> B[FastAPI API Layer]
+
+B --> C[Runtime Router]
+
+C --> D[LLM Evaluation Harness]
+D --> E[JSONL Artifacts]
+
+B --> F[GPU Job Orchestration Layer]
+
+F --> G[Distributed Benchmark Runner]
+
+G --> H[Prometheus Metrics]
+
+F --> I[Kubernetes GPU Job Template]
+
+I --> J[Helm Chart Packaging]
+
+I --> K[Terraform IaC Scaffold]
+
+G --> L[Model Selection Logic]
+
+H --> M[/metrics endpoint]
+
+E --> N[Regression Gating Signals]
 ```
 
 ## What This Project Demonstrates
@@ -213,13 +213,13 @@ torchrun \
 
 ## AMD / AI Platform Relevance
 
-- Pre-flight checks are implemented in the GPU job API validation flow before workload submission.
-- Job lifecycle tracking persists `pending -> running -> completed` states for platform-style operations.
-- Developer platform APIs expose scheduling and benchmark summary endpoints for internal consumers.
-- Kubernetes GPU workloads are represented via deployment, batch job, and network policy manifests.
-- Observability is first-class via Prometheus metrics for jobs and benchmark performance.
-- IaC coverage includes Terraform and Helm for reproducible infrastructure and packaging.
-- Distributed benchmark workflows are automated with matrix runs and summary artifact generation.
+| Infrastructure signal | Evidence in this repository | AMD / AI platform relevance |
+| --- | --- | --- |
+| GPU pre-flight validation | GPU job API validation flow before workload submission | Mirrors production-grade guardrails for accelerator scheduling and admission control. |
+| Job lifecycle orchestration | Persisted `pending -> running -> completed` transitions in platform job artifacts | Reflects cluster job state management expected in enterprise AI platforms. |
+| Internal platform APIs | Scheduling, job status, benchmark, and summary endpoints | Demonstrates service-oriented interfaces for multi-tenant AI infrastructure operations. |
+| Kubernetes-ready GPU packaging | Deployment, batch job, and network policy manifests plus Helm packaging | Aligns with containerized GPU deployment patterns used in modern AI environments. |
+| Observability and SRE signals | Prometheus metrics via `/metrics` for jobs and benchmark performance | Supports reliability, capacity planning, and performance governance for AI systems. |
 
 ## vLLM Runtime Example
 
