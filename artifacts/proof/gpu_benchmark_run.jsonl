@@ -1,0 +1,2 @@
+{"timestamp": "2026-04-04T01:34:14.217974+00:00", "runtime": "vllm", "model": "mistralai/Mistral-7B-Instruct-v0.2", "latency_ms": 5.5, "prompt_tokens": 52, "completion_tokens": 128, "total_tokens": 180, "tokens_per_sec": 23287.19, "requests_per_sec": 181.9312, "status": "success"}
+{"timestamp": "2026-04-04T01:34:14.220434+00:00", "runtime": "vllm", "model": "mistralai/Mistral-7B-Instruct-v0.2", "latency_ms": 2.13, "prompt_tokens": 52, "completion_tokens": 128, "total_tokens": 180, "tokens_per_sec": 59960.83, "requests_per_sec": 468.444, "status": "success"}
