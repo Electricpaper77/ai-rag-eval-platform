@@ -82,3 +82,13 @@ This project now includes a Kubernetes-style GPU job orchestration simulation fo
   - `GET /platform/jobs/{job_id}`
 
 These APIs are mounted on the existing FastAPI app and can be used to simulate internal platform workflows for GPU inference orchestration.
+
+## Kubernetes GPU Batch Job
+
+For workloads that do not need to stay online continuously, you can run GPU inference or evaluation as a Kubernetes `Job`.
+
+- **Batch workloads:** Run one-off GPU tasks (for example, nightly benchmark runs) without keeping a long-lived deployment active.
+- **Offline evaluation jobs:** Execute regression or quality evaluation jobs against saved prompts/datasets and write artifacts for later review.
+- **Training-style orchestration pattern:** Use queue-and-run job patterns similar to model training pipelines, where work is scheduled, processed, and terminated automatically.
+
+See `k8s/gpu-batch-job.yaml` for a template job manifest that runs `scripts/run_gpu_benchmark.py` with `nvidia.com/gpu: 1`.
