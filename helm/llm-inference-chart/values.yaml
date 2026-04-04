@@ -1,0 +1,15 @@
+replicaCount: 1
+
+image:
+  repository: vllm/vllm-openai
+  tag: latest
+
+gpu:
+  count: 1
+
+service:
+  port: 8000
+
+hpa:
+  minReplicas: 1
+  maxReplicas: 3
