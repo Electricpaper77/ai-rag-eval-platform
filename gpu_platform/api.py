@@ -4,6 +4,7 @@ from fastapi import APIRouter, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from .benchmark_summary import load_distributed_summary
+from .vllm_benchmark_summary import load_vllm_benchmark_summary
 from .gpu_job import GPUJobSpec
 from .job_manager import get_job_status, list_jobs, submit_job
 from .metrics import record_benchmark_summary, record_gpu_job_completion, record_gpu_job_submitted
@@ -65,6 +66,11 @@ def get_benchmark_summary() -> dict:
     summary = load_distributed_summary()
     record_benchmark_summary(summary)
     return summary
+
+
+@router.get("/vllm-benchmark")
+def get_vllm_benchmark() -> dict:
+    return load_vllm_benchmark_summary()
 
 
 app = FastAPI(title="GPU Platform Orchestration API")
