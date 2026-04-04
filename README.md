@@ -37,3 +37,35 @@ HPA autoscaling policy
 - p95 latency
 - tokens/sec
 - eval pass rate
+
+## Evaluation Dashboard
+
+Generate the dashboard artifacts from evaluation JSONL files:
+
+```bash
+python scripts/build_eval_dashboard.py
+```
+
+Launch the API endpoints:
+
+```bash
+uvicorn dashboard.app:app --reload
+```
+
+Available endpoints:
+- `GET /dashboard/summary`
+- `GET /dashboard/run/{run_id}`
+
+Example run summary JSON:
+
+```json
+{
+  "run_id": "gpu_benchmark_run",
+  "p50_latency_ms": 2.13,
+  "p95_latency_ms": 5.5,
+  "pass_rate": 0.0,
+  "hallucination_rate": 0.0,
+  "citation_precision": 0.0,
+  "tokens_per_sec_avg": 41624.01
+}
+```
