@@ -63,6 +63,39 @@ def test_run_regression_eval_writes_jsonl(tmp_path: Path):
     assert isinstance(sample["eval_pass"], bool)
     assert "tokens_per_second" in sample
     assert sample["tokens_per_second"] is None or isinstance(sample["tokens_per_second"], float)
+    assert sample["fallback_used"] is False
+    assert sample["error_type"] is None
+    assert sample["error_message"] is None
+    assert sample["case_id"] == "refund"
+    assert sample["top_k"] == 2
+    assert "citation_count" in sample
+
+
+def test_run_regression_eval_fallback_on_query_error(tmp_path: Path):
+    dataset = [{"id": "broken", "question": "Trigger failure"}]
+    variants = [{"name": "base", "prompt_prefix": ""}]
+
+    def _raising_query(question: str, top_k: int):
+        raise RuntimeError("upstream timeout")
+
+    summary = run_regression_eval(
+        query_fn=_raising_query,
+        dataset=dataset,
+        variants=variants,
+        run_id="fallback-run",
+        artifact_dir=tmp_path,
+    )
+
+    output_file = Path(summary["output_file"])
+    line = output_file.read_text(encoding="utf-8").strip()
+    sample = json.loads(line)
+
+    assert sample["run_id"] == "fallback-run"
+    assert sample["fallback_used"] is True
+    assert sample["error_type"] == "RuntimeError"
+    assert sample["error_message"] == "upstream timeout"
+    assert sample["citation_count"] == 0
+    assert sample["eval_pass"] is False
 
 
 @pytest.mark.xfail(reason="TODO: detect hallucinations even when citations are present")
