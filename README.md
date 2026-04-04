@@ -144,3 +144,22 @@ helm template helm/gpu-inference
 ```
 
 This chart deploys `vllm/vllm-openai:latest` with `MODEL_NAME=mistralai/Mistral-7B-Instruct-v0.2` and requests one GPU via `nvidia.com/gpu: 1`.
+
+## Distributed Training Pattern
+
+Use `configs/distributed_training.yaml` as a starter skeleton for multi-node PyTorch training.
+
+```yaml
+backend: nccl
+num_nodes: 2
+gpus_per_node: 1
+```
+
+Launch example:
+
+```bash
+torchrun \
+  --nnodes=2 \
+  --nproc_per_node=1 \
+  train.py
+```
