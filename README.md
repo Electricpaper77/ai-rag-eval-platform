@@ -162,4 +162,24 @@ torchrun \
   --nnodes=2 \
   --nproc_per_node=1 \
   train.py
+## vLLM Runtime Example
+
+Use the sample GPU runtime config in `configs/vllm_gpu_config.yaml`:
+
+```yaml
+model: mistralai/Mistral-7B-Instruct-v0.2
+
+tensor_parallel_size: 1
+
+max_model_len: 4096
+
+gpu_memory_utilization: 0.85
+```
+
+Serve command:
+
+```bash
+python -m vllm.entrypoints.openai.api_server \\
+  --model mistralai/Mistral-7B-Instruct-v0.2 \\
+  --tensor-parallel-size 1
 ```
