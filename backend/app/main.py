@@ -6,7 +6,6 @@ import glob
 from pathlib import Path
 import time
 
-from .guardrail_report import new_report, finalize_and_save
 from .guardrails import redact_pii, check_injection
 from .rag import COLLECTION_NAME, get_client, get_collection, query_rag
 from .routes.regression_eval import router as regression_router
@@ -121,6 +120,11 @@ class QueryRequest(BaseModel):
     top_k: int = 3
 
 
+class EvaluateRequest(BaseModel):
+    prompt: str
+    top_k: int = 3
+
+
 # ----------------------------
 # Helpers
 # ----------------------------
@@ -175,3 +179,22 @@ def chat_completions_openai_compatible(request: dict):
         return handle_chat_completions(request)
     except Exception as e:
         return {"error": str(e)}
+
+
+@app.post("/query_guarded")
+def query_guarded(request: QueryRequest):
+    question = redact_pii(request.question)
+    blocked, reason = check_injection(question)
+
+    if blocked:
+        return {"status": "blocked", "reason": reason}
+
+    try:
+        return query_rag(question, top_k=request.top_k)
+    except Exception as e:
+        return {"status": "error", "message": str(e), "answer": "", "citations": []}
+
+
+@app.post("/evaluate")
+def evaluate(request: EvaluateRequest):
+    return query_guarded(QueryRequest(question=request.prompt, top_k=request.top_k))

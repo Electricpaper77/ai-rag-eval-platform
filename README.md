@@ -91,6 +91,24 @@ Use `scripts/run_distributed_benchmark.py` to execute a multi-config benchmark m
 - **Parallel workload simulation:** models a distributed GPU benchmark workflow by tracking run IDs, waiting for completion, and recording run artifacts in `artifacts/proof/*.jsonl`.
 - **Performance comparison workflow:** aggregates p95 latency and tokens/sec across all matrix runs into `artifacts/proof/distributed_benchmark_summary.json`, retrievable via `GET /platform/benchmark-summary`.
 
+
+## Platform Observability
+
+The GPU orchestration and distributed benchmark simulation now exports Prometheus metrics via the existing `GET /metrics` endpoint.
+
+- **Job-level metrics:**
+  - `gpu_jobs_submitted_total`
+  - `gpu_jobs_completed_total`
+  - `gpu_job_duration_seconds`
+- **Benchmark performance tracking:**
+  - `benchmark_runs_total`
+  - `benchmark_latency_p95_ms`
+  - `benchmark_tokens_per_sec`
+- **Prometheus integration:**
+  - `POST /platform/jobs` increments submission counters.
+  - Job completion tracking records completion counters and job-duration histogram observations.
+  - `GET /platform/benchmark-summary` updates benchmark run counters and p95/tokens gauges from distributed summary artifacts.
+
 ## Kubernetes GPU Batch Job
 
 For workloads that do not need to stay online continuously, you can run GPU inference or evaluation as a Kubernetes `Job`.
