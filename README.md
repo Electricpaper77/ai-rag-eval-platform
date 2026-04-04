@@ -4,39 +4,72 @@ Production-style GenAI evaluation platform for serving, regression validation, a
 
 ## Architecture Diagram
 
-```text
-Client
-↓
-FastAPI inference gateway
-↓
-runtime abstraction layer
-↓
-vLLM GPU inference runtime
-↓
-evaluation harness (JSONL artifacts)
-↓
-CI regression gate
-↓
-benchmark pipeline (tokens/sec)
-↓
-Kubernetes deployment (GPU)
-↓
-HPA autoscaling policy
+```mermaid
+flowchart TD
+    C[Client]
+    API[FastAPI API Layer]
+    Router[Runtime Router]
+    Eval[Evaluation Harness]
+    JSONL[JSONL Artifacts]
+    Orchestrator[GPU Job Orchestration Layer]
+    Bench[Distributed Benchmark Runner]
+    Prom[Prometheus Metrics]
+    ModelSel[Model Selection Logic]
+    Infra[Kubernetes / Helm / Terraform]
+
+    C --> API
+    API --> Router
+    Router --> Orchestrator
+    Router --> Eval
+    Eval --> JSONL
+    JSONL --> ModelSel
+    Orchestrator --> Bench
+    Bench --> JSONL
+    API --> Prom
+    Orchestrator --> Prom
+    Bench --> Prom
+    API --> Infra
+    Orchestrator --> Infra
+    Bench --> Infra
 ```
 
-## Proof of Work
+## What This Project Demonstrates
+
+| Capability | Proof artifact | Hiring signal |
+| --- | --- | --- |
+| LLM regression gating | `artifacts/proof/regression_eval_example.jsonl` | Can enforce quality gates before release. |
+| RAG reliability / guardrails | `artifacts/proof/eval_dashboard_summary.json` | Tracks hallucination/pass-rate behavior with measurable outputs. |
+| GPU workload orchestration | `k8s/gpu-batch-job.yaml` + platform job APIs | Understands GPU job lifecycle and pre-flight controls. |
+| Distributed benchmarking | `artifacts/proof/distributed_benchmark_summary.json` | Can run multi-config performance comparisons and summarize results. |
+| Prometheus observability | `GET /metrics` plus benchmark/job metric families | Exposes platform and workload telemetry for SRE workflows. |
+| Infrastructure as Code | `infra/terraform/main.tf` + `helm/gpu-inference/` | Comfortable with reproducible environment provisioning. |
+| Kubernetes networking isolation | `k8s/network-policy.yaml` | Applies least-privilege service boundaries for GPU APIs. |
+| Distributed training awareness | `configs/distributed_training.yaml` | Understands DDP launch shape and cluster coordination basics. |
+
+## Proof Artifacts
 
 - `artifacts/proof/regression_eval_example.jsonl`
-- `artifacts/proof/load_test_summary.json`
-- `artifacts/proof/benchmark_comparison.json`
-- `artifacts/proof/gpu_summary.json`
+- `artifacts/proof/eval_dashboard_summary.json`
+- `artifacts/proof/distributed_benchmark_summary.json`
+- `artifacts/platform_jobs/best_model.json`
+- `k8s/gpu-batch-job.yaml`
+- `k8s/network-policy.yaml`
+- `infra/terraform/main.tf`
+- `helm/gpu-inference/`
+- `configs/vllm_gpu_config.yaml`
+- `configs/distributed_training.yaml`
 
-## Metrics Summary
+## Example Metrics Snapshot
 
-- p50 latency
-- p95 latency
-- tokens/sec
-- eval pass rate
+```json
+{
+  "p50_latency_ms": 2.13,
+  "p95_latency_ms": 5.5,
+  "pass_rate": 0.92,
+  "hallucination_rate": 0.04,
+  "tokens_per_sec_avg": 41624.01
+}
+```
 
 ## Evaluation Dashboard
 
@@ -157,6 +190,8 @@ Apply with:
 
 ```bash
 kubectl apply -f k8s/network-policy.yaml
+```
+
 ## Distributed Training Pattern
 
 Use `configs/distributed_training.yaml` as a starter skeleton for multi-node PyTorch training.
@@ -174,6 +209,18 @@ torchrun \
   --nnodes=2 \
   --nproc_per_node=1 \
   train.py
+```
+
+## AMD / AI Platform Relevance
+
+- Pre-flight checks are implemented in the GPU job API validation flow before workload submission.
+- Job lifecycle tracking persists `pending -> running -> completed` states for platform-style operations.
+- Developer platform APIs expose scheduling and benchmark summary endpoints for internal consumers.
+- Kubernetes GPU workloads are represented via deployment, batch job, and network policy manifests.
+- Observability is first-class via Prometheus metrics for jobs and benchmark performance.
+- IaC coverage includes Terraform and Helm for reproducible infrastructure and packaging.
+- Distributed benchmark workflows are automated with matrix runs and summary artifact generation.
+
 ## vLLM Runtime Example
 
 Use the sample GPU runtime config in `configs/vllm_gpu_config.yaml`:
