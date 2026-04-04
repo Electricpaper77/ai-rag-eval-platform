@@ -157,6 +157,23 @@ Apply with:
 
 ```bash
 kubectl apply -f k8s/network-policy.yaml
+## Distributed Training Pattern
+
+Use `configs/distributed_training.yaml` as a starter skeleton for multi-node PyTorch training.
+
+```yaml
+backend: nccl
+num_nodes: 2
+gpus_per_node: 1
+```
+
+Launch example:
+
+```bash
+torchrun \
+  --nnodes=2 \
+  --nproc_per_node=1 \
+  train.py
 ## vLLM Runtime Example
 
 Use the sample GPU runtime config in `configs/vllm_gpu_config.yaml`:

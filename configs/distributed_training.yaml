@@ -1,0 +1,10 @@
+backend: nccl
+
+num_nodes: 2
+gpus_per_node: 1
+
+launch_example: |
+  torchrun \
+    --nnodes=2 \
+    --nproc_per_node=1 \
+    train.py
