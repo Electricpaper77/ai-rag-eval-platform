@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-gpu-inference
+  labels:
+    app.kubernetes.io/name: vllm-gpu-inference
+    app.kubernetes.io/component: inference-backend
+    app.kubernetes.io/part-of: rag-eval-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vllm-gpu-inference
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vllm-gpu-inference
+        app.kubernetes.io/component: inference-backend
+        app.kubernetes.io/part-of: rag-eval-platform
+    spec:
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:latest
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            - name: HUGGING_FACE_HUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: huggingface-token
+                  key: HUGGING_FACE_HUB_TOKEN
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+            requests:
+              nvidia.com/gpu: 1
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
