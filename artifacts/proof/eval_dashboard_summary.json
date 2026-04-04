@@ -1,0 +1,74 @@
+{
+  "generated_at": "2026-04-04T04:12:40.410371+00:00",
+  "runs": [
+    {
+      "run_id": "example_run",
+      "model": null,
+      "prompt_version": null,
+      "retrieval_configuration": null,
+      "temperature": null,
+      "chunk_size": null,
+      "mean_latency_ms": 730.0,
+      "p50_latency_ms": 640.0,
+      "p95_latency_ms": 820.0,
+      "pass_rate": 0.0,
+      "hallucination_rate": 0.0,
+      "citation_precision": 0.0,
+      "tokens_per_sec_avg": 0.0,
+      "latency_distribution": [
+        640.0,
+        820.0
+      ],
+      "pass_rate_over_time": [
+        {
+          "timestamp": "index-0",
+          "pass_rate": 0.0
+        },
+        {
+          "timestamp": "index-1",
+          "pass_rate": 0.0
+        }
+      ],
+      "tokens_per_sec_over_time": []
+    },
+    {
+      "run_id": "gpu_benchmark_run",
+      "model": "mistralai/Mistral-7B-Instruct-v0.2",
+      "prompt_version": null,
+      "retrieval_configuration": null,
+      "temperature": null,
+      "chunk_size": null,
+      "mean_latency_ms": 3.815,
+      "p50_latency_ms": 2.13,
+      "p95_latency_ms": 5.5,
+      "pass_rate": 0.0,
+      "hallucination_rate": 0.0,
+      "citation_precision": 0.0,
+      "tokens_per_sec_avg": 41624.01,
+      "latency_distribution": [
+        2.13,
+        5.5
+      ],
+      "pass_rate_over_time": [
+        {
+          "timestamp": "2026-04-04T01:34:14.217974+00:00",
+          "pass_rate": 0.0
+        },
+        {
+          "timestamp": "2026-04-04T01:34:14.220434+00:00",
+          "pass_rate": 0.0
+        }
+      ],
+      "tokens_per_sec_over_time": [
+        {
+          "timestamp": "2026-04-04T01:34:14.217974+00:00",
+          "tokens_per_sec": 23287.19
+        },
+        {
+          "timestamp": "2026-04-04T01:34:14.220434+00:00",
+          "tokens_per_sec": 59960.83
+        }
+      ]
+    }
+  ]
+}
