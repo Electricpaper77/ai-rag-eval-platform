@@ -132,3 +132,15 @@ Selection output is persisted to `artifacts/platform_jobs/best_model.json`, and 
 - `GET /platform/best-model`
 
 This optimization logic simulates dynamic production routing by balancing quality signals and latency performance.
+
+## Helm Deployment Option
+
+For production-style packaging and templating of GPU inference services, use the Helm chart in `helm/gpu-inference`.
+
+Render manifests locally:
+
+```bash
+helm template helm/gpu-inference
+```
+
+This chart deploys `vllm/vllm-openai:latest` with `MODEL_NAME=mistralai/Mistral-7B-Instruct-v0.2` and requests one GPU via `nvidia.com/gpu: 1`.

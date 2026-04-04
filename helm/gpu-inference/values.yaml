@@ -1,0 +1,10 @@
+replicaCount: 1
+
+image:
+  repository: vllm/vllm-openai
+  tag: latest
+
+modelName: mistralai/Mistral-7B-Instruct-v0.2
+
+gpu:
+  count: 1

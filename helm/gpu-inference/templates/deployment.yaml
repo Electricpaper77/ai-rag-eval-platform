@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-inference
+  labels:
+    app.kubernetes.io/name: gpu-inference
+    app.kubernetes.io/component: inference-backend
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gpu-inference
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gpu-inference
+        app.kubernetes.io/component: inference-backend
+    spec:
+      containers:
+        - name: vllm
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          env:
+            - name: MODEL_NAME
+              value: {{ .Values.modelName | quote }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          resources:
+            limits:
+              nvidia.com/gpu: {{ .Values.gpu.count }}
