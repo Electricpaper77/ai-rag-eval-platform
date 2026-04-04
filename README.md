@@ -125,6 +125,17 @@ Use `scripts/run_distributed_benchmark.py` to execute a multi-config benchmark m
 - **Performance comparison workflow:** aggregates p95 latency and tokens/sec across all matrix runs into `artifacts/proof/distributed_benchmark_summary.json`, retrievable via `GET /platform/benchmark-summary`.
 
 
+
+## vLLM GPU Benchmark
+
+Use `scripts/run_vllm_benchmark.py` with `configs/vllm_gpu_config.yaml` to simulate GPU inference behavior and emit `artifacts/proof/vllm_benchmark_summary.json`.
+
+- **Continuous batching simulation:** benchmarks a prompt batch and captures per-request prefill/decode/request latency.
+- **Throughput optimization signal:** computes request-level and aggregate `tokens_per_sec` to model serving efficiency.
+- **Latency distribution measurement:** tracks p95 plus average latency metrics for realistic inference SLO monitoring.
+
+The summary can be retrieved from the platform API via `GET /platform/vllm-benchmark`.
+
 ## Platform Observability
 
 The GPU orchestration and distributed benchmark simulation now exports Prometheus metrics via the existing `GET /metrics` endpoint.
