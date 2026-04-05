@@ -8,6 +8,7 @@ from gpu_platform.canary_policy import CanaryPolicy
 from gpu_platform.request_router import route_request
 from gpu_platform.shadow_eval import load_shadow_summary
 
+from .benchmark_runner import load_latest_benchmark
 from .benchmark_summary import load_distributed_summary
 from .vllm_benchmark_summary import load_vllm_benchmark_summary
 from .gpu_job import GPUJobSpec
@@ -44,6 +45,7 @@ class StartCanaryRequest(BaseModel):
 
 router = APIRouter(prefix="/platform", tags=["platform-jobs"])
 summary_router = APIRouter(prefix="/eval", tags=["evaluation"])
+benchmark_router = APIRouter(tags=["benchmark"])
 
 
 @router.post("/jobs")
@@ -134,6 +136,12 @@ def shadow_summary() -> dict[str, float]:
     return load_shadow_summary()
 
 
+@benchmark_router.get("/benchmark/latest")
+def get_latest_benchmark() -> dict:
+    return load_latest_benchmark()
+
+
 app = FastAPI(title="GPU Platform Orchestration API")
 app.include_router(router)
 app.include_router(summary_router)
+app.include_router(benchmark_router)

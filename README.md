@@ -148,6 +148,25 @@ Use `scripts/run_vllm_benchmark.py` with `configs/vllm_gpu_config.yaml` to simul
 
 The summary can be retrieved from the platform API via `GET /platform/vllm-benchmark`.
 
+
+## GPU Runtime Benchmark Proof
+
+Use `scripts/run_real_gpu_benchmark.py` to run 50 sequential OpenAI-compatible chat completion requests against a live vLLM runtime and save a machine-readable benchmark artifact at:
+
+- `artifacts/benchmarks/gpu_real_run.json`
+
+The script measures and records:
+
+- `total_time_sec`
+- `requests_per_sec`
+- `avg_latency_ms`
+- `p95_latency_ms`
+- `tokens_per_second`
+
+After running the benchmark, retrieve the latest recorded artifact through:
+
+- `GET /benchmark/latest`
+
 ## Platform Observability
 
 The GPU orchestration and distributed benchmark simulation now exports Prometheus metrics via the existing `GET /metrics` endpoint.
