@@ -263,3 +263,15 @@ The platform now supports online inference routing via `POST /platform/chat`.
 - **Shadow evaluation workflow:** 10% of requests are mirrored to an alternate backend for side-by-side latency/score comparison, and summary output is written to `artifacts/proof/shadow_eval_summary.json`.
 
 Every online routing decision is appended to `artifacts/platform_jobs/routing_decisions.jsonl`, and `/platform/chat` returns routing metadata (`selected_backend`, `routing_score`, `cache_hint_used`) for observability.
+
+## Canary Routing and Automatic Rollback
+
+The online inference router now supports a safe canary rollout path for backend upgrades through:
+
+- **Canary activation endpoints:** `POST /platform/canary/start`, `GET /platform/canary/status`, and `POST /platform/canary/stop` manage canary lifecycle and expose live policy/status.
+- **Traffic splitting:** when a canary is active, a deterministic percentage of requests (`canary_percent`) is routed to the candidate backend while the remainder stays on baseline.
+- **Live metric comparison:** candidate and baseline p95 latency plus candidate pass/hallucination rates are continuously tracked during live traffic.
+- **Automatic rollback:** candidate routing is rolled back to baseline if latency exceeds `max_p95_latency_ms`, pass rate drops below `min_pass_rate`, or hallucination rate exceeds `max_hallucination_rate`.
+- **Audit artifacts:** request-level canary decisions are appended to `artifacts/platform_jobs/canary_decisions.jsonl` and a current summary is persisted in `artifacts/proof/canary_summary.json`.
+
+`/platform/chat` now includes `canary_applied`, `active_backend`, and `rollback_triggered` fields to make rollout behavior visible to clients and observability workflows.

@@ -6,6 +6,7 @@ from pathlib import Path
 from time import time
 from typing import Any
 
+from gpu_platform.canary_controller import CANARY_CONTROLLER
 from gpu_platform.router_policies import rank_backends
 from gpu_platform.shadow_eval import record_shadow_result
 
@@ -29,6 +30,16 @@ def _is_repeated_prefix(prefix: str) -> bool:
 def _simulate_latency_ms(p95_latency_ms: float, request_id: str, backend: str) -> float:
     deterministic = int(hashlib.md5(f"{request_id}:{backend}".encode("utf-8")).hexdigest(), 16) % 200
     return round(max(p95_latency_ms * 0.8 + deterministic, 1.0), 2)
+
+
+def _simulate_pass_outcome(pass_rate: float, request_id: str, backend: str) -> bool:
+    deterministic = int(hashlib.sha1(f"pass:{request_id}:{backend}".encode("utf-8")).hexdigest(), 16) % 1000
+    return (deterministic / 1000.0) < pass_rate
+
+
+def _simulate_hallucination_outcome(hallucination_rate: float, request_id: str, backend: str) -> bool:
+    deterministic = int(hashlib.sha1(f"hall:{request_id}:{backend}".encode("utf-8")).hexdigest(), 16) % 1000
+    return (deterministic / 1000.0) < hallucination_rate
 
 
 def _should_shadow(request_id: str) -> bool:
@@ -60,9 +71,29 @@ def route_request(
         quality_tier=quality_tier,
         cache_hint_used=cache_hint_used,
     )
-    selected = ranked[0]
+
+    ranked_by_backend = {item["backend"]: item for item in ranked}
+
+    canary_applied, forced_backend, rollback_triggered = CANARY_CONTROLLER.choose_backend(req_id)
+    if canary_applied and forced_backend in ranked_by_backend:
+        selected = ranked_by_backend[forced_backend]
+    else:
+        selected = ranked[0]
 
     selected_latency = _simulate_latency_ms(selected["metrics"]["p95_latency_ms"], req_id, selected["backend"])
+    pass_outcome = _simulate_pass_outcome(selected["metrics"]["pass_rate"], req_id, selected["backend"])
+    hallucination_outcome = _simulate_hallucination_outcome(
+        selected["metrics"]["hallucination_rate"], req_id, selected["backend"]
+    )
+
+    if canary_applied:
+        CANARY_CONTROLLER.record_decision(
+            request_id=req_id,
+            active_backend=selected["backend"],
+            latency_ms=selected_latency,
+            pass_outcome=pass_outcome,
+            hallucination_outcome=hallucination_outcome,
+        )
 
     decision_row = {
         "request_id": req_id,
@@ -71,6 +102,8 @@ def route_request(
         "cache_hint_used": cache_hint_used,
         "latency_budget_ms": latency_budget_ms,
         "quality_tier": quality_tier,
+        "canary_applied": canary_applied,
+        "rollback_triggered": rollback_triggered,
         "timestamp": time(),
     }
     _log_routing_decision(decision_row)
@@ -89,9 +122,13 @@ def route_request(
         }
         record_shadow_result(shadow_result)
 
+    latest_status = CANARY_CONTROLLER.status()
     return {
         "request_id": req_id,
         "selected_backend": selected["backend"],
+        "active_backend": selected["backend"],
         "routing_score": selected["score"],
         "cache_hint_used": cache_hint_used,
+        "canary_applied": canary_applied,
+        "rollback_triggered": bool(latest_status.get("rollback_triggered", False)),
     }
