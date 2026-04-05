@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .concurrency_controller import MAX_CONCURRENT_JOBS, estimate_queue_latency
+
 JOB_RUNS_PATH = Path("artifacts/platform_jobs/job_runs.jsonl")
 BENCHMARK_ARTIFACT_PATHS = (
     Path("artifacts/proof/distributed_benchmark_summary.json"),
@@ -62,10 +64,17 @@ def platform_health_summary(log_path: Path | None = None, model_health_status: d
     successes = sum(1 for row in runs if row.get("success"))
     avg_latency = (sum(float(row.get("latency_ms", 0.0)) for row in runs) / total_jobs) if total_jobs else 0.0
 
+    active_jobs = min(total_jobs, MAX_CONCURRENT_JOBS)
+    queue_depth = max(0, total_jobs - MAX_CONCURRENT_JOBS)
+    estimated_wait = estimate_queue_latency(active_jobs=total_jobs)
+
     return {
         "models_available": model_health_status or {"vllm": "healthy", "openai": "healthy", "mock": "healthy"},
         "last_benchmark_time": _last_benchmark_time(),
         "avg_latency_ms": round(avg_latency, 2),
         "success_rate": round((successes / total_jobs), 4) if total_jobs else 0.0,
         "total_jobs_run": total_jobs,
+        "active_jobs": active_jobs,
+        "queue_depth": queue_depth,
+        "estimated_wait_time": estimated_wait,
     }
