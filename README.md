@@ -531,3 +531,32 @@ This repository includes Kubernetes templates and policy helpers that model prac
 - Added namespace-level GPU quota controls to model cluster capacity constraints.
 - Built placement policy logic mapping latency/quality tiers to GPU workload placement rules.
 - Documented capacity-control patterns for inference and batch evaluation workloads.
+
+## Runtime comparison insights
+
+The `scripts/compare_runtimes.py` utility emits `artifacts/runtime_comparison/runtime_comparison.json` with a compact runtime-facing view:
+
+- `runtime`
+- `avg_latency`
+- `p95_latency`
+- `throughput`
+
+### Tradeoffs between runtimes
+
+- **vLLM** often provides very stable request latency for OpenAI-compatible APIs and fast iteration with minimal adapter overhead.
+- **Triton** can provide stronger aggregate throughput in GPU-heavy deployments where dynamic batching and backend scheduling are tuned.
+- Neither runtime is universally best: tail latency sensitivity, traffic burstiness, and model shape all influence the right choice.
+
+### Why the abstraction layer matters
+
+A runtime abstraction layer lets the platform preserve one client contract while swapping backend runtimes as workload needs evolve. This avoids coupling evaluation, guardrails, and API consumers to a single serving stack.
+
+### How routing policy can select runtime
+
+Routing policy can use request metadata and SLO priorities to pick a runtime per request:
+
+- Route latency-critical interactive prompts to the runtime currently meeting tighter p95 targets.
+- Route throughput-heavy batch traffic to the runtime showing higher sustained tokens/sec.
+- Fall back to an alternate runtime when health checks or queue pressure indicate elevated risk on the primary path.
+
+This model keeps runtime choice policy-driven instead of hard-coded, which is essential when serving characteristics shift over time.
