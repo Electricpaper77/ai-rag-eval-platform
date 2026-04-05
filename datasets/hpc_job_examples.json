@@ -1,0 +1,10 @@
+[
+  {
+    "job_name": "eval-benchmark",
+    "gpu_count": 1,
+    "memory_required": "16Gi",
+    "time_limit": "00:30:00",
+    "priority": "normal",
+    "queue": "gpu-standard"
+  }
+]
