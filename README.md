@@ -296,7 +296,7 @@ The platform now supports online inference routing via `POST /platform/chat`.
 
 - **Evaluation-driven routing:** the router scores candidate backends (`vllm`, `openai`, `mock`) using weighted quality and performance metrics (`pass_rate`, `hallucination_rate`, `p95_latency_ms`, `tokens_per_sec_avg`).
 - **Cache-aware backend selection:** repeated system/prefix prompts trigger a prefix-cache heuristic that gives a routing bonus to `vllm`.
-- **Shadow evaluation workflow:** 10% of requests are mirrored to an alternate backend for side-by-side latency/score comparison, and summary output is written to `artifacts/proof/shadow_eval_summary.json`.
+- **Shadow evaluation workflow:** production requests can trigger background shadow execution (`force_shadow=true` or `quality_tier=balanced`) without changing user-facing output.
 
 Every online routing decision is appended to `artifacts/platform_jobs/routing_decisions.jsonl`, and `/platform/chat` returns routing metadata (`selected_backend`, `routing_score`, `cache_hint_used`) for observability.
 
@@ -311,3 +311,25 @@ The online inference router now supports a safe canary rollout path for backend 
 - **Audit artifacts:** request-level canary decisions are appended to `artifacts/platform_jobs/canary_decisions.jsonl` and a current summary is persisted in `artifacts/proof/canary_summary.json`.
 
 `/platform/chat` now includes `canary_applied`, `active_backend`, and `rollback_triggered` fields to make rollout behavior visible to clients and observability workflows.
+
+
+## Shadow Evaluation Workflow
+
+Shadow evaluation captures real online routing outputs from a candidate model while keeping the primary response path unchanged.
+
+**Flow diagram**
+
+`request → router → primary response → async shadow run → JSONL log → evaluation summary`
+
+**Artifacts**
+
+- Request-level shadow logs: `artifacts/shadow_runs/shadow_eval.jsonl`
+- Aggregated summary: `artifacts/proof/shadow_eval_summary.json`
+
+**How to run analysis**
+
+```bash
+python scripts/run_shadow_eval_analysis.py
+```
+
+The API endpoint `GET /eval/shadow-summary` also exposes the computed metrics (`agreement_rate`, `avg_latency_delta_ms`, and `avg_cost_delta`) from the JSONL log.

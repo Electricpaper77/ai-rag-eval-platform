@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from gpu_platform.canary_controller import CANARY_CONTROLLER
 from gpu_platform.canary_policy import CanaryPolicy
 from gpu_platform.request_router import route_request
+from gpu_platform.shadow_eval import load_shadow_summary
 
 from .benchmark_summary import load_distributed_summary
 from .vllm_benchmark_summary import load_vllm_benchmark_summary
@@ -29,6 +30,7 @@ class PlatformChatRequest(BaseModel):
     messages: list[dict]
     latency_budget_ms: int = Field(default=1500, gt=0)
     quality_tier: str = Field(default="balanced")
+    force_shadow: bool = Field(default=False)
 
 
 class StartCanaryRequest(BaseModel):
@@ -41,6 +43,7 @@ class StartCanaryRequest(BaseModel):
 
 
 router = APIRouter(prefix="/platform", tags=["platform-jobs"])
+summary_router = APIRouter(prefix="/eval", tags=["evaluation"])
 
 
 @router.post("/jobs")
@@ -122,8 +125,15 @@ def platform_chat(payload: PlatformChatRequest) -> dict:
         messages=payload.messages,
         latency_budget_ms=payload.latency_budget_ms,
         quality_tier=payload.quality_tier,
+        force_shadow=payload.force_shadow,
     )
+
+
+@summary_router.get("/shadow-summary")
+def shadow_summary() -> dict[str, float]:
+    return load_shadow_summary()
 
 
 app = FastAPI(title="GPU Platform Orchestration API")
 app.include_router(router)
+app.include_router(summary_router)

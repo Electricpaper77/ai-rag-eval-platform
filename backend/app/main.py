@@ -13,6 +13,7 @@ from .routes.eval_compare import router as eval_compare_router
 from .routes.dashboard import router as dashboard_router
 from .inference import handle_chat_completions
 from gpu_platform.api import router as platform_router
+from gpu_platform.api import summary_router as shadow_eval_router
 
 from urllib.parse import urlparse
 
@@ -108,6 +109,7 @@ app.include_router(regression_router)
 app.include_router(eval_compare_router)
 app.include_router(dashboard_router)
 app.include_router(platform_router)
+app.include_router(shadow_eval_router)
 
 
 # ----------------------------
