@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 import sys
 
@@ -9,116 +8,63 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
-from gpu_platform.gpu_job import GPUJobSpec
-from gpu_platform.job_manager import get_job_status, submit_job
-from gpu_platform.preflight_checks import run_preflight_checks
-import gpu_platform.job_manager as job_manager
+import gpu_platform.job_orchestrator as job_orchestrator
 
 
 client = TestClient(app)
 
 
-def _set_store_paths(tmp_path: Path, monkeypatch) -> Path:
-    jobs_dir = tmp_path / "artifacts" / "platform_jobs"
-    status_file = jobs_dir / "job_status.json"
-    monkeypatch.setattr(job_manager, "JOBS_DIR", jobs_dir)
-    monkeypatch.setattr(job_manager, "STATUS_FILE", status_file)
-    return status_file
+def _set_store_paths(tmp_path: Path, monkeypatch) -> None:
+    jobs_dir = tmp_path / "artifacts" / "job_runs"
+    monkeypatch.setattr(job_orchestrator, "JOB_RUNS_DIR", jobs_dir)
 
 
-def test_preflight_validation_failures() -> None:
-    invalid = GPUJobSpec(
-        job_id="bad-job",
-        model_name="mistral-7b",
-        gpu_count=0,
-        replicas=0,
-        container_image="not valid image",
-        env={},
-        resources={},
-    )
-
-    result = run_preflight_checks(invalid)
-    assert result["status"] == "fail"
-    assert result["errors"]
-
-
-def test_job_submission_and_status_transitions(tmp_path: Path, monkeypatch) -> None:
-    status_file = _set_store_paths(tmp_path, monkeypatch)
-
-    now = 1000.0
-    monkeypatch.setattr(job_manager.time, "time", lambda: now)
-
-    spec = GPUJobSpec(
-        job_id="eval-benchmark-001",
-        model_name="mistral-7b",
-        gpu_count=1,
-        replicas=1,
-        container_image="vllm/vllm-openai:latest",
-        env={"ENV": "test"},
-        resources={"limits": {"nvidia.com/gpu": 1}},
-    )
-
-    submitted = submit_job(spec)
-    assert submitted["status"] == "pending"
-    assert status_file.exists()
-
-    payload = json.loads(status_file.read_text(encoding="utf-8"))
-    assert "eval-benchmark-001" in payload["jobs"]
-
-    now = 1001.2
-    running = get_job_status("eval-benchmark-001")
-    assert running is not None
-    assert running["status"] == "running"
-
-    now = 1002.6
-    completed = get_job_status("eval-benchmark-001")
-    assert completed is not None
-    assert completed["status"] == "completed"
-
-
-def test_health_check_fields_present(tmp_path: Path, monkeypatch) -> None:
+def test_submit_job_creates_structured_artifact(tmp_path: Path, monkeypatch) -> None:
     _set_store_paths(tmp_path, monkeypatch)
 
-    spec = GPUJobSpec(
-        job_id="eval-benchmark-002",
-        model_name="mistral-7b",
-        gpu_count=1,
-        replicas=1,
-        container_image="vllm/vllm-openai:latest",
-        env={},
-        resources={"limits": {"nvidia.com/gpu": 1}},
+    job_id = job_orchestrator.submit_job(
+        model="llm-balanced",
+        dataset="eval_dataset_v2",
+        runtime="vllm",
+        gpu_required=True,
     )
-    submit_job(spec)
-    job = get_job_status("eval-benchmark-002")
 
+    job_path = (tmp_path / "artifacts" / "job_runs" / f"{job_id}.json")
+    assert job_path.exists()
+
+    job = job_orchestrator.get_job(job_id)
     assert job is not None
-    health = job["health"]
-    assert "startup_latency_ms" in health
-    assert "readiness_status" in health
-    assert "gpu_allocated" in health
+    assert job["job_id"] == job_id
+    assert job["dataset"] == "eval_dataset_v2"
+    assert job["runtime"] == "vllm"
+    assert "latency_summary" in job
 
 
-def test_platform_api_endpoints_respond(tmp_path: Path, monkeypatch) -> None:
+def test_platform_api_job_endpoints(tmp_path: Path, monkeypatch) -> None:
     _set_store_paths(tmp_path, monkeypatch)
 
     create_resp = client.post(
         "/platform/jobs",
         json={
-            "job_id": "eval-benchmark-003",
-            "model_name": "mistral-7b",
-            "gpu_count": 1,
-            "replicas": 1,
-            "container_image": "vllm/vllm-openai:latest",
-            "env": {"MODE": "test"},
-            "resources": {"limits": {"nvidia.com/gpu": 1}},
+            "model": "llm-balanced",
+            "dataset": "eval_dataset_v2",
+            "runtime": "vllm",
+            "gpu_required": True,
         },
     )
     assert create_resp.status_code == 200
+    job_id = create_resp.json()["job_id"]
 
     list_resp = client.get("/platform/jobs")
     assert list_resp.status_code == 200
-    assert any(job["job_id"] == "eval-benchmark-003" for job in list_resp.json())
+    jobs = list_resp.json()
+    assert any(job["job_id"] == job_id for job in jobs)
 
-    detail_resp = client.get("/platform/jobs/eval-benchmark-003")
+    detail_resp = client.get(f"/platform/jobs/{job_id}")
     assert detail_resp.status_code == 200
-    assert detail_resp.json()["job_id"] == "eval-benchmark-003"
+    assert detail_resp.json()["job_id"] == job_id
+
+
+def test_get_missing_job_returns_none(tmp_path: Path, monkeypatch) -> None:
+    _set_store_paths(tmp_path, monkeypatch)
+    assert job_orchestrator.get_job("job_999") is None

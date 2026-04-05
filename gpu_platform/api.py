@@ -3,6 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from .job_orchestrator import get_job, list_jobs, submit_job
+
 from gpu_platform.canary_controller import CANARY_CONTROLLER
 from gpu_platform.canary_policy import CanaryPolicy
 from gpu_platform.request_router import route_request
@@ -11,21 +13,16 @@ from gpu_platform.shadow_eval import load_shadow_summary
 from .benchmark_runner import load_latest_benchmark
 from .benchmark_summary import load_distributed_summary
 from .vllm_benchmark_summary import load_vllm_benchmark_summary
-from .gpu_job import GPUJobSpec
-from .job_manager import get_job_status, list_jobs, submit_job
-from .metrics import record_benchmark_summary, record_gpu_job_completion, record_gpu_job_submitted
+from .metrics import record_benchmark_summary
 from .model_selector import select_best_model
 from .job_status import platform_health_summary
 
 
-class GPUJobPayload(BaseModel):
-    job_id: str
-    model_name: str
-    gpu_count: int = Field(gt=0)
-    replicas: int = Field(gt=0)
-    container_image: str
-    env: dict[str, str] = Field(default_factory=dict)
-    resources: dict = Field(default_factory=dict)
+class PlatformJobPayload(BaseModel):
+    model: str
+    dataset: str
+    runtime: str
+    gpu_required: bool = True
 
 
 class PlatformChatRequest(BaseModel):
@@ -50,42 +47,33 @@ benchmark_router = APIRouter(tags=["benchmark"])
 
 
 @router.post("/jobs")
-def create_job(payload: GPUJobPayload) -> dict:
-    spec = GPUJobSpec(**payload.model_dump())
-    result = submit_job(spec)
-
-    if result.get("status") == "fail":
-        raise HTTPException(status_code=400, detail=result)
-
-    record_gpu_job_submitted()
-    return result
+def create_job(payload: PlatformJobPayload) -> dict:
+    job_id = submit_job(
+        model=payload.model,
+        dataset=payload.dataset,
+        runtime=payload.runtime,
+        gpu_required=payload.gpu_required,
+    )
+    return {"job_id": job_id, "status": "submitted"}
 
 
 @router.get("/jobs")
 def get_jobs() -> list[dict]:
-    jobs = list_jobs()
-    for job in jobs:
-        if job.get("status") == "completed":
-            record_gpu_job_completion(job_id=job["job_id"], duration_seconds=float(job.get("duration_seconds", 0.0)))
-    return jobs
+    return list_jobs()
 
 
 @router.get("/jobs/{job_id}")
-def get_job(job_id: str) -> dict:
-    result = get_job_status(job_id)
+def get_job_by_id(job_id: str) -> dict:
+    result = get_job(job_id)
     if not result:
         raise HTTPException(status_code=404, detail=f"Job not found: {job_id}")
-
-    if result.get("status") == "completed":
-        record_gpu_job_completion(job_id=result["job_id"], duration_seconds=float(result.get("duration_seconds", 0.0)))
     return result
-
-
 
 
 @router.get("/summary")
 def get_platform_summary() -> dict:
     return platform_health_summary()
+
 
 @router.get("/best-model")
 def get_best_model() -> dict:
