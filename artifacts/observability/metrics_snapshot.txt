@@ -1,0 +1,12 @@
+# HELP gpu_jobs_submitted_total Total number of submitted GPU jobs.
+# TYPE gpu_jobs_submitted_total counter
+gpu_jobs_submitted_total 12.0
+# HELP gpu_jobs_completed_total Total number of completed GPU jobs.
+# TYPE gpu_jobs_completed_total counter
+gpu_jobs_completed_total 11.0
+# HELP benchmark_latency_p95_ms p95 latency from benchmark summary.
+# TYPE benchmark_latency_p95_ms gauge
+benchmark_latency_p95_ms 201.3
+# HELP benchmark_tokens_per_sec tokens/sec from benchmark summary.
+# TYPE benchmark_tokens_per_sec gauge
+benchmark_tokens_per_sec 41624.01

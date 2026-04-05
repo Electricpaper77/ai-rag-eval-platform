@@ -2,21 +2,31 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ai-rag-eval-api
+  labels:
+    app.kubernetes.io/name: ai-rag-eval-api
+    app.kubernetes.io/component: api
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: ai-rag-eval-api
+      app.kubernetes.io/name: ai-rag-eval-api
+      app.kubernetes.io/component: api
   template:
     metadata:
       labels:
-        app: ai-rag-eval-api
+        app.kubernetes.io/name: ai-rag-eval-api
+        app.kubernetes.io/component: api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
       - name: api
         image: us-central1-docker.pkg.dev/ai-rag-eval-prod/rag-eval-repo/ai-rag-eval-api:latest
         ports:
         - containerPort: 8080
+          name: http
         env:
         - name: PORT
           value: "8080"

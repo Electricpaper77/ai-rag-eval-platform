@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: ai-rag-eval-api
+  name: ai-rag-eval-metrics
   labels:
     app.kubernetes.io/name: ai-rag-eval-api
     app.kubernetes.io/component: api
@@ -11,13 +11,8 @@ spec:
     app.kubernetes.io/name: ai-rag-eval-api
     app.kubernetes.io/component: api
   ports:
-    - name: http
-      protocol: TCP
-      port: 80
-      targetPort: http
-    # Explicit metrics endpoint exposed for Prometheus Operator scraping via ServiceMonitor.
     - name: http-metrics
       protocol: TCP
       port: 8080
-      targetPort: http
-  type: LoadBalancer
+      targetPort: 8080
+  type: ClusterIP
