@@ -3,6 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from gpu_platform.canary_controller import CANARY_CONTROLLER
+from gpu_platform.canary_policy import CanaryPolicy
 from gpu_platform.request_router import route_request
 
 from .benchmark_summary import load_distributed_summary
@@ -23,11 +25,19 @@ class GPUJobPayload(BaseModel):
     resources: dict = Field(default_factory=dict)
 
 
-
 class PlatformChatRequest(BaseModel):
     messages: list[dict]
     latency_budget_ms: int = Field(default=1500, gt=0)
     quality_tier: str = Field(default="balanced")
+
+
+class StartCanaryRequest(BaseModel):
+    baseline_backend: str
+    candidate_backend: str
+    canary_percent: int = Field(ge=0, le=100)
+    max_p95_latency_ms: float = Field(gt=0)
+    min_pass_rate: float = Field(ge=0.0, le=1.0)
+    max_hallucination_rate: float = Field(ge=0.0, le=1.0)
 
 
 router = APIRouter(prefix="/platform", tags=["platform-jobs"])
@@ -80,6 +90,30 @@ def get_benchmark_summary() -> dict:
 @router.get("/vllm-benchmark")
 def get_vllm_benchmark() -> dict:
     return load_vllm_benchmark_summary()
+
+
+@router.post("/canary/start")
+def start_canary(payload: StartCanaryRequest) -> dict:
+    policy = CanaryPolicy(
+        candidate_backend=payload.candidate_backend,
+        baseline_backend=payload.baseline_backend,
+        canary_percent=payload.canary_percent,
+        max_p95_latency_ms=payload.max_p95_latency_ms,
+        min_pass_rate=payload.min_pass_rate,
+        max_hallucination_rate=payload.max_hallucination_rate,
+        rollback_enabled=True,
+    )
+    return CANARY_CONTROLLER.start(policy)
+
+
+@router.get("/canary/status")
+def canary_status() -> dict:
+    return CANARY_CONTROLLER.status()
+
+
+@router.post("/canary/stop")
+def stop_canary() -> dict:
+    return CANARY_CONTROLLER.stop()
 
 
 @router.post("/chat")
