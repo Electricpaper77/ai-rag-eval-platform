@@ -33,6 +33,37 @@ H --> M[/metrics endpoint]
 E --> N[Regression Gating Signals]
 ```
 
+## Multi-runtime inference architecture
+
+```text
+Client
+  -> FastAPI gateway
+      -> runtime router
+          -> vLLM backend
+          -> Triton backend
+```
+
+Supporting multiple runtimes keeps the gateway flexible when teams need to balance quality, latency, and infrastructure constraints across model serving stacks. vLLM can be retained for OpenAI-compatible serving while Triton can be introduced for GPU-optimized workflows that benefit from explicit control of inference request payloads.
+
+Triton integration in this repository focuses on architecture clarity:
+
+- OpenAI-style chat inputs are normalized before runtime dispatch.
+- Triton requests are translated to `POST /v2/models/{model_name}/infer` payloads.
+- Responses are returned in a shared normalized shape (`output`, `tokens_out`, `latency_ms`) so evaluation and routing logic stay backend-agnostic.
+
+Why this matters for GPU inference optimization:
+
+- Triton supports dynamic batching patterns that can improve throughput under bursty request traffic.
+- Runtime abstraction allows benchmarking and routing policies to compare latency/throughput behaviors without changing client contracts.
+- Operators can keep one API surface while iterating on backend deployment strategy.
+
+Resume-proof highlights:
+
+- implemented runtime abstraction layer supporting multiple GPU inference backends
+- integrated Triton inference server adapter for optimized batching workloads
+- standardized OpenAI-compatible interface across inference runtimes
+- generated benchmark artifacts comparing inference latency characteristics
+
 ## What This Project Demonstrates
 
 | Capability | Proof artifact | Hiring signal |
