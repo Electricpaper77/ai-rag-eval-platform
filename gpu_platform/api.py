@@ -15,6 +15,7 @@ from .gpu_job import GPUJobSpec
 from .job_manager import get_job_status, list_jobs, submit_job
 from .metrics import record_benchmark_summary, record_gpu_job_completion, record_gpu_job_submitted
 from .model_selector import select_best_model
+from .job_status import platform_health_summary
 
 
 class GPUJobPayload(BaseModel):
@@ -79,6 +80,12 @@ def get_job(job_id: str) -> dict:
         record_gpu_job_completion(job_id=result["job_id"], duration_seconds=float(result.get("duration_seconds", 0.0)))
     return result
 
+
+
+
+@router.get("/summary")
+def get_platform_summary() -> dict:
+    return platform_health_summary()
 
 @router.get("/best-model")
 def get_best_model() -> dict:

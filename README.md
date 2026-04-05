@@ -352,3 +352,29 @@ python scripts/run_shadow_eval_analysis.py
 ```
 
 The API endpoint `GET /eval/shadow-summary` also exposes the computed metrics (`agreement_rate`, `avg_latency_delta_ms`, and `avg_cost_delta`) from the JSONL log.
+
+## Platform Architecture Signals
+
+```text
+Client
+  -> Router
+      -> Model Policy
+          -> Inference Runtime
+              -> Metrics
+                  -> Benchmark Artifacts
+```
+
+This flow is intentionally simple and recruiter-readable while still showing practical platform abstraction boundaries used in ML infrastructure teams.
+
+## GPU Workload Template
+
+Two Kubernetes templates are included for infrastructure signaling:
+
+- `k8s/gpu-job.yaml`: batch-style inference/eval `Job` with `nvidia.com/gpu: 1`, CPU/memory requests+limits, `restartPolicy: Never`, and container args that call an inference endpoint.
+- `k8s/gpu-deployment.yaml`: online inference API `Deployment` with `readinessProbe`, `livenessProbe`, monitoring labels, and explicit compute resource requests.
+
+### Why both patterns matter
+
+- **`nvidia.com/gpu` usage:** expresses explicit accelerator scheduling constraints in cluster orchestration.
+- **Batch jobs vs deployments:** batch jobs are better for finite benchmark/eval workloads; deployments are better for continuously available inference APIs.
+- **Routing abstraction layer:** model policy logic decouples request intent (latency/quality/cost) from concrete backend selection, which mirrors real platform teams.
