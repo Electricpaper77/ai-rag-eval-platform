@@ -560,3 +560,46 @@ Routing policy can use request metadata and SLO priorities to pick a runtime per
 - Fall back to an alternate runtime when health checks or queue pressure indicate elevated risk on the primary path.
 
 This model keeps runtime choice policy-driven instead of hard-coded, which is essential when serving characteristics shift over time.
+## HPC job schema awareness
+
+This repository now includes a lightweight HPC-style job schema mock at `platform/hpc_job_schema.py` with an example record in `datasets/hpc_job_examples.json`.
+
+### Kubernetes jobs vs HPC schedulers
+
+- Kubernetes Jobs focus on container lifecycle orchestration (pod creation, restart behavior, and completion tracking).
+- HPC schedulers (for example, Slurm-style environments) center around queueing, priority, wall-time limits, and explicit resource reservations before dispatch.
+- In practice, both execute batch work, but HPC systems usually expose stronger controls around queue policy and fairness for shared accelerator clusters.
+
+### Why GPU clusters often use queue abstractions
+
+- GPU hardware is scarce and expensive, so teams use queues to arbitrate access across research, inference, and benchmarking workloads.
+- Priority tiers (for example, `normal` vs urgent) help operations protect critical runs while still allowing background experimentation.
+- Queue boundaries also improve predictability by routing jobs to partitions/classes tuned for specific accelerator and memory profiles.
+
+### How platform APIs map to scheduler requirements
+
+The mock schema fields intentionally map to common scheduler concerns:
+
+- `job_name`: human-readable run identity and traceability.
+- `gpu_count`: accelerator reservation request.
+- `memory_required`: node-level memory requirement.
+- `time_limit`: wall-clock runtime cap used by schedulers for placement and preemption policy.
+- `priority`: scheduling weight relative to other queued jobs.
+- `queue`: target partition/class of service for execution.
+
+This keeps the implementation lightweight while showing how API-level job payloads can be translated into scheduler-native submission options.
+
+## Reliability patterns for GPU inference workloads
+
+This repository includes practical Kubernetes reliability controls for inference deployments, designed to demonstrate production-style resilience without overstating live-cluster claims.
+
+- **Rolling updates:** `k8s/gpu-inference-deployment.yaml` uses a rolling strategy (`maxUnavailable: 0`, `maxSurge: 1`) so capacity is preserved while replicas are replaced.
+- **Pod disruption budgets:** `k8s/pdb.yaml` enforces `minAvailable: 1` to protect at least one inference pod during voluntary disruptions such as node maintenance.
+- **Health checks:** readiness and liveness probes use `/health` and `/metrics` to ensure only responsive pods serve traffic and stuck pods are automatically recycled.
+- **GPU restart cost awareness:** GPU pods can take longer to become ready due to model load and initialization overhead, so controlled rollouts and disruption limits materially reduce downtime risk.
+
+Recruiter-facing highlights:
+
+- implemented Kubernetes PodDisruptionBudget protecting GPU inference workloads during cluster maintenance
+- configured rolling update strategy ensuring zero-downtime deployment patterns
+- integrated readiness and liveness health checks for platform reliability
