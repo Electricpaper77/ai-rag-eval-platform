@@ -1,0 +1,21 @@
+{
+  "job_id": "job_001",
+  "status": "completed",
+  "submitted_at": "2026-04-05T00:00:00+00:00",
+  "completed_at": "2026-04-05T00:00:03+00:00",
+  "dataset": "eval_dataset_v2",
+  "runtime": "vllm",
+  "avg_latency": 138.4,
+  "success_rate": 0.98,
+  "model": "llm-balanced",
+  "gpu_required": true,
+  "runtime_used": "vllm",
+  "dataset_used": "eval_dataset_v2",
+  "start_time": "2026-04-05T00:00:00+00:00",
+  "end_time": "2026-04-05T00:00:03+00:00",
+  "latency_summary": {
+    "p50_ms": 118.0,
+    "p95_ms": 207.0,
+    "avg_ms": 138.4
+  }
+}

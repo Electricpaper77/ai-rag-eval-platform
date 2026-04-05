@@ -115,6 +115,35 @@ The repository includes example evaluation data at `artifacts/evals/test_eval.js
 
 Add a dashboard screenshot to `docs/screenshots/eval_dashboard.png` after running the UI locally.
 
+
+## AI Job Orchestration Layer
+
+This repository includes a simple GPU job orchestration abstraction to model platform-style inference and evaluation workflows without claiming a live cluster scheduler.
+
+```text
+user request
+-> job submission api
+-> routing policy
+-> runtime backend
+-> metrics collection
+-> job artifact logs
+```
+
+### Recruiter-ready highlights
+
+- implemented GPU workload orchestration abstraction
+- built job lifecycle tracking system
+- simulated platform-style batch inference workflows
+- generated structured job artifacts for reproducibility
+
+### Job orchestration API
+
+- `POST /platform/jobs`
+- `GET /platform/jobs/{job_id}`
+- `GET /platform/jobs`
+
+Job runs are persisted as JSON under `artifacts/job_runs/`.
+
 ## GPU Platform Orchestration Layer
 
 This project now includes a Kubernetes-style GPU job orchestration simulation for AI inference workloads.
