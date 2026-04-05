@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import sys
+import time
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -21,10 +22,10 @@ def _configure_paths(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
     jobs_dir = tmp_path / "artifacts" / "platform_jobs"
     proof_dir = tmp_path / "artifacts" / "proof"
     decisions_path = jobs_dir / "routing_decisions.jsonl"
-    shadow_path = proof_dir / "shadow_eval_summary.json"
+    shadow_path = tmp_path / "artifacts" / "shadow_runs" / "shadow_eval.jsonl"
 
     monkeypatch.setattr(request_router, "ROUTING_DECISIONS_PATH", decisions_path)
-    monkeypatch.setattr(shadow_eval, "SHADOW_SUMMARY_PATH", shadow_path)
+    monkeypatch.setattr(shadow_eval, "SHADOW_LOG_PATH", shadow_path)
 
     eval_summary_path = proof_dir / "eval_dashboard_summary.json"
     eval_summary_path.parent.mkdir(parents=True, exist_ok=True)
@@ -110,6 +111,10 @@ def test_shadow_eval_summary_created(tmp_path: Path, monkeypatch) -> None:
         force_shadow=True,
     )
 
+    deadline = time.time() + 2
+    while time.time() < deadline and not shadow_path.exists():
+        time.sleep(0.05)
+
     assert shadow_path.exists()
-    payload = json.loads(shadow_path.read_text(encoding="utf-8"))
-    assert payload["total_comparisons"] >= 1
+    lines = [line for line in shadow_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    assert len(lines) >= 1

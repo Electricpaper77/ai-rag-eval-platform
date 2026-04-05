@@ -8,7 +8,7 @@ from typing import Any
 
 from gpu_platform.canary_controller import CANARY_CONTROLLER
 from gpu_platform.router_policies import rank_backends
-from gpu_platform.shadow_eval import record_shadow_result
+from gpu_platform.shadow_eval import run_shadow_evaluation_async
 
 ROUTING_DECISIONS_PATH = Path("artifacts/platform_jobs/routing_decisions.jsonl")
 PREFIX_CACHE: set[str] = set()
@@ -42,8 +42,10 @@ def _simulate_hallucination_outcome(hallucination_rate: float, request_id: str, 
     return (deterministic / 1000.0) < hallucination_rate
 
 
-def _should_shadow(request_id: str) -> bool:
-    return int(hashlib.sha1(request_id.encode("utf-8")).hexdigest(), 16) % 10 == 0
+def _simulate_model_response(backend: str, messages: list[dict[str, Any]]) -> str:
+    prompt = "\n".join(str(message.get("content", "")) for message in messages if message.get("content"))
+    last_line = prompt.splitlines()[-1] if prompt else ""
+    return f"[{backend}] {last_line[:120]}".strip()
 
 
 def _log_routing_decision(decision: dict[str, Any], log_path: Path | None = None) -> None:
@@ -85,6 +87,7 @@ def route_request(
     hallucination_outcome = _simulate_hallucination_outcome(
         selected["metrics"]["hallucination_rate"], req_id, selected["backend"]
     )
+    primary_response = _simulate_model_response(selected["backend"], messages)
 
     if canary_applied:
         CANARY_CONTROLLER.record_decision(
@@ -108,19 +111,19 @@ def route_request(
     }
     _log_routing_decision(decision_row)
 
-    do_shadow = force_shadow if force_shadow is not None else _should_shadow(req_id)
+    do_shadow = bool(force_shadow) or quality_tier == "balanced"
     if do_shadow and len(ranked) > 1:
         shadow = ranked[1]
-        shadow_result = {
-            "request_id": req_id,
-            "selected_backend": selected["backend"],
-            "shadow_backend": shadow["backend"],
-            "selected_latency_ms": selected_latency,
-            "shadow_latency_ms": _simulate_latency_ms(shadow["metrics"]["p95_latency_ms"], req_id, shadow["backend"]),
-            "selected_score": selected["score"],
-            "shadow_score": shadow["score"],
-        }
-        record_shadow_result(shadow_result)
+        shadow_latency = _simulate_latency_ms(shadow["metrics"]["p95_latency_ms"], req_id, shadow["backend"])
+        run_shadow_evaluation_async(
+            request_id=req_id,
+            primary_model=selected["backend"],
+            shadow_model=shadow["backend"],
+            messages=messages,
+            primary_response=primary_response,
+            primary_latency_ms=selected_latency,
+            shadow_latency_ms=shadow_latency,
+        )
 
     latest_status = CANARY_CONTROLLER.status()
     return {
@@ -131,4 +134,5 @@ def route_request(
         "cache_hint_used": cache_hint_used,
         "canary_applied": canary_applied,
         "rollback_triggered": bool(latest_status.get("rollback_triggered", False)),
+        "response": primary_response,
     }
