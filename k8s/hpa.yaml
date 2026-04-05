@@ -1,0 +1,29 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gpu-inference-autoscaler
+  labels:
+    app.kubernetes.io/name: gpu-inference
+    app.kubernetes.io/component: inference-backend
+    app.kubernetes.io/part-of: ai-rag-eval-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gpu-inference
+  minReplicas: 1
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Pods
+      pods:
+        metric:
+          name: request_concurrency
+        target:
+          type: AverageValue
+          averageValue: "6"

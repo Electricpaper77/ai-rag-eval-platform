@@ -46,3 +46,6 @@ def test_platform_summary_endpoint_aggregates_job_logs(tmp_path: Path, monkeypat
     assert body["avg_latency_ms"] == 200.0
     assert body["success_rate"] == 0.5
     assert body["total_jobs_run"] == 2
+    assert body["active_jobs"] == 2
+    assert body["queue_depth"] == 0
+    assert body["estimated_wait_time"] == 0.0

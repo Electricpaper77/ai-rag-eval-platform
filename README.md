@@ -167,6 +167,41 @@ user request
 - simulated platform-style batch inference workflows
 - generated structured job artifacts for reproducibility
 
+## Autoscaling simulation
+
+```text
+job queue
+-> concurrency controller
+-> runtime backend
+-> metrics
+```
+
+This repository now includes a lightweight autoscaling simulation layer for GPU inference workflows. The goal is architecture realism: show how queue pressure can drive scaling decisions without making claims about production autoscaler behavior.
+
+Why autoscaling matters for GPU workloads:
+
+- GPU serving is capacity constrained, and saturation can quickly increase request latency when incoming traffic spikes.
+- Queue growth is often the first signal that inference capacity is under-provisioned for current workload intensity.
+- Capacity-aware controllers help platforms decide when to scale up, hold, or scale down to balance responsiveness and cost.
+
+How queue latency impacts inference performance:
+
+- As concurrency rises beyond the configured active GPU worker limit, requests accumulate in backlog before execution.
+- Queue delay compounds end-to-end latency even if model execution speed is stable.
+- This simulation models that effect so benchmark artifacts can capture latency sensitivity under 5/10/20 concurrent jobs.
+
+How platforms manage capacity:
+
+- `k8s/hpa.yaml` models a HorizontalPodAutoscaler with CPU and request-concurrency metrics for inference deployments.
+- `platform/concurrency_controller.py` provides queue-aware scale actions (`scale_up`, `hold`, `scale_down`).
+- `scripts/run_load_scenario.py` generates `artifacts/load_test/load_summary.json` for repeatable load validation output.
+
+Recruiter proof bullets:
+
+- simulated GPU workload autoscaling behavior using concurrency-aware job controller
+- modeled queue latency impact across varying concurrency levels
+- generated structured load artifacts supporting performance validation
+
 ### Job orchestration API
 
 - `POST /platform/jobs`
