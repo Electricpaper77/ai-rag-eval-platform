@@ -531,3 +531,32 @@ This repository includes Kubernetes templates and policy helpers that model prac
 - Added namespace-level GPU quota controls to model cluster capacity constraints.
 - Built placement policy logic mapping latency/quality tiers to GPU workload placement rules.
 - Documented capacity-control patterns for inference and batch evaluation workloads.
+
+## HPC job schema awareness
+
+This repository now includes a lightweight HPC-style job schema mock at `platform/hpc_job_schema.py` with an example record in `datasets/hpc_job_examples.json`.
+
+### Kubernetes jobs vs HPC schedulers
+
+- Kubernetes Jobs focus on container lifecycle orchestration (pod creation, restart behavior, and completion tracking).
+- HPC schedulers (for example, Slurm-style environments) center around queueing, priority, wall-time limits, and explicit resource reservations before dispatch.
+- In practice, both execute batch work, but HPC systems usually expose stronger controls around queue policy and fairness for shared accelerator clusters.
+
+### Why GPU clusters often use queue abstractions
+
+- GPU hardware is scarce and expensive, so teams use queues to arbitrate access across research, inference, and benchmarking workloads.
+- Priority tiers (for example, `normal` vs urgent) help operations protect critical runs while still allowing background experimentation.
+- Queue boundaries also improve predictability by routing jobs to partitions/classes tuned for specific accelerator and memory profiles.
+
+### How platform APIs map to scheduler requirements
+
+The mock schema fields intentionally map to common scheduler concerns:
+
+- `job_name`: human-readable run identity and traceability.
+- `gpu_count`: accelerator reservation request.
+- `memory_required`: node-level memory requirement.
+- `time_limit`: wall-clock runtime cap used by schedulers for placement and preemption policy.
+- `priority`: scheduling weight relative to other queued jobs.
+- `queue`: target partition/class of service for execution.
+
+This keeps the implementation lightweight while showing how API-level job payloads can be translated into scheduler-native submission options.
