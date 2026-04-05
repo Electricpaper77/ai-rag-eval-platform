@@ -508,3 +508,26 @@ kubectl get endpoints ai-rag-eval-api
 kubectl port-forward svc/ai-rag-eval-api 8080:8080
 curl -s http://127.0.0.1:8080/metrics | head
 ```
+
+## GPU Placement and Capacity Controls
+
+This repository includes Kubernetes templates and policy helpers that model practical GPU placement decisions for AI infrastructure workflows, without claiming production cluster state.
+
+### Core concepts
+
+- **GPU requests via `nvidia.com/gpu`:** inference and batch manifests request and limit one GPU per workload unit so placement intent is explicit.
+- **Node labels and placement controls:** workloads target labeled GPU pools using node selectors (inference) or node affinity (batch).
+- **Taints and tolerations:** templates include tolerations for `nvidia.com/gpu=present:NoSchedule` so GPU workloads can land on dedicated, tainted nodes.
+- **Namespace quotas for GPU control:** `ResourceQuota` caps aggregate GPU requests and limits to model multi-team cluster capacity management.
+
+### Inference vs batch placement
+
+- **Inference deployment (`k8s/gpu-inference-deployment.yaml`)** uses `nodeSelector + toleration` for predictable low-latency routing on a defined GPU tier.
+- **Batch job (`k8s/gpu-batch-job.yaml`)** uses `nodeAffinity + toleration` to allow flexible scheduling within approved GPU pools for asynchronous evaluation work.
+
+### Recruiter-facing implementation bullets
+
+- Implemented Kubernetes GPU placement templates using node selectors, tolerations, and GPU resource requests.
+- Added namespace-level GPU quota controls to model cluster capacity constraints.
+- Built placement policy logic mapping latency/quality tiers to GPU workload placement rules.
+- Documented capacity-control patterns for inference and batch evaluation workloads.

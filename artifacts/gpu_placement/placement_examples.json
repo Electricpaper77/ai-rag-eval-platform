@@ -1,0 +1,30 @@
+{
+  "examples": [
+    {
+      "input": {
+        "job_type": "inference",
+        "latency_budget_ms": 350,
+        "quality_tier": "high",
+        "runtime": "triton"
+      },
+      "output": {
+        "gpu_tier": "premium",
+        "placement_mode": "nodeSelector+toleration",
+        "reason": "strict latency SLO requires highest-throughput tier"
+      }
+    },
+    {
+      "input": {
+        "job_type": "batch",
+        "latency_budget_ms": 2500,
+        "quality_tier": "balanced",
+        "runtime": "vllm"
+      },
+      "output": {
+        "gpu_tier": "economy",
+        "placement_mode": "nodeAffinity+toleration",
+        "reason": "cost-oriented tier for flexible latency workloads"
+      }
+    }
+  ]
+}

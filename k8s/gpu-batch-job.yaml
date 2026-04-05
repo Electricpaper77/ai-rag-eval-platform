@@ -1,17 +1,47 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: gpu-batch-inference
+  name: ai-eval-batch
+  labels:
+    workload-type: batch
+    gpu-tier: standard
+    platform: ai-eval
 spec:
+  backoffLimit: 1
   template:
+    metadata:
+      labels:
+        workload-type: batch
+        gpu-tier: standard
+        platform: ai-eval
     spec:
       restartPolicy: Never
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: gpu-tier
+                    operator: In
+                    values: ["standard"]
+                  - key: platform
+                    operator: In
+                    values: ["ai-eval"]
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Equal"
+          value: "present"
+          effect: "NoSchedule"
       containers:
-        - name: inference-job
-          image: vllm/vllm-openai:latest
+        - name: batch-eval
+          image: ghcr.io/example/ai-eval-batch:latest
+          command: ["python", "scripts/run_eval.py"]
           resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+              nvidia.com/gpu: "1"
             limits:
-              nvidia.com/gpu: 1
-          command:
-            - python
-            - scripts/run_gpu_benchmark.py
+              cpu: "4"
+              memory: 8Gi
+              nvidia.com/gpu: "1"
