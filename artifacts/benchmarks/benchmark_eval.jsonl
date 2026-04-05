@@ -1,0 +1,1 @@
+{"run_id": "exp-2026-04-05-c", "model_version": "mistral-7b-instruct", "prompt_version": "bench-v1", "dataset_version": "benchmark-qa-1", "timestamp": "2026-04-05T11:00:00Z", "eval_pass": true, "is_hallucination": false, "citation_precision": 0.88, "refusal_accuracy": 0.95, "response_latency_ms": 145.0, "output_tokens": 340, "cost": 0.0019}
