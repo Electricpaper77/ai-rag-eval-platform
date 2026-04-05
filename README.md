@@ -378,3 +378,38 @@ Two Kubernetes templates are included for infrastructure signaling:
 - **`nvidia.com/gpu` usage:** expresses explicit accelerator scheduling constraints in cluster orchestration.
 - **Batch jobs vs deployments:** batch jobs are better for finite benchmark/eval workloads; deployments are better for continuously available inference APIs.
 - **Routing abstraction layer:** model policy logic decouples request intent (latency/quality/cost) from concrete backend selection, which mirrors real platform teams.
+
+## Prometheus Operator Scraping
+
+A Prometheus Operator `ServiceMonitor` is a Kubernetes custom resource that tells Prometheus which Services to scrape for metrics and how to scrape them (endpoint port, path, and interval).
+
+In this repo, `k8s/servicemonitor.yaml` selects Services labeled for monitoring and scrapes the API metrics endpoint exposed on `http-metrics` at `/metrics` every `30s`. This connects Prometheus to the inference/evaluation API without hardcoding targets in Prometheus config.
+
+### Platform-proof updates
+
+- Added Kubernetes-native metrics scraping via Prometheus Operator ServiceMonitor.
+- Exposed inference service metrics for latency and throughput monitoring.
+- Standardized service labels/selectors to support reliable monitoring discovery.
+- Documented operational verification steps for platform observability.
+
+### Common failure point
+
+The most common issue is a label/selector mismatch between the Deployment pod labels, Service selectors/labels, and ServiceMonitor selectors. If these are not aligned, Prometheus Operator will not discover scrape targets.
+
+### Verification commands
+
+```bash
+kubectl apply -f k8s/api-deployment.yaml
+kubectl apply -f k8s/api-service.yaml
+kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/servicemonitor.yaml
+
+kubectl get deploy ai-rag-eval-api --show-labels
+kubectl get svc ai-rag-eval-api --show-labels
+kubectl get svc ai-rag-eval-metrics --show-labels
+kubectl get servicemonitor ai-rag-eval-metrics -o yaml
+kubectl get endpoints ai-rag-eval-api
+
+kubectl port-forward svc/ai-rag-eval-api 8080:8080
+curl -s http://127.0.0.1:8080/metrics | head
+```
