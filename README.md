@@ -531,3 +531,19 @@ This repository includes Kubernetes templates and policy helpers that model prac
 - Added namespace-level GPU quota controls to model cluster capacity constraints.
 - Built placement policy logic mapping latency/quality tiers to GPU workload placement rules.
 - Documented capacity-control patterns for inference and batch evaluation workloads.
+
+
+## Reliability patterns for GPU inference workloads
+
+This repository includes practical Kubernetes reliability controls for inference deployments, designed to demonstrate production-style resilience without overstating live-cluster claims.
+
+- **Rolling updates:** `k8s/gpu-inference-deployment.yaml` uses a rolling strategy (`maxUnavailable: 0`, `maxSurge: 1`) so capacity is preserved while replicas are replaced.
+- **Pod disruption budgets:** `k8s/pdb.yaml` enforces `minAvailable: 1` to protect at least one inference pod during voluntary disruptions such as node maintenance.
+- **Health checks:** readiness and liveness probes use `/health` and `/metrics` to ensure only responsive pods serve traffic and stuck pods are automatically recycled.
+- **GPU restart cost awareness:** GPU pods can take longer to become ready due to model load and initialization overhead, so controlled rollouts and disruption limits materially reduce downtime risk.
+
+Recruiter-facing highlights:
+
+- implemented Kubernetes PodDisruptionBudget protecting GPU inference workloads during cluster maintenance
+- configured rolling update strategy ensuring zero-downtime deployment patterns
+- integrated readiness and liveness health checks for platform reliability
