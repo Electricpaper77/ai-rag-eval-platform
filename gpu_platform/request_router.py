@@ -9,6 +9,8 @@ from typing import Any
 from gpu_platform.canary_controller import CANARY_CONTROLLER
 from gpu_platform.router_policies import rank_backends
 from gpu_platform.shadow_eval import run_shadow_evaluation_async
+from gpu_platform.model_policy import select_model_by_policy
+from gpu_platform.job_status import log_job_run
 
 ROUTING_DECISIONS_PATH = Path("artifacts/platform_jobs/routing_decisions.jsonl")
 PREFIX_CACHE: set[str] = set()
@@ -75,10 +77,20 @@ def route_request(
     )
 
     ranked_by_backend = {item["backend"]: item for item in ranked}
+    model_health_status = {backend: "healthy" for backend in ranked_by_backend}
+
+    policy_decision = select_model_by_policy(
+        latency_budget_ms=latency_budget_ms,
+        quality_tier=quality_tier,
+        cost_priority="balanced",
+        model_health_status=model_health_status,
+    )
 
     canary_applied, forced_backend, rollback_triggered = CANARY_CONTROLLER.choose_backend(req_id)
     if canary_applied and forced_backend in ranked_by_backend:
         selected = ranked_by_backend[forced_backend]
+    elif policy_decision["selected_model"] in ranked_by_backend:
+        selected = ranked_by_backend[policy_decision["selected_model"]]
     else:
         selected = ranked[0]
 
@@ -105,6 +117,8 @@ def route_request(
         "cache_hint_used": cache_hint_used,
         "latency_budget_ms": latency_budget_ms,
         "quality_tier": quality_tier,
+        "policy_selected_model": policy_decision["selected_model"],
+        "routing_reason": policy_decision["routing_reason"],
         "canary_applied": canary_applied,
         "rollback_triggered": rollback_triggered,
         "timestamp": time(),
@@ -125,12 +139,20 @@ def route_request(
             shadow_latency_ms=shadow_latency,
         )
 
+    log_job_run(
+        job_id=req_id,
+        model_used=selected["backend"],
+        latency_ms=selected_latency,
+        success=pass_outcome,
+    )
+
     latest_status = CANARY_CONTROLLER.status()
     return {
         "request_id": req_id,
         "selected_backend": selected["backend"],
         "active_backend": selected["backend"],
         "routing_score": selected["score"],
+        "routing_reason": policy_decision["routing_reason"],
         "cache_hint_used": cache_hint_used,
         "canary_applied": canary_applied,
         "rollback_triggered": bool(latest_status.get("rollback_triggered", False)),

@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rag-eval-batch-inference
+  labels:
+    app.kubernetes.io/name: rag-eval-batch-inference
+    app.kubernetes.io/component: benchmark
+    app.kubernetes.io/part-of: ai-rag-eval-platform
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rag-eval-batch-inference
+        app.kubernetes.io/component: benchmark
+        workload-type: batch-inference
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: batch-inference
+          image: curlimages/curl:8.7.1
+          args:
+            - -sS
+            - -X
+            - POST
+            - http://rag-eval-api.default.svc.cluster.local/v1/chat/completions
+            - -H
+            - Content-Type: application/json
+            - -d
+            - '{"model":"vllm","messages":[{"role":"user","content":"Run benchmark prompt batch"}]}'
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+              cpu: "2"
+              memory: 4Gi
+            requests:
+              cpu: "500m"
+              memory: 1Gi
