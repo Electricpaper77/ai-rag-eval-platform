@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-eval-inference
+  labels:
+    app: ai-eval-inference
+    workload-type: inference
+    gpu-tier: standard
+    platform: ai-eval
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ai-eval-inference
+  template:
+    metadata:
+      labels:
+        app: ai-eval-inference
+        workload-type: inference
+        gpu-tier: standard
+        platform: ai-eval
+    spec:
+      nodeSelector:
+        gpu-tier: standard
+        platform: ai-eval
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Equal"
+          value: "present"
+          effect: "NoSchedule"
+      containers:
+        - name: inference
+          image: ghcr.io/example/ai-eval-inference:latest
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "2"
+              memory: 4Gi
+              nvidia.com/gpu: "1"

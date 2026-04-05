@@ -16,6 +16,11 @@ from .vllm_benchmark_summary import load_vllm_benchmark_summary
 from .metrics import record_benchmark_summary
 from .model_selector import select_best_model
 from .job_status import platform_health_summary
+from platform.placement_policy import (
+    build_k8s_placement_spec,
+    choose_gpu_tier,
+    explain_placement_reason,
+)
 
 
 class PlatformJobPayload(BaseModel):
@@ -68,6 +73,47 @@ def get_job_by_id(job_id: str) -> dict:
     if not result:
         raise HTTPException(status_code=404, detail=f"Job not found: {job_id}")
     return result
+
+
+@router.get("/placement/example")
+def get_placement_example() -> dict:
+    decision = choose_gpu_tier(latency_budget_ms=900, quality_tier="balanced", runtime="vllm")
+    placement = build_k8s_placement_spec(job_type="inference", gpu_tier=decision["gpu_tier"])
+    explanation = explain_placement_reason(
+        latency_budget_ms=900,
+        quality_tier="balanced",
+        runtime="vllm",
+        job_type="inference",
+        gpu_tier=decision["gpu_tier"],
+    )
+    return {
+        "decision": decision,
+        "placement": placement,
+        "explanation": explanation,
+    }
+
+
+@router.get("/capacity")
+def get_capacity_summary() -> dict:
+    return {
+        "available_placement_modes": [
+            "nodeSelector+toleration",
+            "nodeAffinity+toleration",
+        ],
+        "default_gpu_tier": "standard",
+        "namespace_quota_summary": {
+            "resource_quota": "gpu-capacity-quota",
+            "max_gpu_requests": 8,
+            "max_gpu_limits": 8,
+            "cpu_request_budget": "24",
+            "memory_request_budget": "96Gi",
+        },
+        "concurrency_assumptions": {
+            "inference_replicas": 2,
+            "batch_jobs_parallelism": 2,
+            "max_concurrent_gpu_workloads": 8,
+        },
+    }
 
 
 @router.get("/summary")
