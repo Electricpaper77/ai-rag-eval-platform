@@ -73,35 +73,47 @@ E --> N[Regression Gating Signals]
 
 ## Evaluation Dashboard
 
-Generate the dashboard artifacts from evaluation JSONL files:
+The FastAPI service now includes an evaluation dashboard that ingests JSONL artifacts from:
 
-```bash
-python scripts/build_eval_dashboard.py
-```
+- `artifacts/evals/*.jsonl`
+- `artifacts/routing/*.jsonl`
+- `artifacts/benchmarks/*.jsonl`
 
-Launch the API endpoints:
+Run metadata is stored in:
 
-```bash
-uvicorn dashboard.app:app --reload
-```
+- `artifacts/run_metadata.json`
 
-Available endpoints:
+### Dashboard API
+
 - `GET /dashboard/summary`
-- `GET /dashboard/run/{run_id}`
+- `GET /dashboard/runs`
+- `GET /dashboard` (simple HTML table view)
 
-Example run summary JSON:
+`GET /dashboard/summary` returns:
 
 ```json
 {
-  "run_id": "gpu_benchmark_run",
-  "p50_latency_ms": 2.13,
-  "p95_latency_ms": 5.5,
-  "pass_rate": 0.0,
-  "hallucination_rate": 0.0,
-  "citation_precision": 0.0,
-  "tokens_per_sec_avg": 41624.01
+  "eval_pass_rate": 0.8,
+  "hallucination_rate": 0.1,
+  "citation_precision": 0.85,
+  "p95_latency_ms": 201.3,
+  "cost_per_request": 0.0026
 }
 ```
+
+`GET /dashboard/runs` returns experiment run records including:
+
+- `model_version`
+- `prompt_version`
+- `dataset_version`
+- `timestamp`
+- `metrics` (`eval_pass_rate`, `hallucination_rate`, `citation_precision`, `refusal_accuracy`, `p50_latency_ms`, `p95_latency_ms`, `tokens_per_second`, `cost_per_request`)
+
+The repository includes example evaluation data at `artifacts/evals/test_eval.jsonl` (50 rows).
+
+### Screenshot
+
+Add a dashboard screenshot to `docs/screenshots/eval_dashboard.png` after running the UI locally.
 
 ## GPU Platform Orchestration Layer
 

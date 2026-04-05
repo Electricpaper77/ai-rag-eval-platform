@@ -10,6 +10,7 @@ from .guardrails import redact_pii, check_injection
 from .rag import COLLECTION_NAME, get_client, get_collection, query_rag
 from .routes.regression_eval import router as regression_router
 from .routes.eval_compare import router as eval_compare_router
+from .routes.dashboard import router as dashboard_router
 from .inference import handle_chat_completions
 from gpu_platform.api import router as platform_router
 
@@ -105,6 +106,7 @@ DEFAULT_EVAL_SET = os.path.join(EVAL_DIR, "policy_eval.json")
 app = FastAPI(title="AI RAG Eval Platform")
 app.include_router(regression_router)
 app.include_router(eval_compare_router)
+app.include_router(dashboard_router)
 app.include_router(platform_router)
 
 
