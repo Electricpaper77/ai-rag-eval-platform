@@ -177,6 +177,30 @@ def _group_runs(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
     return grouped
 
 
+def _inverse_safe(value: float) -> float:
+    if value <= 0:
+        return 0.0
+    return 1.0 / value
+
+
+def _compute_final_score(
+    metrics: dict[str, float],
+    quality_weight: float = 0.5,
+    latency_weight: float = 0.3,
+    cost_weight: float = 0.2,
+) -> float:
+    quality_score = (
+        metrics["eval_pass_rate"] - metrics["hallucination_rate"] + metrics["citation_precision"]
+    )
+    latency_score = _inverse_safe(metrics["p95_latency_ms"])
+    cost_score = _inverse_safe(metrics["cost_per_request"])
+    return (
+        quality_weight * quality_score
+        + latency_weight * latency_score
+        + cost_weight * cost_score
+    )
+
+
 @router.get("/dashboard/summary")
 def dashboard_summary() -> dict[str, float]:
     rows = _iter_jsonl_rows()
@@ -211,6 +235,58 @@ def dashboard_runs() -> list[dict[str, Any]]:
             }
         )
     return runs
+
+
+@router.get("/dashboard/leaderboard", response_class=HTMLResponse)
+def dashboard_leaderboard() -> str:
+    runs = dashboard_runs()
+    sorted_runs = sorted(runs, key=lambda run: _compute_final_score(run["metrics"]), reverse=True)
+
+    table_rows = "\n".join(
+        (
+            "<tr>"
+            f"<td>{run['model_version']}</td>"
+            f"<td>{run['metrics']['eval_pass_rate']:.3f}</td>"
+            f"<td>{run['metrics']['hallucination_rate']:.3f}</td>"
+            f"<td>{run['metrics']['p95_latency_ms']:.2f}</td>"
+            f"<td>{run['metrics']['cost_per_request']:.4f}</td>"
+            f"<td>{_compute_final_score(run['metrics']):.6f}</td>"
+            "</tr>"
+        )
+        for run in sorted_runs
+    )
+
+    return f"""
+    <html>
+      <head>
+        <title>Model Leaderboard</title>
+        <style>
+          body {{ font-family: Arial, sans-serif; margin: 24px; }}
+          table {{ border-collapse: collapse; width: 100%; }}
+          th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+          th {{ background-color: #f4f4f4; }}
+        </style>
+      </head>
+      <body>
+        <h1>Multi-Model Leaderboard</h1>
+        <table>
+          <thead>
+            <tr>
+              <th>model</th>
+              <th>eval_pass_rate</th>
+              <th>hallucination_rate</th>
+              <th>p95_latency</th>
+              <th>cost</th>
+              <th>final_score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {table_rows}
+          </tbody>
+        </table>
+      </body>
+    </html>
+    """
 
 
 @router.get("/dashboard", response_class=HTMLResponse)

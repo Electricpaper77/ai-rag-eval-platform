@@ -175,19 +175,43 @@ For workloads that do not need to stay online continuously, you can run GPU infe
 
 See `k8s/gpu-batch-job.yaml` for a template job manifest that runs `scripts/run_gpu_benchmark.py` with `nvidia.com/gpu: 1`.
 
-## Automatic Model Selection
+## Multi-Model Selection Logic
 
-The platform now supports evaluation-driven model routing by selecting the best model run from `artifacts/proof/eval_dashboard_summary.json` using a weighted score:
+The platform supports evaluation-driven routing by selecting the best model from:
 
-- `pass_rate * 0.5`
-- `- hallucination_rate * 0.3`
-- `- normalized_p95_latency * 0.2`
+- `artifacts/evals/*.jsonl`
+- `artifacts/benchmarks/*.jsonl`
+- `artifacts/run_metadata.json`
 
-Selection output is persisted to `artifacts/platform_jobs/best_model.json`, and can be retrieved via:
+The selector computes per-run metrics:
+
+- `eval_pass_rate`
+- `hallucination_rate`
+- `citation_precision`
+- `p95_latency_ms`
+- `tokens_per_second`
+- `cost_per_request`
+
+Scoring formula:
+
+- `quality_score = eval_pass_rate - hallucination_rate + citation_precision`
+- `latency_score = 1 / p95_latency_ms`
+- `cost_score = 1 / cost_per_request`
+- `final_score = (quality_weight * quality_score) + (latency_weight * latency_score) + (cost_weight * cost_score)`
+
+Default weights:
+
+- `quality_weight = 0.5`
+- `latency_weight = 0.3`
+- `cost_weight = 0.2`
+
+Selection output is persisted to `artifacts/platform_jobs/best_model.json` and exposed by:
 
 - `GET /platform/best-model`
 
-This optimization logic simulates dynamic production routing by balancing quality signals and latency performance.
+A leaderboard view is also available at:
+
+- `GET /dashboard/leaderboard`
 
 ## Helm Deployment Option
 
