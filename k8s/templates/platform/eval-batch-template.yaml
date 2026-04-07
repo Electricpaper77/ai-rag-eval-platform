@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: eval-batch-template
+spec:
+  completions: 10
+  parallelism: 2
+  template:
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        accelerator: nvidia
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: eval-batch
+          image: python:3.11-slim
+          command: ["python", "scripts/run_eval.py"]
+          resources:
+            requests:
+              cpu: "8"
+              memory: "32Gi"
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "8"
+              memory: "32Gi"
+              nvidia.com/gpu: "1"
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "test -f /tmp/ready"]
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "ps aux | grep run_eval.py"]
+          volumeMounts:
+            - name: eval-workdir
+              mountPath: /workspace
+      volumes:
+        - name: eval-workdir
+          persistentVolumeClaim:
+            claimName: gpu-platform-eval-pvc
