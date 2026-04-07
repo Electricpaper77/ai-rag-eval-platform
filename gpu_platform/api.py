@@ -44,6 +44,16 @@ class PlatformJobPayload(BaseModel):
     env: dict[str, str] = Field(default_factory=dict)
     command: list[str] = Field(default_factory=list)
     retries: int = Field(default=0, ge=0)
+    replicas: int = Field(default=1, ge=1)
+    gpu_per_replica: int = Field(default=1, ge=1)
+    tensor_parallel: int = Field(default=1, ge=1)
+    pipeline_parallel: int = Field(default=1, ge=1)
+    data_parallel: int = Field(default=1, ge=1)
+    placement_group: str = Field(default="default")
+    worker_group: str = Field(default="default")
+    priority_class: str = Field(default="balanced")
+    oversubscribed: bool = Field(default=False)
+    oversubscription_reason_code: str | None = Field(default=None)
 
 
 
@@ -75,6 +85,12 @@ def create_job(payload: PlatformJobPayload) -> dict:
         "job_id": job["job_id"],
         "status": job["status"],
         "preflight_status": "pass" if job["status"] == "succeeded" else "fail",
+        "topology_summary": job.get("topology_summary"),
+        "total_gpu_requested": job.get("total_gpu_requested"),
+        "parallelism_config": job.get("parallelism_config"),
+        "priority_class": job.get("priority_class"),
+        "admission_decision": job.get("admission_decision"),
+        "rejection_reason": job.get("rejection_reason"),
     }
 
 

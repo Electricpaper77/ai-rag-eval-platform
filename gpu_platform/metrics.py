@@ -60,6 +60,29 @@ PLATFORM_QUEUE_DEPTH = Gauge(
     "Current number of queued/admitted/running platform jobs",
 )
 
+PLATFORM_DISTRIBUTED_JOBS_TOTAL = Counter(
+    "platform_distributed_jobs_total",
+    "Total number of distributed platform jobs submitted",
+)
+
+PLATFORM_ADMISSION_REJECTIONS_TOTAL = Counter(
+    "platform_admission_rejections_total",
+    "Total number of platform admission rejections",
+    labelnames=("reason_code",),
+)
+
+PLATFORM_PRIORITY_QUEUE_DEPTH = Gauge(
+    "platform_priority_queue_depth",
+    "Current platform queue depth by priority class",
+    labelnames=("priority_class",),
+)
+
+PLATFORM_PARALLELISM_CONFIG_TOTAL = Counter(
+    "platform_parallelism_config_total",
+    "Observed platform parallelism configurations",
+    labelnames=("tensor_parallel", "pipeline_parallel", "data_parallel"),
+)
+
 _completed_jobs: set[str] = set()
 _seen_benchmark_runs: set[str] = set()
 _state_lock = Lock()
@@ -115,3 +138,27 @@ def record_platform_preflight_failure(reason_code: str) -> None:
 
 def set_platform_queue_depth(depth: int) -> None:
     PLATFORM_QUEUE_DEPTH.set(max(depth, 0))
+
+
+def record_platform_distributed_job() -> None:
+    PLATFORM_DISTRIBUTED_JOBS_TOTAL.inc()
+
+
+def record_platform_admission_rejection(reason_code: str) -> None:
+    PLATFORM_ADMISSION_REJECTIONS_TOTAL.labels(reason_code=reason_code).inc()
+
+
+def set_platform_priority_queue_depth(priority_class: str, depth: int) -> None:
+    PLATFORM_PRIORITY_QUEUE_DEPTH.labels(priority_class=priority_class).set(max(depth, 0))
+
+
+def record_platform_parallelism_config(
+    tensor_parallel: int,
+    pipeline_parallel: int,
+    data_parallel: int,
+) -> None:
+    PLATFORM_PARALLELISM_CONFIG_TOTAL.labels(
+        tensor_parallel=str(tensor_parallel),
+        pipeline_parallel=str(pipeline_parallel),
+        data_parallel=str(data_parallel),
+    ).inc()

@@ -17,6 +17,50 @@ This repository demonstrates a self-service GPU platform workflow for Kubernetes
 3. Accepted jobs move through `queued -> admitted -> running -> succeeded`.
 4. Jobs can be listed with `GET /platform/jobs` and inspected by ID.
 
+## Distributed GPU Workload Topology
+
+The platform accepts distributed topology metadata on `POST /platform/jobs`:
+
+- `replicas`: number of replicated workers.
+- `gpu_per_replica`: GPUs attached to each replica.
+- `tensor_parallel`: tensor-shard degree per model execution stage.
+- `pipeline_parallel`: pipeline stage count.
+- `data_parallel`: data-parallel group count.
+- `placement_group`: placement affinity bucket for topology-aware scheduling.
+- `worker_group`: logical worker grouping label.
+- `priority_class`: queue class (`latency-sensitive`, `balanced`, `batch`).
+
+Derived and validated behavior:
+
+- `total_gpu_requested = replicas * gpu_per_replica`.
+- `tensor_parallel >= 1`, `pipeline_parallel >= 1`, `data_parallel >= 1`.
+- `total_gpu_requested > 0`.
+- Parallelism product (`tensor_parallel * pipeline_parallel * data_parallel`) cannot exceed `total_gpu_requested` unless explicitly marked with `oversubscribed=false` and a non-empty reason code.
+
+Queue and admission model:
+
+- Priority order is `latency-sensitive` > `balanced` > `batch`.
+- FIFO ordering is preserved within each priority class.
+- Admission quotas enforce:
+  - `MAX_GPUS_PER_JOB = 8`
+  - `MAX_REPLICAS_PER_JOB = 8`
+  - `MAX_QUEUE_DEPTH = 32`
+
+Rejections emit structured reason codes:
+
+- `quota_exceeded`
+- `invalid_parallelism_config`
+- `invalid_replica_count`
+- `invalid_gpu_request`
+- `queue_full`
+- `unsupported_priority_class`
+
+Artifacts:
+
+- Distributed topology records: `artifacts/platform_jobs/distributed_jobs.jsonl`
+- Admission rejections: `artifacts/platform_jobs/admission_rejections.jsonl`
+- Core lifecycle history: `artifacts/platform/jobs.jsonl`
+
 ## pre-flight checks
 
 Checks produce pass/fail plus reason codes:
@@ -82,6 +126,10 @@ Exported Prometheus metrics:
 - `platform_job_duration_seconds`
 - `platform_preflight_failures_total`
 - `platform_queue_depth`
+- `platform_distributed_jobs_total`
+- `platform_admission_rejections_total`
+- `platform_priority_queue_depth{priority_class=...}`
+- `platform_parallelism_config_total`
 
 Grafana proof placeholder is at `artifacts/observability/grafana_proof_placeholder.md`.
 
