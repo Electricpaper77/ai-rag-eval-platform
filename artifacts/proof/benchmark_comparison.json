@@ -1,6 +1,30 @@
 {
-  "baseline_run": "example_run",
-  "candidate_run": "gpu_benchmark_run",
-  "improvement_pass_rate": 0.0,
-  "latency_delta_ms": -637.87
+  "providers": [
+    "openai",
+    "vllm",
+    "mock"
+  ],
+  "metrics": [
+    {
+      "provider": "openai",
+      "pass_rate": 0.89,
+      "p50_latency": 850.0,
+      "p95_latency": 1250.0,
+      "tokens_per_sec": 32.0
+    },
+    {
+      "provider": "vllm",
+      "pass_rate": 0.87,
+      "p50_latency": 420.0,
+      "p95_latency": 810.0,
+      "tokens_per_sec": 41.0
+    },
+    {
+      "provider": "mock",
+      "pass_rate": 0.76,
+      "p50_latency": 110.0,
+      "p95_latency": 180.0,
+      "tokens_per_sec": 95.0
+    }
+  ]
 }

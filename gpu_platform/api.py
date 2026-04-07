@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from .job_orchestrator import get_job, list_jobs, submit_job
+from .job_orchestrator import get_job, get_job_lifecycle, list_jobs, submit_job
 
 from gpu_platform.canary_controller import CANARY_CONTROLLER
 from gpu_platform.canary_policy import CanaryPolicy
@@ -31,19 +31,40 @@ from gpu_platform.placement_policy import (
 
 
 class PlatformJobPayload(BaseModel):
-    workload_type: str
-    image: str
-    model: str
-    gpu_count: int
-    cpu: str
-    memory: str
-    pvc_size: str
-    storage_class: str
+    job_id: str | None = None
+    workload_type: str = "inference"
+    image: str = "nvcr.io/nvidia/tritonserver:24.01-py3"
+    model: str = "unknown-model"
+    command: list[str] = Field(default_factory=list)
+    env: dict[str, str] = Field(default_factory=dict)
+    gpu_count: int = 1
+    cpu: str = "4"
+    memory: str = "16Gi"
+    replicas: int = Field(default=1, ge=1)
+    retry_limit: int = Field(default=0, ge=0)
+    timeout_seconds: int = Field(default=3600, gt=0)
+
+    tensor_parallel: int = Field(default=1, ge=1)
+    pipeline_parallel: int = Field(default=1, ge=1)
+    gpu_per_replica: int = Field(default=1, ge=1)
+
+    pvc_size: str = "100Gi"
+    storage_class: str = "standard-rwo"
+    mount_path: str = "/mnt/models"
+
     node_selector: dict[str, str] = Field(default_factory=dict)
     tolerations: list[dict] = Field(default_factory=list)
-    env: dict[str, str] = Field(default_factory=dict)
-    command: list[str] = Field(default_factory=list)
-    retries: int = Field(default=0, ge=0)
+    priority_class: str = "medium-priority"
+    queue: str = "gpu"
+
+    readiness_probe: dict = Field(default_factory=lambda: {"httpGet": {"path": "/healthz", "port": 8080}})
+    liveness_probe: dict = Field(default_factory=lambda: {"httpGet": {"path": "/livez", "port": 8080}})
+    network_isolation: dict = Field(default_factory=lambda: {"policy": "default-deny"})
+
+    # legacy compatibility fields
+    model_name: str | None = None
+    container_image: str | None = None
+    retries: int | None = None
 
 
 
@@ -70,22 +91,39 @@ benchmark_router = APIRouter(tags=["benchmark"])
 
 @router.post("/jobs")
 def create_job(payload: PlatformJobPayload) -> dict:
-    job = submit_job(payload.model_dump())
-    return {
-        "job_id": job["job_id"],
-        "status": job["status"],
-        "preflight_status": "pass" if job["status"] == "succeeded" else "fail",
-    }
+    spec = payload.model_dump()
+    if spec.get("model_name") and (not spec.get("model") or spec.get("model") == "unknown-model"):
+        spec["model"] = spec["model_name"]
+    if spec.get("container_image") and (not spec.get("image") or spec.get("image") == "nvcr.io/nvidia/tritonserver:24.01-py3"):
+        spec["image"] = spec["container_image"]
+    if spec.get("retries") is not None:
+        spec["retry_limit"] = spec["retries"]
+    job = submit_job(spec)
+    lifecycle = get_job_lifecycle(job["job_id"]) or {}
+    return {"job_id": job["job_id"], **lifecycle}
 
 
 @router.get("/jobs")
 def get_jobs() -> list[dict]:
-    return list_jobs()
+    jobs = list_jobs()
+    return [
+        {
+            "job_id": row.get("job_id"),
+            "status": row.get("status"),
+            "submission_time": row.get("submission_time"),
+            "start_time": row.get("start_time"),
+            "end_time": row.get("end_time"),
+            "retry_count": row.get("retry_count", 0),
+            "assigned_node": row.get("assigned_node"),
+            "failure_reason": row.get("failure_reason"),
+        }
+        for row in jobs
+    ]
 
 
 @router.get("/jobs/{job_id}")
 def get_job_by_id(job_id: str) -> dict:
-    result = get_job(job_id)
+    result = get_job_lifecycle(job_id)
     if not result:
         raise HTTPException(status_code=404, detail=f"Job not found: {job_id}")
     return result
