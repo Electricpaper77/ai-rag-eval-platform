@@ -16,6 +16,13 @@ from .vllm_benchmark_summary import load_vllm_benchmark_summary
 from .metrics import record_benchmark_summary
 from .model_selector import select_best_model
 from .job_status import platform_health_summary
+from .dynamic_batch_scheduler import schedule_requests
+from .kv_cache_policy import decide_kv_cache_runtime
+from .parallelism_config import (
+    EXAMPLE_PARALLELISM_CONFIG,
+    ParallelismConfig,
+    estimate_gpu_memory_usage,
+)
 from platform.placement_policy import (
     build_k8s_placement_spec,
     choose_gpu_tier,
@@ -136,6 +143,34 @@ def get_benchmark_summary() -> dict:
 @router.get("/vllm-benchmark")
 def get_vllm_benchmark() -> dict:
     return load_vllm_benchmark_summary()
+
+
+@router.get("/gpu/optimization_summary")
+def get_gpu_optimization_summary() -> dict:
+    sample_queue = [
+        {"request_id": "req-a", "token_length": 128, "arrival_ms": 0, "latency_budget_ms": 900},
+        {"request_id": "req-b", "token_length": 320, "arrival_ms": 5, "latency_budget_ms": 900},
+        {"request_id": "req-c", "token_length": 960, "arrival_ms": 12, "latency_budget_ms": 1200},
+        {"request_id": "req-d", "token_length": 256, "arrival_ms": 15, "latency_budget_ms": 900},
+        {"request_id": "req-e", "token_length": 512, "arrival_ms": 19, "latency_budget_ms": 900},
+    ]
+    scheduler = schedule_requests(sample_queue, batch_window_ms=15, max_batch_size=4, latency_sla_ms=1200)
+    avg_batch_size = (
+        round(sum(group["batch_size"] for group in scheduler["batch_groups"]) / len(scheduler["batch_groups"]), 2)
+        if scheduler["batch_groups"]
+        else 0.0
+    )
+    parallelism = ParallelismConfig(**EXAMPLE_PARALLELISM_CONFIG)
+    kv_summary = decide_kv_cache_runtime(tokens_in_context=3072, max_batch_tokens=parallelism.max_batch_tokens)
+    memory_summary = estimate_gpu_memory_usage(model_size="13b", parallelism_config=parallelism)
+
+    return {
+        "recommended_batch_size": avg_batch_size,
+        "kv_cache_estimate": kv_summary,
+        "parallelism_config": parallelism.to_dict(),
+        "parallelism_memory_estimate": memory_summary,
+        "expected_tokens_per_second": round(1200.0 * max(0.5, scheduler["gpu_utilization_estimate"]), 2),
+    }
 
 
 @router.post("/canary/start")
