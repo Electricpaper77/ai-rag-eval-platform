@@ -17,12 +17,17 @@ client = TestClient(app)
 
 
 def _set_store_paths(tmp_path: Path, monkeypatch) -> None:
+    base = tmp_path / "artifacts" / "platform"
+    jobs_base = tmp_path / "artifacts" / "platform_jobs"
     base = tmp_path / "artifacts" / "platform_jobs"
     monkeypatch.setattr(job_orchestrator, "PLATFORM_ARTIFACTS_DIR", base)
     monkeypatch.setattr(job_orchestrator, "JOBS_FILE", base / "jobs.jsonl")
     monkeypatch.setattr(job_orchestrator, "PREFLIGHT_FILE", base / "preflight_results.jsonl")
     monkeypatch.setattr(job_orchestrator, "DISTRIBUTED_FILE", base / "distributed_jobs.jsonl")
     monkeypatch.setattr(job_orchestrator, "SLURM_FILE", base / "slurm_submissions.jsonl")
+    monkeypatch.setattr(job_orchestrator, "PLATFORM_JOB_ARTIFACTS_DIR", jobs_base)
+    monkeypatch.setattr(job_orchestrator, "DISTRIBUTED_JOBS_FILE", jobs_base / "distributed_jobs.jsonl")
+    monkeypatch.setattr(job_orchestrator, "ADMISSION_REJECTIONS_FILE", jobs_base / "admission_rejections.jsonl")
     monkeypatch.setattr(job_orchestrator, "POSTMORTEM_FILE", base / "postmortem_reports.jsonl")
 
 
@@ -85,5 +90,8 @@ def test_platform_metrics_exposed_and_incremented(tmp_path: Path, monkeypatch) -
     assert _metric_value(after_metrics.text, "platform_jobs_submitted_total") >= before_submitted + 1
     assert _metric_value(after_metrics.text, "platform_job_duration_seconds_count") >= 1
     assert _metric_value(after_metrics.text, "platform_queue_depth") >= 0
+    assert _metric_value(after_metrics.text, "platform_distributed_jobs_total") >= 1
+    assert _metric_value(after_metrics.text, 'platform_priority_queue_depth{priority_class="balanced"}') >= 0
+    assert _metric_value(after_metrics.text, "platform_parallelism_config_total") >= 1
     assert _metric_value(after_metrics.text, "benchmark_latency_p95_ms") == 123.4
     assert _metric_value(after_metrics.text, "benchmark_tokens_per_sec") == 456.7
