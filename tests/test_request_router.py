@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import sys
-import time
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -11,110 +10,127 @@ from fastapi.testclient import TestClient
 
 from backend.app.main import app
 import gpu_platform.request_router as request_router
-import gpu_platform.router_policies as router_policies
-import gpu_platform.shadow_eval as shadow_eval
+import gpu_platform.job_orchestrator as job_orchestrator
 
 
 client = TestClient(app)
 
 
-def _configure_paths(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
-    jobs_dir = tmp_path / "artifacts" / "platform_jobs"
-    proof_dir = tmp_path / "artifacts" / "proof"
-    decisions_path = jobs_dir / "routing_decisions.jsonl"
-    shadow_path = tmp_path / "artifacts" / "shadow_runs" / "shadow_eval.jsonl"
-
+def _configure_paths(tmp_path: Path, monkeypatch) -> Path:
+    decisions_path = tmp_path / "artifacts" / "platform_jobs" / "routing_decisions.jsonl"
     monkeypatch.setattr(request_router, "ROUTING_DECISIONS_PATH", decisions_path)
-    monkeypatch.setattr(shadow_eval, "SHADOW_LOG_PATH", shadow_path)
 
-    eval_summary_path = proof_dir / "eval_dashboard_summary.json"
-    eval_summary_path.parent.mkdir(parents=True, exist_ok=True)
-    eval_summary_path.write_text(
-        json.dumps(
-            {
-                "runs": [
-                    {
-                        "run_id": "vllm_primary",
-                        "pass_rate": 0.9,
-                        "hallucination_rate": 0.05,
-                        "p95_latency_ms": 700,
-                        "tokens_per_sec_avg": 85,
-                    },
-                    {
-                        "run_id": "openai_primary",
-                        "pass_rate": 0.93,
-                        "hallucination_rate": 0.03,
-                        "p95_latency_ms": 1050,
-                        "tokens_per_sec_avg": 65,
-                    },
-                    {
-                        "run_id": "mock_primary",
-                        "pass_rate": 0.7,
-                        "hallucination_rate": 0.2,
-                        "p95_latency_ms": 200,
-                        "tokens_per_sec_avg": 20,
-                    },
-                ]
-            }
-        ),
-        encoding="utf-8",
+    base = tmp_path / "artifacts" / "platform_jobs"
+    monkeypatch.setattr(job_orchestrator, "PLATFORM_ARTIFACTS_DIR", base)
+    monkeypatch.setattr(job_orchestrator, "JOBS_FILE", base / "jobs.jsonl")
+    monkeypatch.setattr(job_orchestrator, "PREFLIGHT_FILE", base / "preflight_results.jsonl")
+    monkeypatch.setattr(job_orchestrator, "DISTRIBUTED_FILE", base / "distributed_jobs.jsonl")
+    monkeypatch.setattr(job_orchestrator, "SLURM_FILE", base / "slurm_submissions.jsonl")
+    monkeypatch.setattr(job_orchestrator, "PLATFORM_JOB_ARTIFACTS_DIR", base)
+    monkeypatch.setattr(job_orchestrator, "DISTRIBUTED_JOBS_FILE", base / "distributed_jobs.jsonl")
+    monkeypatch.setattr(job_orchestrator, "ADMISSION_REJECTIONS_FILE", base / "admission_rejections.jsonl")
+    monkeypatch.setattr(job_orchestrator, "POSTMORTEM_FILE", base / "postmortem_reports.jsonl")
+    return decisions_path
+
+
+def _valid_payload() -> dict:
+    return {
+        "workload_type": "inference",
+        "image": "nvcr.io/nvidia/tritonserver:24.01-py3",
+        "model": "llama-3-8b",
+        "gpu_count": 1,
+        "cpu": "4",
+        "memory": "16Gi",
+        "priority_class": "balanced",
+        "env": {},
+        "command": ["python", "serve.py"],
+    }
+
+
+def test_routing_is_deterministic_for_same_inputs(tmp_path: Path, monkeypatch) -> None:
+    _configure_paths(tmp_path, monkeypatch)
+
+    first = request_router.route_request(
+        workload_type="inference",
+        latency_budget_ms=800,
+        priority_class="latency-sensitive",
+        gpu_required=True,
+        parallelism_config={"tensor_parallel": 1, "pipeline_parallel": 1, "data_parallel": 1},
+        request_id="route-001",
+        queue_depth=2,
+        historical_failure_rate=0.01,
     )
-    monkeypatch.setattr(router_policies, "EVAL_SUMMARY_PATH", eval_summary_path)
-
-    request_router.PREFIX_CACHE.clear()
-    return decisions_path, shadow_path
-
-
-def test_router_selects_backend_and_returns_score(tmp_path: Path, monkeypatch) -> None:
-    decisions_path, _ = _configure_paths(tmp_path, monkeypatch)
-
-    response = client.post(
-        "/platform/chat",
-        json={
-            "messages": [{"role": "system", "content": "You are helpful"}, {"role": "user", "content": "hello"}],
-            "latency_budget_ms": 1500,
-            "quality_tier": "balanced",
-        },
+    second = request_router.route_request(
+        workload_type="inference",
+        latency_budget_ms=800,
+        priority_class="latency-sensitive",
+        gpu_required=True,
+        parallelism_config={"tensor_parallel": 1, "pipeline_parallel": 1, "data_parallel": 1},
+        request_id="route-001",
+        queue_depth=2,
+        historical_failure_rate=0.01,
     )
 
-    assert response.status_code == 200
-    body = response.json()
-    assert body["selected_backend"] in {"vllm", "openai", "mock"}
-    assert "routing_score" in body
+    assert first["selected_runtime"] == second["selected_runtime"]
+    assert first["gpu_pool"] == second["gpu_pool"]
+    assert first["kv_cache_strategy"] == second["kv_cache_strategy"]
+
+
+def test_priority_class_influences_pool_selection(tmp_path: Path, monkeypatch) -> None:
+    _configure_paths(tmp_path, monkeypatch)
+
+    latency = request_router.route_request(
+        workload_type="inference",
+        latency_budget_ms=850,
+        priority_class="latency-sensitive",
+        gpu_required=True,
+        parallelism_config={"tensor_parallel": 1, "pipeline_parallel": 1, "data_parallel": 1},
+        request_id="priority-latency",
+    )
+    batch = request_router.route_request(
+        workload_type="batch",
+        latency_budget_ms=2500,
+        priority_class="batch",
+        gpu_required=True,
+        parallelism_config={"tensor_parallel": 1, "pipeline_parallel": 1, "data_parallel": 1},
+        request_id="priority-batch",
+    )
+
+    assert latency["gpu_pool"] == "latency_pool"
+    assert batch["gpu_pool"] == "throughput_pool"
+
+
+def test_distributed_workload_selects_distributed_pool(tmp_path: Path, monkeypatch) -> None:
+    decisions_path = _configure_paths(tmp_path, monkeypatch)
+
+    distributed = request_router.route_request(
+        workload_type="inference",
+        latency_budget_ms=1500,
+        priority_class="balanced",
+        gpu_required=True,
+        parallelism_config={"tensor_parallel": 4, "pipeline_parallel": 1, "data_parallel": 2, "context_tokens": 8192},
+        request_id="distributed-001",
+    )
+
+    assert distributed["gpu_pool"] == "distributed_pool"
+    assert distributed["kv_cache_strategy"] == "distributed"
     assert decisions_path.exists()
 
 
-def test_repeated_prefix_adds_vllm_preference(tmp_path: Path, monkeypatch) -> None:
+def test_job_response_contains_routing_and_metrics_are_exposed(tmp_path: Path, monkeypatch) -> None:
     _configure_paths(tmp_path, monkeypatch)
 
-    messages = [
-        {"role": "system", "content": "Repeated system prompt"},
-        {"role": "user", "content": "Question A"},
-    ]
+    response = client.post("/platform/jobs", json=_valid_payload())
+    assert response.status_code == 200
+    body = response.json()
+    assert "routing" in body
+    assert body["routing"]["gpu_pool"]
+    assert body["routing"]["runtime"]
+    assert body["routing"]["kv_cache_strategy"]
 
-    first = request_router.route_request(messages, latency_budget_ms=1200, quality_tier="balanced")
-    second = request_router.route_request(messages, latency_budget_ms=1200, quality_tier="balanced")
-
-    assert first["cache_hint_used"] is False
-    assert second["cache_hint_used"] is True
-    assert second["selected_backend"] == "vllm"
-
-
-def test_shadow_eval_summary_created(tmp_path: Path, monkeypatch) -> None:
-    _, shadow_path = _configure_paths(tmp_path, monkeypatch)
-
-    request_router.route_request(
-        messages=[{"role": "system", "content": "shadow"}, {"role": "user", "content": "test"}],
-        latency_budget_ms=1200,
-        quality_tier="balanced",
-        request_id="shadow-request-001",
-        force_shadow=True,
-    )
-
-    deadline = time.time() + 2
-    while time.time() < deadline and not shadow_path.exists():
-        time.sleep(0.05)
-
-    assert shadow_path.exists()
-    lines = [line for line in shadow_path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    assert len(lines) >= 1
+    metrics = client.get("/metrics")
+    assert metrics.status_code == 200
+    assert "platform_routing_decisions_total" in metrics.text
+    assert "platform_routing_latency_bucket" in metrics.text
+    assert "platform_kv_cache_strategy_total" in metrics.text
+    assert "platform_gpu_pool_selection_total" in metrics.text

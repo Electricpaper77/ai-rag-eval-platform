@@ -104,18 +104,6 @@ benchmark_router = APIRouter(tags=["benchmark"])
 
 @router.post("/jobs")
 def create_job(payload: PlatformJobPayload) -> dict:
-    job = submit_job(payload.model_dump())
-    return {
-        "job_id": job["job_id"],
-        "status": job["status"],
-        "preflight_status": "pass" if job["status"] == "succeeded" else "fail",
-        "topology_summary": job.get("topology_summary"),
-        "total_gpu_requested": job.get("total_gpu_requested"),
-        "parallelism_config": job.get("parallelism_config"),
-        "priority_class": job.get("priority_class"),
-        "admission_decision": job.get("admission_decision"),
-        "rejection_reason": job.get("rejection_reason"),
-    }
     spec = payload.model_dump()
     if spec.get("model_name") and (not spec.get("model") or spec.get("model") == "unknown-model"):
         spec["model"] = spec["model_name"]
@@ -123,9 +111,36 @@ def create_job(payload: PlatformJobPayload) -> dict:
         spec["image"] = spec["container_image"]
     if spec.get("retries") is not None:
         spec["retry_limit"] = spec["retries"]
+    existing_jobs = list_jobs()
+    total_jobs = len(existing_jobs)
+    failed_jobs = len([row for row in existing_jobs if row.get("status") == "failed"])
+    failure_rate = failed_jobs / total_jobs if total_jobs else 0.0
+
+    routing = route_request(
+        workload_type=str(spec.get("workload_type", "inference")),
+        latency_budget_ms=900 if str(spec.get("priority_class", "balanced")) == "latency-sensitive" else 1800,
+        priority_class=str(spec.get("priority_class", "balanced")),
+        gpu_required=int(spec.get("gpu_count", 0) or 0) > 0,
+        parallelism_config={
+            "tensor_parallel": int(spec.get("tensor_parallel", 1) or 1),
+            "pipeline_parallel": int(spec.get("pipeline_parallel", 1) or 1),
+            "data_parallel": int(spec.get("data_parallel", 1) or 1),
+            "context_tokens": int(spec.get("env", {}).get("CONTEXT_TOKENS", 0) or 0),
+            "repeat_prompt": bool(spec.get("env", {}).get("REPEAT_PROMPT", False)),
+        },
+        request_id=str(spec.get("job_id") or ""),
+        queue_depth=len([row for row in existing_jobs if row.get("status") in {"queued", "admitted", "running"}]),
+        historical_failure_rate=round(failure_rate, 4),
+    )
+
     job = submit_job(spec)
-    lifecycle = get_job_lifecycle(job["job_id"]) or {}
-    return {"job_id": job["job_id"], **lifecycle}
+    job["routing"] = {
+        "gpu_pool": routing["gpu_pool"],
+        "runtime": routing["selected_runtime"],
+        "kv_cache_strategy": routing["kv_cache_strategy"],
+        "batching_strategy": routing["batching_strategy"],
+    }
+    return {**job, "preflight_status": "pass" if job["status"] == "succeeded" else "fail"}
 
 
 @router.get("/jobs")
@@ -141,6 +156,7 @@ def get_jobs() -> list[dict]:
             "retry_count": row.get("retry_count", 0),
             "assigned_node": row.get("assigned_node"),
             "failure_reason": row.get("failure_reason"),
+            "priority_class": row.get("priority_class"),
         }
         for row in jobs
     ]
@@ -272,8 +288,9 @@ def stop_canary() -> dict:
 @router.post("/chat")
 def platform_chat(payload: PlatformChatRequest) -> dict:
     return route_request(
-        messages=payload.messages,
+        workload_type=payload.messages,
         latency_budget_ms=payload.latency_budget_ms,
+        priority_class=payload.quality_tier,
         quality_tier=payload.quality_tier,
         force_shadow=payload.force_shadow,
     )

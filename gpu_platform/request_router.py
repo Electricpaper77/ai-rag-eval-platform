@@ -3,17 +3,30 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from time import time
+from time import perf_counter, time
 from typing import Any
 
 from gpu_platform.canary_controller import CANARY_CONTROLLER
+from gpu_platform.metrics import (
+    record_gpu_pool_selection,
+    record_kv_cache_strategy,
+    record_routing_decision,
+    record_routing_latency,
+)
+from gpu_platform.model_policy import select_model_by_policy
 from gpu_platform.router_policies import rank_backends
 from gpu_platform.shadow_eval import run_shadow_evaluation_async
-from gpu_platform.model_policy import select_model_by_policy
 from gpu_platform.job_status import log_job_run
 
 ROUTING_DECISIONS_PATH = Path("artifacts/platform_jobs/routing_decisions.jsonl")
 PREFIX_CACHE: set[str] = set()
+
+_GPU_POOLS = {
+    "latency_pool": {"capacity": 8, "runtime": "mock_vllm"},
+    "throughput_pool": {"capacity": 24, "runtime": "mock_triton"},
+    "distributed_pool": {"capacity": 16, "runtime": "mock_ray"},
+    "shared_pool": {"capacity": 32, "runtime": "mock_vllm"},
+}
 
 
 def _get_prefix(messages: list[dict[str, Any]]) -> str:
@@ -57,7 +70,47 @@ def _log_routing_decision(decision: dict[str, Any], log_path: Path | None = None
         fp.write(json.dumps(decision) + "\n")
 
 
-def route_request(
+def _choose_kv_cache_strategy(
+    workload_type: str,
+    parallelism_config: dict[str, Any],
+    *,
+    repeated_prompt: bool = False,
+) -> str:
+    if int(parallelism_config.get("context_tokens", 0) or 0) >= 4096:
+        return "distributed"
+    if repeated_prompt or bool(parallelism_config.get("repeat_prompt", False)):
+        return "reuse"
+    if workload_type == "batch":
+        return "isolated"
+    return "reuse"
+
+
+def _choose_pool(
+    workload_type: str,
+    latency_budget_ms: int,
+    priority_class: str,
+    gpu_required: bool,
+    parallelism_config: dict[str, Any],
+    queue_depth: int,
+    historical_failure_rate: float,
+) -> tuple[str, str]:
+    distributed_size = int(parallelism_config.get("data_parallel", 1) or 1) * int(
+        parallelism_config.get("tensor_parallel", 1) or 1
+    )
+    if distributed_size >= 8:
+        return "distributed_pool", "large_parallelism"
+    if workload_type == "batch" or priority_class == "batch":
+        return "throughput_pool", "batch_workload"
+    if latency_budget_ms <= 900 or priority_class in {"latency-sensitive", "high"}:
+        return "latency_pool", "latency_budget"
+    if not gpu_required:
+        return "shared_pool", "gpu_not_required"
+    if queue_depth > 20 or historical_failure_rate >= 0.20:
+        return "shared_pool", "resilience_fallback"
+    return "throughput_pool", "balanced_default"
+
+
+def _route_chat_request(
     messages: list[dict[str, Any]],
     latency_budget_ms: int,
     quality_tier: str,
@@ -158,3 +211,68 @@ def route_request(
         "rollback_triggered": bool(latest_status.get("rollback_triggered", False)),
         "response": primary_response,
     }
+
+
+def route_request(
+    workload_type: str | list[dict[str, Any]],
+    latency_budget_ms: int,
+    priority_class: str,
+    gpu_required: bool = True,
+    parallelism_config: dict[str, Any] | None = None,
+    request_id: str | None = None,
+    queue_depth: int = 0,
+    historical_failure_rate: float = 0.0,
+    quality_tier: str | None = None,
+    force_shadow: bool | None = None,
+) -> dict[str, Any]:
+    """Route requests using either the new workload routing API or legacy chat routing shape."""
+    if isinstance(workload_type, list):
+        return _route_chat_request(
+            messages=workload_type,
+            latency_budget_ms=latency_budget_ms,
+            quality_tier=quality_tier or priority_class,
+            request_id=request_id,
+            force_shadow=force_shadow,
+        )
+
+    started = perf_counter()
+    cfg = parallelism_config or {}
+    req_id = request_id or hashlib.sha1(f"{workload_type}:{time()}".encode("utf-8")).hexdigest()
+
+    gpu_pool, routing_reason = _choose_pool(
+        workload_type=workload_type,
+        latency_budget_ms=latency_budget_ms,
+        priority_class=priority_class,
+        gpu_required=gpu_required,
+        parallelism_config=cfg,
+        queue_depth=queue_depth,
+        historical_failure_rate=historical_failure_rate,
+    )
+
+    selected_runtime = _GPU_POOLS[gpu_pool]["runtime"]
+    kv_cache_strategy = _choose_kv_cache_strategy(workload_type, cfg)
+    batching_strategy = "dynamic" if gpu_pool in {"throughput_pool", "distributed_pool"} else "micro_batch"
+
+    decision = {
+        "request_id": req_id,
+        "selected_runtime": selected_runtime,
+        "runtime": selected_runtime,
+        "gpu_pool": gpu_pool,
+        "routing_reason": routing_reason,
+        "kv_cache_strategy": kv_cache_strategy,
+        "batching_strategy": batching_strategy,
+        "queue_depth": queue_depth,
+        "historical_failure_rate": historical_failure_rate,
+        "pool_capacity": _GPU_POOLS[gpu_pool]["capacity"],
+        "timestamp": time(),
+    }
+
+    _log_routing_decision(decision)
+
+    latency = max((perf_counter() - started) * 1000.0, 0.01)
+    record_routing_decision(workload_type=workload_type, priority_class=priority_class, runtime=selected_runtime)
+    record_routing_latency(workload_type=workload_type, gpu_pool=gpu_pool, latency_ms=latency)
+    record_kv_cache_strategy(strategy=kv_cache_strategy)
+    record_gpu_pool_selection(gpu_pool=gpu_pool)
+
+    return decision

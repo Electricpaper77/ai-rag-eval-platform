@@ -83,6 +83,32 @@ PLATFORM_PARALLELISM_CONFIG_TOTAL = Counter(
     labelnames=("tensor_parallel", "pipeline_parallel", "data_parallel"),
 )
 
+
+PLATFORM_ROUTING_DECISIONS_TOTAL = Counter(
+    "platform_routing_decisions_total",
+    "Total number of platform routing decisions",
+    labelnames=("workload_type", "priority_class", "runtime"),
+)
+
+PLATFORM_ROUTING_LATENCY_BUCKET = Histogram(
+    "platform_routing_latency_bucket",
+    "Latency for platform routing decision logic in milliseconds",
+    labelnames=("workload_type", "gpu_pool"),
+    buckets=(0.1, 0.5, 1, 2, 5, 10, 20, 50, 100),
+)
+
+PLATFORM_KV_CACHE_STRATEGY_TOTAL = Counter(
+    "platform_kv_cache_strategy_total",
+    "Total number of KV cache strategy selections",
+    labelnames=("strategy",),
+)
+
+PLATFORM_GPU_POOL_SELECTION_TOTAL = Counter(
+    "platform_gpu_pool_selection_total",
+    "Total number of GPU pool selections",
+    labelnames=("gpu_pool",),
+)
+
 _completed_jobs: set[str] = set()
 _seen_benchmark_runs: set[str] = set()
 _state_lock = Lock()
@@ -162,3 +188,23 @@ def record_platform_parallelism_config(
         pipeline_parallel=str(pipeline_parallel),
         data_parallel=str(data_parallel),
     ).inc()
+
+
+def record_routing_decision(workload_type: str, priority_class: str, runtime: str) -> None:
+    PLATFORM_ROUTING_DECISIONS_TOTAL.labels(
+        workload_type=workload_type,
+        priority_class=priority_class,
+        runtime=runtime,
+    ).inc()
+
+
+def record_routing_latency(workload_type: str, gpu_pool: str, latency_ms: float) -> None:
+    PLATFORM_ROUTING_LATENCY_BUCKET.labels(workload_type=workload_type, gpu_pool=gpu_pool).observe(max(latency_ms, 0.0))
+
+
+def record_kv_cache_strategy(strategy: str) -> None:
+    PLATFORM_KV_CACHE_STRATEGY_TOTAL.labels(strategy=strategy).inc()
+
+
+def record_gpu_pool_selection(gpu_pool: str) -> None:
+    PLATFORM_GPU_POOL_SELECTION_TOTAL.labels(gpu_pool=gpu_pool).inc()

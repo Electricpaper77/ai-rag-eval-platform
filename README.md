@@ -153,6 +153,56 @@ Exposed at `GET /metrics`:
 Slurm bridge mapping persists:
 - `partition`, `gpus`, `cpus`, `memory`, `time_limit`
 
+## Inference Routing Layer
+
+The demo includes a workload-aware inference routing layer in `gpu_platform/request_router.py` that focuses on platform decisions (runtime + GPU pool selection), not model internals.
+
+### Workload classification inputs
+
+Routing decisions consider:
+- `latency_budget_ms`
+- `priority_class`
+- `gpu_required`
+- `parallelism_config`
+- live `queue_depth`
+- `historical_failure_rate`
+
+### Routing decision policies
+
+High-level policy rules:
+- latency-sensitive requests (`latency_budget_ms <= 900` or `priority_class=latency-sensitive`) route to `latency_pool`.
+- batch workloads (`workload_type=batch` or `priority_class=batch`) route to `throughput_pool`.
+- larger parallel jobs (`tensor_parallel * data_parallel >= 8`) route to `distributed_pool`.
+- non-GPU jobs route to `shared_pool`.
+- resilience fallback routes to `shared_pool` during deep queue / elevated failure rates.
+
+### GPU pool abstraction
+
+The platform simulates pool capacity and runtime mapping:
+- `latency_pool` → `mock_vllm`
+- `throughput_pool` → `mock_triton`
+- `distributed_pool` → `mock_ray`
+- `shared_pool` → `mock_vllm`
+
+Each routing decision is persisted to:
+- `artifacts/platform_jobs/routing_decisions.jsonl`
+
+### KV-cache policy strategy
+
+The router emits `kv_cache_strategy`:
+- `distributed` for large contexts (e.g., `context_tokens >= 4096`).
+- `reuse` for repeated prompts or default interactive inference.
+- `isolated` for batch jobs.
+
+### Platform optimization logic and API behavior
+
+- `POST /platform/jobs` now includes a `routing` block with `gpu_pool`, `runtime`, `kv_cache_strategy`, and `batching_strategy`.
+- Prometheus exports routing telemetry:
+  - `platform_routing_decisions_total`
+  - `platform_routing_latency_bucket`
+  - `platform_kv_cache_strategy_total`
+  - `platform_gpu_pool_selection_total`
+
 ## Proof artifacts
 
 All platform JSONL artifacts are persisted under `artifacts/platform_jobs/`:
