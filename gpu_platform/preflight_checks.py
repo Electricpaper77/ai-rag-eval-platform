@@ -2,65 +2,54 @@ from __future__ import annotations
 
 from typing import Any
 
-_REQUIRED_REASON_CODES = {
-    "MISSING_IMAGE",
-    "INVALID_GPU_COUNT",
-    "MISSING_RESOURCE_LIMITS_REQUESTS",
-    "MISSING_PROBES",
-    "INVALID_STORAGE",
-    "MISSING_NETWORK_POLICY_REF",
-}
+VALID_WORKLOAD_TYPES = {"inference", "batch-eval", "training"}
+VALID_LIFECYCLE_STATES = {"queued", "admitted", "running", "succeeded", "failed"}
 
 
-_TEMPLATE_GUARDS = {
-    "inference": {
-        "has_probes": True,
-        "network_policy_ref": "k8s/templates/platform/network-policy-example.yaml",
-    },
-    "eval-batch": {
-        "has_probes": True,
-        "network_policy_ref": "k8s/templates/platform/network-policy-example.yaml",
-    },
-    "training": {
-        "has_probes": True,
-        "network_policy_ref": "k8s/templates/platform/network-policy-example.yaml",
-    },
-}
+def _looks_like_image(image: str) -> bool:
+    return "/" in image and ":" in image and len(image.strip()) > 3
 
 
 def run_preflight_checks(job_id: str, spec: dict[str, Any]) -> dict[str, Any]:
+    """Validate a platform job spec before admission."""
     reason_codes: list[str] = []
 
-    if not spec.get("image"):
-        reason_codes.append("MISSING_IMAGE")
-
     if int(spec.get("gpu_count", 0) or 0) <= 0:
-        reason_codes.append("INVALID_GPU_COUNT")
+        reason_codes.append("invalid_gpu_request")
 
-    cpu = str(spec.get("cpu", "")).strip()
-    memory = str(spec.get("memory", "")).strip()
-    if not cpu or not memory:
-        reason_codes.append("MISSING_RESOURCE_LIMITS_REQUESTS")
+    if not str(spec.get("cpu", "")).strip() or not str(spec.get("memory", "")).strip():
+        reason_codes.append("invalid_resource_limits")
 
-    storage_class = str(spec.get("storage_class", "")).strip()
-    pvc_size = str(spec.get("pvc_size", "")).strip()
-    if not storage_class or not pvc_size:
-        reason_codes.append("INVALID_STORAGE")
+    image = str(spec.get("image", "")).strip()
+    if not _looks_like_image(image):
+        reason_codes.append("invalid_container_image")
+
+    retry_limit = int(spec.get("retry_limit", 0) or 0)
+    if retry_limit < 0 or retry_limit > 10:
+        reason_codes.append("invalid_retry_policy")
+
+    if not str(spec.get("storage_class", "")).strip() or not str(spec.get("pvc_size", "")).strip() or not str(spec.get("mount_path", "")).strip():
+        reason_codes.append("missing_storage_config")
+
+    if not (spec.get("readiness_probe") and spec.get("liveness_probe")):
+        reason_codes.append("invalid_probe_config")
+
+    if not spec.get("network_isolation"):
+        reason_codes.append("missing_network_isolation")
+
+    replicas = int(spec.get("replicas", 1) or 1)
+    tensor_parallel = int(spec.get("tensor_parallel", 1) or 1)
+    pipeline_parallel = int(spec.get("pipeline_parallel", 1) or 1)
+    gpu_per_replica = int(spec.get("gpu_per_replica", spec.get("gpu_count", 1)) or 1)
+    if min(replicas, tensor_parallel, pipeline_parallel, gpu_per_replica) <= 0:
+        reason_codes.append("invalid_parallelism_config")
 
     workload_type = str(spec.get("workload_type", "")).strip().lower()
-    template_guard = _TEMPLATE_GUARDS.get(workload_type)
-    if not template_guard or not template_guard.get("has_probes"):
-        reason_codes.append("MISSING_PROBES")
-
-    if not template_guard or not template_guard.get("network_policy_ref"):
-        reason_codes.append("MISSING_NETWORK_POLICY_REF")
-
-    unknown_codes = sorted(set(reason_codes).difference(_REQUIRED_REASON_CODES))
-    if unknown_codes:
-        raise ValueError(f"Unexpected reason codes generated: {unknown_codes}")
+    if workload_type not in VALID_WORKLOAD_TYPES:
+        reason_codes.append("invalid_workload_type")
 
     return {
         "job_id": job_id,
         "status": "pass" if not reason_codes else "fail",
-        "reason_codes": reason_codes,
+        "reason_codes": sorted(set(reason_codes)),
     }

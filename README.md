@@ -1,94 +1,121 @@
 # GPU Developer Platform Demo
 
-This repository demonstrates a self-service GPU platform workflow for Kubernetes-first AI workloads with Slurm portability artifacts.
+A backend-focused demo of GPU platform orchestration responsibilities: submission APIs, pre-flight validation, lifecycle management, governance controls, observability, and portability across Kubernetes and HPC-style scheduling systems.
 
-## architecture
+## Architecture overview
 
-- FastAPI control plane (`/platform/jobs`) receives job specs.
-- Pre-flight validation checks compute/storage/network guardrails before admission.
-- Lifecycle tracking persists job state transitions and runtime metadata.
-- Platform artifacts are stored under `artifacts/platform/*.jsonl`.
-- Slurm bridge mock emits translated submission records for HPC portability.
+Core modules:
+- `gpu_platform/api.py`: self-service platform APIs.
+- `gpu_platform/job_orchestrator.py`: lifecycle simulation, admission control, artifact persistence.
+- `gpu_platform/preflight_checks.py`: validation and reason-code generation.
+- `gpu_platform/metrics.py`: Prometheus metric instrumentation.
+- `gpu_platform/inference_backend.py`: runtime abstraction layer (`InferenceBackend`, mock backend, vLLM-style placeholder).
 
-## self-service workflows
+## Self-service workflows
 
-1. Submit a workload via `POST /platform/jobs`.
-2. Platform runs pre-flight checks and writes `preflight_results.jsonl`.
-3. Accepted jobs move through `queued -> admitted -> running -> succeeded`.
-4. Jobs can be listed with `GET /platform/jobs` and inspected by ID.
+### Submit GPU workload
+- `POST /platform/jobs`
+- Unified schema supports inference, batch-eval, and training-style workloads.
 
-## pre-flight checks
-
-Checks produce pass/fail plus reason codes:
-
-- `MISSING_IMAGE`
-- `INVALID_GPU_COUNT`
-- `MISSING_RESOURCE_LIMITS_REQUESTS`
-- `MISSING_PROBES`
-- `INVALID_STORAGE`
-- `MISSING_NETWORK_POLICY_REF`
-
-Results are appended to `artifacts/platform/preflight_results.jsonl`.
-
-## job monitoring
-
+### List jobs
 - `GET /platform/jobs`
+
+### Inspect job lifecycle
 - `GET /platform/jobs/{job_id}`
+- Returns: `status`, `submission_time`, `start_time`, `end_time`, `retry_count`, `assigned_node`, `failure_reason`.
 
-Tracked fields include:
+Lifecycle states used by the platform: `queued`, `admitted`, `running`, `succeeded`, `failed`.
 
-- `status`
-- `states`
-- `timestamps`
-- `duration_seconds`
-- `retry_count`
-- `failure_reason`
-- `assigned_node`
+## Unified job specification
 
-## post-mortem analysis
+Required/primary fields:
+- `job_id`, `workload_type`, `image`, `model`, `command`, `env`
+- `gpu_count`, `cpu`, `memory`, `replicas`, `retry_limit`, `timeout_seconds`
 
-Use persisted JSONL artifacts for root-cause and timeline reconstruction:
+Distributed config:
+- `tensor_parallel`, `pipeline_parallel`, `gpu_per_replica`
 
-- `artifacts/platform/jobs.jsonl`
-- `artifacts/platform/preflight_results.jsonl`
-- `artifacts/platform/slurm_submissions.jsonl`
+Storage config:
+- `pvc_size`, `storage_class`, `mount_path`
 
-## kubernetes templates
+Scheduling config:
+- `node_selector`, `tolerations`, `priority_class`, `queue`
 
-Template examples are in `k8s/templates/platform/`:
+Validation-specific fields:
+- `readiness_probe`, `liveness_probe`, `network_isolation`
 
-- `inference-template.yaml`
-- `eval-batch-template.yaml`
-- `training-style-template.yaml`
-- `pdb-example.yaml`
-- `network-policy-example.yaml`
+## Job lifecycle model
 
-Each workload template includes `nvidia.com/gpu`, readiness/liveness probes, PVC mount, node selector, and tolerations.
+`submit_job(...)` flow:
+1. Persist pre-flight result.
+2. Apply admission constraints:
+   - `MAX_GPUS_PER_JOB = 4`
+   - `MAX_REPLICAS = 8`
+   - `MAX_QUEUE_DEPTH = 32`
+3. Mark failed jobs with reason codes and generate postmortem artifacts.
+4. Mark admitted jobs succeeded in this simulation and persist Slurm bridge artifacts.
 
-## storage/networking
+## Pre-flight validation
 
-Storage and scheduling are provided in each template via:
+Checks include:
+- `gpu_count > 0`
+- CPU/memory limits present
+- container image format validity
+- retry policy validity
+- storage configuration validity
+- readiness/liveness probes
+- network isolation configuration presence
+- distributed parallelism validity
 
-- `persistentVolumeClaim` mounts
-- `storage_class`/`pvc_size` checks at submission time
-- network policy reference validation against `network-policy-example.yaml`
+Reason codes include:
+- `invalid_gpu_request`
+- `missing_storage_config`
+- `invalid_probe_config`
+- `quota_exceeded`
+- `invalid_parallelism_config`
 
-## observability
+## Kubernetes workload templates
 
-Exported Prometheus metrics:
+- `k8s/gpu-inference.yaml`
+- `k8s/gpu-batch.yaml`
+- `k8s/gpu-training.yaml`
 
+Each includes GPU limits, PVC mount, node selection/tolerations, readiness/liveness probes, and restart policy.
+
+## Storage and networking assumptions
+
+- PVC example: `k8s/pvc-gpu-workload.yaml`
+  - parameter placeholders: PVC size, mount path, storage class.
+  - assumes CSI dynamic provisioning.
+- Network policy example: `k8s/network-policy-gpu-isolation.yaml`
+  - assumes CNI enforcement of ingress/egress isolation.
+
+## Observability metrics
+
+Exposed at `GET /metrics`:
 - `platform_jobs_submitted_total`
 - `platform_jobs_failed_total`
 - `platform_job_duration_seconds`
-- `platform_preflight_failures_total`
 - `platform_queue_depth`
+- `platform_preflight_failures_total`
 
-Grafana proof placeholder is at `artifacts/observability/grafana_proof_placeholder.md`.
+## HPC portability layer
 
-## slurm portability
+Slurm bridge mapping persists:
+- `partition`, `gpus`, `cpus`, `memory`, `time_limit`
 
-Submitted platform jobs are translated into Slurm-style artifacts and appended to:
+## Proof artifacts
 
-- `artifacts/platform/slurm_submissions.jsonl`
+All platform JSONL artifacts are persisted under `artifacts/platform_jobs/`:
+- `jobs.jsonl`
+- `preflight_results.jsonl`
+- `distributed_jobs.jsonl`
+- `slurm_submissions.jsonl`
+- `postmortem_reports.jsonl`
 
-This enables straightforward comparison of Kubernetes-native and HPC scheduler submission semantics.
+## Validation commands
+
+```bash
+pytest
+python -m py_compile gpu_platform/*.py backend/app/*.py
+```
