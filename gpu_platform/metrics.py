@@ -109,6 +109,28 @@ PLATFORM_GPU_POOL_SELECTION_TOTAL = Counter(
     labelnames=("gpu_pool",),
 )
 
+
+PLATFORM_RUNTIME_SELECTION_TOTAL = Counter(
+    "platform_runtime_selection_total",
+    "Total number of platform runtime selections",
+    labelnames=("runtime",),
+)
+
+PLATFORM_RUNTIME_VALIDATION_FAILURES_TOTAL = Counter(
+    "platform_runtime_validation_failures_total",
+    "Total number of platform runtime validation failures",
+    labelnames=("reason_code",),
+)
+
+PLATFORM_VLLM_CONFIG_GENERATED_TOTAL = Counter(
+    "platform_vllm_config_generated_total",
+    "Total number of vLLM runtime configs generated",
+)
+
+PLATFORM_RUNTIME_DEPLOYMENTS_TOTAL = Counter(
+    "platform_runtime_deployments_total",
+    "Total number of runtime deployment specs generated",
+)
 _completed_jobs: set[str] = set()
 _seen_benchmark_runs: set[str] = set()
 _state_lock = Lock()
@@ -208,3 +230,19 @@ def record_kv_cache_strategy(strategy: str) -> None:
 
 def record_gpu_pool_selection(gpu_pool: str) -> None:
     PLATFORM_GPU_POOL_SELECTION_TOTAL.labels(gpu_pool=gpu_pool).inc()
+
+
+def record_platform_runtime_selection(runtime: str) -> None:
+    PLATFORM_RUNTIME_SELECTION_TOTAL.labels(runtime=runtime).inc()
+
+
+def record_platform_runtime_validation_failure(reason_code: str) -> None:
+    PLATFORM_RUNTIME_VALIDATION_FAILURES_TOTAL.labels(reason_code=reason_code).inc()
+
+
+def record_platform_vllm_config_generated() -> None:
+    PLATFORM_VLLM_CONFIG_GENERATED_TOTAL.inc()
+
+
+def record_platform_runtime_deployment() -> None:
+    PLATFORM_RUNTIME_DEPLOYMENTS_TOTAL.inc()
