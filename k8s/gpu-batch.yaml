@@ -1,14 +1,16 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: gpu-inference-job
+  name: gpu-batch-eval-job
   labels:
-    workload-type: inference
+    workload-type: batch-eval
 spec:
+  completions: 1
+  parallelism: 1
   template:
     metadata:
       labels:
-        app: gpu-inference
+        app: gpu-batch-eval
     spec:
       restartPolicy: OnFailure
       nodeSelector:
@@ -18,26 +20,24 @@ spec:
           operator: "Exists"
           effect: "NoSchedule"
       containers:
-        - name: inference
-          image: nvcr.io/nvidia/tritonserver:24.01-py3
-          command: ["python", "serve.py"]
+        - name: evaluator
+          image: python:3.11-slim
+          command: ["python", "scripts/run_eval.py"]
           resources:
             limits:
               nvidia.com/gpu: 1
               cpu: "4"
               memory: "16Gi"
           readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 8080
+            exec:
+              command: ["/bin/sh", "-c", "test -f /tmp/ready"]
           livenessProbe:
-            httpGet:
-              path: /livez
-              port: 8080
+            exec:
+              command: ["/bin/sh", "-c", "echo alive"]
           volumeMounts:
-            - name: model-cache
-              mountPath: /mnt/models
+            - name: eval-data
+              mountPath: /mnt/eval
       volumes:
-        - name: model-cache
+        - name: eval-data
           persistentVolumeClaim:
             claimName: gpu-workload-pvc

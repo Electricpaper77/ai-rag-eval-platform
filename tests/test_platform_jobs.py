@@ -17,13 +17,16 @@ client = TestClient(app)
 def _set_store_paths(tmp_path: Path, monkeypatch) -> None:
     base = tmp_path / "artifacts" / "platform"
     jobs_base = tmp_path / "artifacts" / "platform_jobs"
+    base = tmp_path / "artifacts" / "platform_jobs"
     monkeypatch.setattr(job_orchestrator, "PLATFORM_ARTIFACTS_DIR", base)
     monkeypatch.setattr(job_orchestrator, "JOBS_FILE", base / "jobs.jsonl")
     monkeypatch.setattr(job_orchestrator, "PREFLIGHT_FILE", base / "preflight_results.jsonl")
+    monkeypatch.setattr(job_orchestrator, "DISTRIBUTED_FILE", base / "distributed_jobs.jsonl")
     monkeypatch.setattr(job_orchestrator, "SLURM_FILE", base / "slurm_submissions.jsonl")
     monkeypatch.setattr(job_orchestrator, "PLATFORM_JOB_ARTIFACTS_DIR", jobs_base)
     monkeypatch.setattr(job_orchestrator, "DISTRIBUTED_JOBS_FILE", jobs_base / "distributed_jobs.jsonl")
     monkeypatch.setattr(job_orchestrator, "ADMISSION_REJECTIONS_FILE", jobs_base / "admission_rejections.jsonl")
+    monkeypatch.setattr(job_orchestrator, "POSTMORTEM_FILE", base / "postmortem_reports.jsonl")
 
 
 def _valid_payload() -> dict:
@@ -51,6 +54,11 @@ def _valid_payload() -> dict:
         "priority_class": "balanced",
         "oversubscribed": False,
         "oversubscription_reason_code": "fits_cluster_topology",
+        "retry_limit": 1,
+        "mount_path": "/models",
+        "readiness_probe": {"httpGet": {"path": "/healthz", "port": 8080}},
+        "liveness_probe": {"httpGet": {"path": "/livez", "port": 8080}},
+        "network_isolation": {"policy": "default-deny"},
     }
 
 
@@ -64,6 +72,9 @@ def test_submit_job_creates_platform_artifacts(tmp_path: Path, monkeypatch) -> N
     assert (tmp_path / "artifacts" / "platform" / "preflight_results.jsonl").exists()
     assert (tmp_path / "artifacts" / "platform" / "slurm_submissions.jsonl").exists()
     assert (tmp_path / "artifacts" / "platform_jobs" / "distributed_jobs.jsonl").exists()
+    assert (tmp_path / "artifacts" / "platform_jobs" / "jobs.jsonl").exists()
+    assert (tmp_path / "artifacts" / "platform_jobs" / "preflight_results.jsonl").exists()
+    assert (tmp_path / "artifacts" / "platform_jobs" / "slurm_submissions.jsonl").exists()
 
 
 def test_platform_api_job_endpoints(tmp_path: Path, monkeypatch) -> None:

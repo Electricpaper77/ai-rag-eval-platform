@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: gpu-training
+  labels:
+    workload-type: training
+spec:
+  serviceName: gpu-training-headless
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gpu-training
+  template:
+    metadata:
+      labels:
+        app: gpu-training
+    spec:
+      restartPolicy: Always
+      nodeSelector:
+        accelerator: nvidia
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: trainer
+          image: pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime
+          command: ["python", "train.py"]
+          resources:
+            limits:
+              nvidia.com/gpu: 2
+              cpu: "8"
+              memory: "64Gi"
+          readinessProbe:
+            tcpSocket:
+              port: 29500
+          livenessProbe:
+            tcpSocket:
+              port: 29500
+          volumeMounts:
+            - name: training-data
+              mountPath: /mnt/training
+  volumeClaimTemplates:
+    - metadata:
+        name: training-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "__STORAGE_CLASS__"
+        resources:
+          requests:
+            storage: "__PVC_SIZE__"
