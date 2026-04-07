@@ -4,6 +4,7 @@ from fastapi import APIRouter, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from .job_orchestrator import get_job, get_job_lifecycle, list_jobs, submit_job
+from .runtime_backends import plan_runtime
 
 from gpu_platform.canary_controller import CANARY_CONTROLLER
 from gpu_platform.canary_policy import CanaryPolicy
@@ -62,6 +63,12 @@ class PlatformJobPayload(BaseModel):
     tensor_parallel: int = Field(default=1, ge=1)
     pipeline_parallel: int = Field(default=1, ge=1)
     data_parallel: int = Field(default=1, ge=1)
+    distributed_executor_backend: str = Field(default="mp")
+    nnodes: int = Field(default=1, ge=1)
+    node_rank: int = Field(default=0, ge=0)
+    max_model_len: int = Field(default=4096, ge=1)
+    gpu_memory_utilization: float = Field(default=0.9, gt=0.0, le=1.0)
+    served_model_name: str | None = None
     placement_group: str = Field(default="default")
     worker_group: str = Field(default="default")
     priority_class: str = Field(default="balanced")
@@ -139,6 +146,21 @@ def create_job(payload: PlatformJobPayload) -> dict:
         "runtime": routing["selected_runtime"],
         "kv_cache_strategy": routing["kv_cache_strategy"],
         "batching_strategy": routing["batching_strategy"],
+    }
+
+    runtime_spec = {
+        **spec,
+        "gpu_pool": routing["gpu_pool"],
+        "kv_cache_policy": routing["kv_cache_strategy"],
+        "distributed_executor_backend": spec.get("distributed_executor_backend", "mp"),
+    }
+    runtime = plan_runtime(runtime_spec, job_id=job["job_id"])
+    job["runtime"] = {
+        "runtime_name": runtime["runtime_name"],
+        "runtime_plan": runtime["runtime_plan"],
+        "runtime_config_path": runtime["runtime_config_path"],
+        "deployment_config_path": runtime["deployment_config_path"],
+        "validation": runtime["validation"],
     }
     return {**job, "preflight_status": "pass" if job["status"] == "succeeded" else "fail"}
 

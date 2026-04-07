@@ -9,7 +9,8 @@ Core modules:
 - `gpu_platform/job_orchestrator.py`: lifecycle simulation, admission control, artifact persistence.
 - `gpu_platform/preflight_checks.py`: validation and reason-code generation.
 - `gpu_platform/metrics.py`: Prometheus metric instrumentation.
-- `gpu_platform/inference_backend.py`: runtime abstraction layer (`InferenceBackend`, mock backend, vLLM-style placeholder).
+- `gpu_platform/inference_backend.py`: inference provider abstraction used by chat completion flows.
+- `gpu_platform/runtime_backends.py`: platform runtime backend layer (`InferenceRuntime`, `MockRuntime`, `VLLMRuntime`, Triton stub).
 
 ## Self-service workflows
 
@@ -147,6 +148,10 @@ Exposed at `GET /metrics`:
 - `platform_priority_queue_depth{priority_class=...}`
 - `platform_parallelism_config_total`
 - `platform_preflight_failures_total`
+- `platform_runtime_selection_total`
+- `platform_runtime_validation_failures_total`
+- `platform_vllm_config_generated_total`
+- `platform_runtime_deployments_total`
 
 ## HPC portability layer
 
@@ -211,6 +216,10 @@ All platform JSONL artifacts are persisted under `artifacts/platform_jobs/`:
 - `distributed_jobs.jsonl`
 - `slurm_submissions.jsonl`
 - `postmortem_reports.jsonl`
+- `runtime_selections.jsonl`
+- `runtime_validation_results.jsonl`
+- `vllm_runtime_configs.jsonl`
+- `runtime_deployments.jsonl`
 
 ## Validation commands
 
@@ -218,3 +227,43 @@ All platform JSONL artifacts are persisted under `artifacts/platform_jobs/`:
 pytest
 python -m py_compile gpu_platform/*.py backend/app/*.py
 ```
+
+
+## Runtime Backend Layer
+
+Platform jobs include runtime planning so orchestration decisions can map onto executable inference backends without adding frontend or prompt UX complexity.
+
+### Why runtime selection exists
+
+Different job classes need different runtime behavior:
+- latency-sensitive inference jobs prefer `VLLMRuntime` for low-latency serving semantics.
+- distributed workloads that use tensor/pipeline parallelism prefer `VLLMRuntime`.
+- unsupported or incomplete runtime configs fall back to `MockRuntime` with structured reason codes.
+- batch/eval jobs use `MockRuntime` by default unless they are vLLM-compatible.
+
+### Runtime outputs and topology mapping
+
+`VLLMRuntime` emits config records containing:
+- `model`, `served_model_name`
+- `tensor_parallel_size`, `pipeline_parallel_size`, `data_parallel_size`
+- `nnodes`, `node_rank`, `distributed_executor_backend`
+- `max_model_len`, `gpu_memory_utilization`, `kv_cache_policy`, `priority_class`, `gpu_pool`, `runtime_name`
+
+Parallelism maps directly from platform fields:
+- `tensor_parallel` -> `tensor_parallel_size`
+- `pipeline_parallel` -> `pipeline_parallel_size`
+- `data_parallel` -> `data_parallel_size`
+
+### Runtime artifacts
+
+- runtime selections: `artifacts/platform_jobs/runtime_selections.jsonl`
+- runtime validation results: `artifacts/platform_jobs/runtime_validation_results.jsonl`
+- vLLM runtime configs: `artifacts/platform_jobs/vllm_runtime_configs.jsonl`
+- runtime deployment specs: `artifacts/platform_jobs/runtime_deployments.jsonl`
+
+`POST /platform/jobs` responses include additive runtime metadata under `job["runtime"]`:
+- `runtime_name`
+- `runtime_plan`
+- `runtime_config_path`
+- `deployment_config_path`
+- `validation`

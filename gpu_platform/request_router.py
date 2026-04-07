@@ -214,9 +214,9 @@ def _route_chat_request(
 
 
 def route_request(
-    workload_type: str | list[dict[str, Any]],
-    latency_budget_ms: int,
-    priority_class: str,
+    workload_type: str | list[dict[str, Any]] | None = None,
+    latency_budget_ms: int = 1500,
+    priority_class: str = "balanced",
     gpu_required: bool = True,
     parallelism_config: dict[str, Any] | None = None,
     request_id: str | None = None,
@@ -224,8 +224,18 @@ def route_request(
     historical_failure_rate: float = 0.0,
     quality_tier: str | None = None,
     force_shadow: bool | None = None,
+    messages: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Route requests using either the new workload routing API or legacy chat routing shape."""
+    if messages is not None:
+        return _route_chat_request(
+            messages=messages,
+            latency_budget_ms=latency_budget_ms,
+            quality_tier=quality_tier or priority_class,
+            request_id=request_id,
+            force_shadow=force_shadow,
+        )
+
     if isinstance(workload_type, list):
         return _route_chat_request(
             messages=workload_type,
@@ -234,6 +244,8 @@ def route_request(
             request_id=request_id,
             force_shadow=force_shadow,
         )
+
+    workload_type = workload_type or "inference"
 
     started = perf_counter()
     cfg = parallelism_config or {}
