@@ -603,3 +603,58 @@ Recruiter-facing highlights:
 - implemented Kubernetes PodDisruptionBudget protecting GPU inference workloads during cluster maintenance
 - configured rolling update strategy ensuring zero-downtime deployment patterns
 - integrated readiness and liveness health checks for platform reliability
+
+## GPU optimization strategies
+
+This project includes a simulation-focused GPU optimization layer to make batching and runtime tradeoffs explicit without claiming production performance.
+
+### Dynamic batching
+
+The dynamic scheduler (`gpu_platform/dynamic_batch_scheduler.py`) models:
+
+- configurable `batch_window_ms`
+- `max_batch_size` limits
+- per-request and global latency budgets
+- token-length-aware grouping (`short`, `medium`, `long`) to reduce padding waste
+
+It also includes a head-of-line blocking guard that flushes a bucket early when the oldest request risks violating latency budget.
+
+### KV cache memory impact
+
+The KV-cache policy (`gpu_platform/kv_cache_policy.py`) estimates context memory footprint and routes requests to:
+
+- `high-memory-gpu-tier` when memory pressure is high
+- `standard-gpu-tier` when context and pressure are moderate
+
+It returns `memory_estimate_mb`, `recommended_runtime`, and `batching_strategy` so runtime decisions can be traced.
+
+### Tensor vs pipeline parallelism
+
+`gpu_platform/parallelism_config.py` defines a simple parallelism schema:
+
+- `tensor_parallel_size`
+- `pipeline_parallel_size`
+- `max_batch_tokens`
+
+`estimate_gpu_memory_usage(model_size, parallelism_config)` provides a transparent approximation of per-GPU memory impact for sharded model serving.
+
+### Latency vs throughput tradeoffs
+
+- Larger batches generally increase throughput and GPU utilization.
+- Larger batches can increase queueing delay and hurt p95 latency.
+- Longer contexts increase KV-cache pressure, often requiring smaller micro-batches or higher-memory tiers.
+
+```text
+request queue
+-> batching scheduler
+-> runtime
+-> kv cache
+-> metrics
+```
+
+Recruiter proof bullets:
+
+- implemented dynamic batching scheduler improving simulated GPU utilization
+- modeled kv-cache memory impact on inference routing decisions
+- designed parallelism configuration abstraction supporting tensor and pipeline parallel inference patterns
+- generated structured artifacts measuring tokens/sec and latency tradeoffs
