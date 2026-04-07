@@ -23,7 +23,7 @@ from .parallelism_config import (
     ParallelismConfig,
     estimate_gpu_memory_usage,
 )
-from platform.placement_policy import (
+from gpu_platform.placement_policy import (
     build_k8s_placement_spec,
     choose_gpu_tier,
     explain_placement_reason,
@@ -31,10 +31,20 @@ from platform.placement_policy import (
 
 
 class PlatformJobPayload(BaseModel):
+    workload_type: str
+    image: str
     model: str
-    dataset: str
-    runtime: str
-    gpu_required: bool = True
+    gpu_count: int
+    cpu: str
+    memory: str
+    pvc_size: str
+    storage_class: str
+    node_selector: dict[str, str] = Field(default_factory=dict)
+    tolerations: list[dict] = Field(default_factory=list)
+    env: dict[str, str] = Field(default_factory=dict)
+    command: list[str] = Field(default_factory=list)
+    retries: int = Field(default=0, ge=0)
+
 
 
 class PlatformChatRequest(BaseModel):
@@ -60,13 +70,12 @@ benchmark_router = APIRouter(tags=["benchmark"])
 
 @router.post("/jobs")
 def create_job(payload: PlatformJobPayload) -> dict:
-    job_id = submit_job(
-        model=payload.model,
-        dataset=payload.dataset,
-        runtime=payload.runtime,
-        gpu_required=payload.gpu_required,
-    )
-    return {"job_id": job_id, "status": "submitted"}
+    job = submit_job(payload.model_dump())
+    return {
+        "job_id": job["job_id"],
+        "status": job["status"],
+        "preflight_status": "pass" if job["status"] == "succeeded" else "fail",
+    }
 
 
 @router.get("/jobs")

@@ -34,6 +34,32 @@ BENCHMARK_TOKENS_PER_SEC = Gauge(
     "Tokens per second from distributed benchmark summaries",
 )
 
+PLATFORM_JOBS_SUBMITTED_TOTAL = Counter(
+    "platform_jobs_submitted_total",
+    "Total number of platform jobs submitted",
+)
+
+PLATFORM_JOBS_FAILED_TOTAL = Counter(
+    "platform_jobs_failed_total",
+    "Total number of platform jobs that failed",
+)
+
+PLATFORM_JOB_DURATION_SECONDS = Histogram(
+    "platform_job_duration_seconds",
+    "Platform job lifecycle duration in seconds",
+)
+
+PLATFORM_PREFLIGHT_FAILURES_TOTAL = Counter(
+    "platform_preflight_failures_total",
+    "Total number of preflight check failures by reason code",
+    labelnames=("reason_code",),
+)
+
+PLATFORM_QUEUE_DEPTH = Gauge(
+    "platform_queue_depth",
+    "Current number of queued/admitted/running platform jobs",
+)
+
 _completed_jobs: set[str] = set()
 _seen_benchmark_runs: set[str] = set()
 _state_lock = Lock()
@@ -69,3 +95,23 @@ def record_benchmark_summary(summary: dict) -> None:
                 continue
             _seen_benchmark_runs.add(run_id)
             BENCHMARK_RUNS_TOTAL.inc()
+
+
+def record_platform_job_submitted() -> None:
+    PLATFORM_JOBS_SUBMITTED_TOTAL.inc()
+
+
+def record_platform_job_failed() -> None:
+    PLATFORM_JOBS_FAILED_TOTAL.inc()
+
+
+def record_platform_job_duration(duration_seconds: float) -> None:
+    PLATFORM_JOB_DURATION_SECONDS.observe(max(duration_seconds, 0.0))
+
+
+def record_platform_preflight_failure(reason_code: str) -> None:
+    PLATFORM_PREFLIGHT_FAILURES_TOTAL.labels(reason_code=reason_code).inc()
+
+
+def set_platform_queue_depth(depth: int) -> None:
+    PLATFORM_QUEUE_DEPTH.set(max(depth, 0))
