@@ -153,6 +153,30 @@ Exposed at `GET /metrics`:
 - `platform_vllm_config_generated_total`
 - `platform_runtime_deployments_total`
 
+## Platform Observability Insights
+
+Operators can transform raw platform metrics and lifecycle artifacts into a structured health report with:
+
+```bash
+python scripts/generate_platform_report.py
+```
+
+Generated artifacts:
+- `artifacts/platform_jobs/platform_failure_summary.json`
+- `artifacts/platform_jobs/platform_health_report.json`
+
+The report captures:
+- `queue_pressure_level` (`low`, `moderate`, `high`) derived from `platform_queue_depth`.
+- `routing_distribution` percentages for `latency_pool`, `throughput_pool`, and `distributed_pool`.
+- `failure_summary` covering failure reason frequency, retry frequency, and admission rejection reasons.
+- `parallelism_summary` with average `replicas`, `tensor_parallel`, and `gpu_per_replica`, plus inefficient topology hints.
+- `runtime_usage_summary` from runtime selection records.
+
+Why these signals matter:
+- **Queue depth** is a first-line reliability indicator: sustained high depth means admission pressure and likely latency growth.
+- **Routing distribution** validates pool balancing: heavy concentration in one pool can indicate policy drift, bad defaults, or capacity skew.
+- **Parallelism configuration** catches underutilized distributed jobs (for example, large GPU requests still running with `replicas=1` and `tensor_parallel=1`), which wastes cluster throughput.
+
 ## HPC portability layer
 
 Slurm bridge mapping persists:
