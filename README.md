@@ -291,3 +291,60 @@ Parallelism maps directly from platform fields:
 - `runtime_config_path`
 - `deployment_config_path`
 - `validation`
+
+## Production Inference Observability Pipeline
+
+This feature adds a production-style inference telemetry pipeline with modular components, structured artifact persistence, and performance-centric observability.
+
+### Directory structure
+
+```text
+backend/app/observability/
+├── __init__.py
+├── artifact_store.py
+├── models.py
+├── performance.py
+└── service.py
+
+tests/
+└── test_inference_observability_pipeline.py
+
+artifacts/inference_events/
+└── year=YYYY/month=MM/day=DD/inference_events.jsonl
+```
+
+### Implementation files
+
+- `backend/app/observability/models.py`: typed event schema for request context + performance metrics.
+- `backend/app/observability/performance.py`: phase-level latency decomposition (queue, TTFT, decode) and decode throughput metrics.
+- `backend/app/observability/artifact_store.py`: date-partitioned JSONL persistence for scalable artifact ingestion.
+- `backend/app/observability/service.py`: orchestration layer that builds context, computes metrics, emits Prometheus metrics, and stores events.
+- `backend/app/inference.py`: runtime inference flow now records structured telemetry per request.
+- `backend/app/metrics.py`: additional counters/histograms for end-to-end pipeline observability.
+
+### Tests
+
+- `tests/test_inference_observability_pipeline.py` validates:
+  - phase-level performance metric calculations,
+  - artifact persistence under partitioned paths,
+  - telemetry correlation via `request_id`,
+  - metrics surface exposure on `/metrics`.
+
+### Performance metrics captured
+
+Each inference event records realistic serving-path metrics:
+
+- `latency_ms` (end-to-end)
+- `queue_time_ms` (admission/dispatch delay)
+- `ttft_ms` (time-to-first-token)
+- `decode_time_ms` (token generation phase)
+- `tokens_out`
+- `tokens_per_second` (decode throughput)
+
+Prometheus metrics added:
+
+- `inference_pipeline_events_total{runtime,model,status}`
+- `inference_queue_time_ms{runtime,model}`
+- `inference_ttft_ms{runtime,model}`
+- `inference_decode_time_ms{runtime,model}`
+- `inference_decode_throughput_tps{runtime,model}`
