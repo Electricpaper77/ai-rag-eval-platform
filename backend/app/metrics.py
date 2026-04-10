@@ -26,6 +26,25 @@ INFERENCE_LATENCY_MS = Histogram(
     labelnames=("model",),
 )
 
+# New portfolio-signal metrics for OpenAI-compatible local inference.
+LLM_REQUESTS_TOTAL = Counter(
+    "llm_requests_total",
+    "Total LLM API requests",
+    labelnames=("backend", "status"),
+)
+
+LLM_TOKENS_TOTAL = Counter(
+    "llm_tokens_total",
+    "Total LLM tokens returned",
+    labelnames=("backend", "status"),
+)
+
+LLM_REQUEST_LATENCY_SECONDS = Histogram(
+    "llm_request_latency_seconds",
+    "LLM request latency in seconds",
+    labelnames=("backend", "status"),
+)
+
 
 def record_inference_metrics(
     runtime_label: str,
@@ -39,6 +58,12 @@ def record_inference_metrics(
 
     TOKENS_GENERATED.labels(runtime=runtime_label, model=model).inc(max(tokens_generated, 0))
     INFERENCE_LATENCY_SECONDS.labels(runtime=runtime_label, model=model).observe(max(latency_ms / 1000.0, 0.0))
+
+
+def record_llm_api_metrics(backend: str, status: str, total_tokens: int, latency_ms: float) -> None:
+    LLM_REQUESTS_TOTAL.labels(backend=backend, status=status).inc()
+    LLM_TOKENS_TOTAL.labels(backend=backend, status=status).inc(max(total_tokens, 0))
+    LLM_REQUEST_LATENCY_SECONDS.labels(backend=backend, status=status).observe(max(latency_ms / 1000.0, 0.0))
 
 
 INFERENCE_PIPELINE_EVENTS_TOTAL = Counter(

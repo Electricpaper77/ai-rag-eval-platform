@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Any, Dict, List
 import os
@@ -180,11 +180,13 @@ def metrics():
 
 
 @app.post("/v1/chat/completions")
-def chat_completions_openai_compatible(request: dict):
+async def chat_completions_openai_compatible(request: dict):
     try:
-        return handle_chat_completions(request)
+        return await handle_chat_completions(request)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/query_guarded")

@@ -1,0 +1,7 @@
+{"timestamp": "2026-04-09T14:30:14.041069+00:00", "request_id": "chatcmpl-f12fd541c96e", "latency_ms": 263.847, "tokens_generated": 46, "backend": "mock", "status": "success"}
+{"timestamp": "2026-04-09T14:30:14.161648+00:00", "request_id": "chatcmpl-727ee076c367", "latency_ms": 112.567, "tokens_generated": 20, "backend": "mock", "status": "success"}
+{"timestamp": "2026-04-09T14:30:23.738749+00:00", "request_id": "chatcmpl-0afa4510a5d4", "latency_ms": 341.451, "tokens_generated": 27, "backend": "mock", "status": "success"}
+{"timestamp": "2026-04-09T14:30:24.083273+00:00", "request_id": "chatcmpl-3b9d31bfc809", "latency_ms": 341.339, "tokens_generated": 27, "backend": "mock", "status": "success"}
+{"timestamp": "2026-04-09T14:30:24.427803+00:00", "request_id": "chatcmpl-1ed6fdc1d752", "latency_ms": 341.587, "tokens_generated": 27, "backend": "mock", "status": "success"}
+{"timestamp": "2026-04-09T14:30:24.772581+00:00", "request_id": "chatcmpl-62c35076f68f", "latency_ms": 341.288, "tokens_generated": 27, "backend": "mock", "status": "success"}
+{"timestamp": "2026-04-09T14:30:25.116764+00:00", "request_id": "chatcmpl-36f9cead16ee", "latency_ms": 341.515, "tokens_generated": 27, "backend": "mock", "status": "success"}

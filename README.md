@@ -348,3 +348,110 @@ Prometheus metrics added:
 - `inference_ttft_ms{runtime,model}`
 - `inference_decode_time_ms{runtime,model}`
 - `inference_decode_throughput_tps{runtime,model}`
+
+## Architecture
+
+This repo now includes a **production-style local inference slice** that preserves the existing FastAPI app while adding OpenAI-compatible inference semantics and observability artifacts:
+
+- **API layer**: `POST /v1/chat/completions` in `backend/app/main.py`, delegated to `backend/app/inference.py`.
+- **Runtime abstraction**: `backend/runtimes/base.py` and `backend/runtimes/mock_runtime.py`.
+- **Backend selection**: `INFERENCE_BACKEND=mock` (default) for deterministic CPU-only inference simulation.
+- **Metrics**: Prometheus counters/histogram in `backend/app/metrics.py`, exported at `GET /metrics`.
+- **Artifacts**:
+  - request logs: `artifacts/inference_logs.jsonl`
+  - benchmark summary: `artifacts/benchmark_summary.json`
+
+## OpenAI-compatible API
+
+`POST /v1/chat/completions`
+
+Request example:
+
+```json
+{
+  "model": "mock-llm",
+  "messages": [
+    {"role": "system", "content": "You are helpful."},
+    {"role": "user", "content": "Hello"}
+  ],
+  "max_tokens": 256,
+  "temperature": 0.7
+}
+```
+
+Response shape:
+
+- `id`, `object`, `created`, `model`
+- `choices[0].message.role/content`
+- `choices[0].finish_reason`
+- `usage.prompt_tokens/completion_tokens/total_tokens`
+
+## Metrics exposed
+
+`GET /metrics` includes:
+
+- `llm_requests_total{backend,status}`
+- `llm_tokens_total{backend,status}`
+- `llm_request_latency_seconds{backend,status}`
+
+## Benchmark methodology
+
+Run:
+
+```bash
+python scripts/run_benchmark.py --base-url http://127.0.0.1:8000 --requests 25 --model mock-llm
+```
+
+Method:
+- issues N sequential `POST /v1/chat/completions` calls
+- captures end-to-end per-request latency
+- aggregates:
+  - p50 latency
+  - p95 latency
+  - requests/sec
+  - tokens/sec
+  - success_rate
+- writes reproducible artifact to `artifacts/benchmark_summary.json`
+
+## Proof artifacts
+
+The following files provide portfolio-quality proof points:
+
+- `artifacts/inference_logs.jsonl`: one JSONL event per inference request
+- `artifacts/benchmark_summary.json`: benchmark KPIs for a run
+- `tests/test_chat_endpoint.py`: OpenAI-compatible schema validation
+- `tests/test_metrics.py`: Prometheus scrape-format validation
+- `tests/test_runtime.py`: deterministic runtime behavior validation
+
+## Local run instructions
+
+1. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+2. Start API:
+
+```bash
+INFERENCE_BACKEND=mock uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+```
+
+3. Test endpoint:
+
+```bash
+curl -s http://127.0.0.1:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model":"mock-llm",
+    "messages":[{"role":"system","content":"You are helpful"},{"role":"user","content":"Say hello"}],
+    "max_tokens":128,
+    "temperature":0.7
+  }'
+```
+
+4. Run benchmark:
+
+```bash
+python scripts/run_benchmark.py --base-url http://127.0.0.1:8000 --requests 25
+```
