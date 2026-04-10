@@ -1,96 +1,101 @@
 from __future__ import annotations
 
 import json
-import logging
-from typing import Any, Dict
+import os
+import time
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List
 
-from .metrics import record_inference_metrics
-from .router import run_inference
-from .observability.service import INFERENCE_OBSERVABILITY
+from backend.runtimes import MockRuntime
 
-logger = logging.getLogger("uvicorn.access")
-
-DEFAULT_RUNTIME = "openai"
+from .metrics import record_llm_api_metrics
 
 
-def handle_chat_completions(request_body: Dict[str, Any]) -> Dict[str, Any]:
-    """Route chat inference through a runtime-agnostic layer for multi-backend evaluation."""
-    messages = request_body.get("messages", [])
+DEFAULT_MODEL = "mock-llm"
+DEFAULT_BACKEND = "mock"
+INFERENCE_LOG_PATH = Path("artifacts/inference_logs.jsonl")
+
+
+def _select_runtime() -> MockRuntime:
+    backend = os.getenv("INFERENCE_BACKEND", DEFAULT_BACKEND).strip().lower()
+    if backend != "mock":
+        raise ValueError(f"unsupported inference backend '{backend}'")
+    return MockRuntime()
+
+
+def _append_inference_log(
+    request_id: str,
+    latency_ms: float,
+    tokens_generated: int,
+    backend: str,
+    status: str,
+) -> None:
+    INFERENCE_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "request_id": request_id,
+        "latency_ms": round(latency_ms, 3),
+        "tokens_generated": tokens_generated,
+        "backend": backend,
+        "status": status,
+    }
+    with INFERENCE_LOG_PATH.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(payload) + "\n")
+
+
+async def handle_chat_completions(request_body: Dict[str, Any]) -> Dict[str, Any]:
+    """Handle an OpenAI-compatible /v1/chat/completions request."""
+
+    model = request_body.get("model") or DEFAULT_MODEL
+    messages: List[Dict[str, str]] = request_body.get("messages") or []
+    max_tokens = int(request_body.get("max_tokens", 256))
+    temperature = float(request_body.get("temperature", 0.7))
+
     if not messages:
-        return {"error": "messages field required"}
+        raise ValueError("messages field required")
 
-    user_prompt = messages[-1]["content"]
-    requested_runtime = request_body.get("model") or DEFAULT_RUNTIME
+    runtime = _select_runtime()
+    backend = runtime.backend_name
+
+    start = time.perf_counter()
+    status = "success"
 
     try:
-        result = run_inference(requested_runtime, user_prompt)
-        resolved_runtime = (requested_runtime or "").strip().lower()
-    except ValueError:
-        # Backward compatibility: unknown runtimes fall back to mock baseline behavior.
-        resolved_runtime = "mock"
-        result = run_inference(resolved_runtime, user_prompt)
-
-    request_context = INFERENCE_OBSERVABILITY.build_request_context(
-        runtime=resolved_runtime,
-        model=resolved_runtime,
-        prompt=user_prompt,
-    )
-
-    tokens_out = int(result.get("tokens_out", 0) or 0)
-    latency_ms = float(result.get("latency_ms", 0.0) or 0.0)
-
-    record_inference_metrics(resolved_runtime, tokens_out, latency_ms, model_label=resolved_runtime)
-
-    event = INFERENCE_OBSERVABILITY.record_event(
-        request_context=request_context,
-        latency_ms=latency_ms,
-        tokens_out=tokens_out,
-        status="ok",
-    )
-
-    latency_seconds = max(latency_ms / 1000.0, 1e-9)
-    tokens_per_second = tokens_out / latency_seconds
-    logger.info(
-        json.dumps(
-            {
-                "event": "inference_metrics",
-                "runtime": resolved_runtime,
-                "tokens_out": tokens_out,
-        "request_id": request_context.request_id,
-        "performance": {
-            "queue_time_ms": event.performance.queue_time_ms,
-            "ttft_ms": event.performance.ttft_ms,
-            "decode_time_ms": event.performance.decode_time_ms,
-            "tokens_per_second": event.performance.tokens_per_second,
-        },
-                "latency_ms": round(latency_ms, 3),
-                "tokens_per_second": round(tokens_per_second, 3),
-                "ttft_ms": event.performance.ttft_ms,
-                "queue_time_ms": event.performance.queue_time_ms,
-            }
+        response = await runtime.generate(
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            model=model,
         )
+    except Exception:
+        status = "error"
+        raise
+    finally:
+        latency_ms = (time.perf_counter() - start) * 1000
+
+    response["id"] = response.get("id") or f"chatcmpl-{uuid.uuid4().hex[:12]}"
+    response["object"] = "chat.completion"
+    response["model"] = model
+    response["created"] = int(time.time())
+
+    total_tokens = int(response.get("usage", {}).get("total_tokens", 0) or 0)
+
+    record_llm_api_metrics(
+        backend=backend,
+        status=status,
+        total_tokens=total_tokens,
+        latency_ms=latency_ms,
+    )
+    _append_inference_log(
+        request_id=response["id"],
+        latency_ms=latency_ms,
+        tokens_generated=total_tokens,
+        backend=backend,
+        status=status,
     )
 
-    return {
-        "id": f"chatcmpl-{request_context.request_id}",
-        "object": "chat.completion",
-        "model_runtime": resolved_runtime,
-        "latency_ms": latency_ms,
-        "tokens_out": tokens_out,
-        "request_id": request_context.request_id,
-        "performance": {
-            "queue_time_ms": event.performance.queue_time_ms,
-            "ttft_ms": event.performance.ttft_ms,
-            "decode_time_ms": event.performance.decode_time_ms,
-            "tokens_per_second": event.performance.tokens_per_second,
-        },
-        "choices": [
-            {
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": result.get("output", ""),
-                },
-            }
-        ],
-    }
+    response.pop("backend", None)
+    response.pop("latency_ms", None)
+    return response
