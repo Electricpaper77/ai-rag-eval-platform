@@ -76,6 +76,7 @@ def record_llm_api_metrics(backend: str, status: str, total_tokens: int, latency
     LLM_REQUEST_LATENCY_SECONDS.labels(backend=backend, status=status).observe(max(latency_ms / 1000.0, 0.0))
 
 
+
 INFERENCE_PIPELINE_EVENTS_TOTAL = Counter(
     "inference_pipeline_events_total",
     "Inference pipeline events by status",

@@ -34,6 +34,18 @@ BENCHMARK_TOKENS_PER_SEC = Gauge(
     "Tokens per second from distributed benchmark summaries",
 )
 
+BENCHMARK_LATENCY_MS = Histogram(
+    "benchmark_latency_ms",
+    "Benchmark request latency in milliseconds",
+    labelnames=("model",),
+)
+
+BENCHMARK_TOKENS_PER_SECOND = Histogram(
+    "benchmark_tokens_per_second",
+    "Benchmark tokens per second",
+    labelnames=("model",),
+)
+
 PLATFORM_JOBS_SUBMITTED_TOTAL = Counter(
     "platform_jobs_submitted_total",
     "Total number of platform jobs submitted",
@@ -197,6 +209,12 @@ def record_benchmark_summary(summary: dict) -> None:
                 continue
             _seen_benchmark_runs.add(run_id)
             BENCHMARK_RUNS_TOTAL.inc()
+
+
+def record_benchmark_metrics(model: str, latency_ms: float, tokens_per_second: float, runs: int = 1) -> None:
+    BENCHMARK_RUNS_TOTAL.inc(max(runs, 0))
+    BENCHMARK_LATENCY_MS.labels(model=model).observe(max(latency_ms, 0.0))
+    BENCHMARK_TOKENS_PER_SECOND.labels(model=model).observe(max(tokens_per_second, 0.0))
 
 
 def record_platform_job_submitted() -> None:

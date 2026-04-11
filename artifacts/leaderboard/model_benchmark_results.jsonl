@@ -1,0 +1,3 @@
+{"model": "openai/gpt-4o-mini", "avg_latency_ms": 0.635, "p50_latency_ms": 0.214, "p95_latency_ms": 4.478, "tokens_per_second": 0.0, "eval_pass_rate": 0.0, "hallucination_rate": 1.0, "cost_per_request": 0.0, "requests": 10}
+{"model": "mistral-7b-instruct", "avg_latency_ms": 0.209, "p50_latency_ms": 0.198, "p95_latency_ms": 0.292, "tokens_per_second": 0.0, "eval_pass_rate": 0.0, "hallucination_rate": 1.0, "cost_per_request": 0.0, "requests": 10}
+{"model": "mock/local-model", "avg_latency_ms": 0.201, "p50_latency_ms": 0.182, "p95_latency_ms": 0.278, "tokens_per_second": 0.0, "eval_pass_rate": 0.0, "hallucination_rate": 1.0, "cost_per_request": 0.0, "requests": 10}
