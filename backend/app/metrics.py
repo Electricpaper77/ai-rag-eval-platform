@@ -122,3 +122,23 @@ def record_inference_observability_metrics(
     INFERENCE_TTFT_MS.labels(runtime=runtime, model=model).observe(max(ttft_ms, 0.0))
     INFERENCE_DECODE_TIME_MS.labels(runtime=runtime, model=model).observe(max(decode_time_ms, 0.0))
     INFERENCE_DECODE_THROUGHPUT_TPS.labels(runtime=runtime, model=model).observe(max(tokens_per_second, 0.0))
+
+
+from prometheus_client import Gauge
+
+ROUTER_DECISIONS_TOTAL = Counter(
+    "router_decisions_total",
+    "Total routing decisions",
+    labelnames=("runtime", "quality_tier"),
+)
+
+GPU_QUEUE_DEPTH = Gauge(
+    "gpu_queue_depth",
+    "Current GPU runtime queue depth",
+    labelnames=("runtime",),
+)
+
+
+def record_router_metrics(runtime: str, quality_tier: str, queue_depth: int) -> None:
+    ROUTER_DECISIONS_TOTAL.labels(runtime=runtime, quality_tier=quality_tier).inc()
+    GPU_QUEUE_DEPTH.labels(runtime=runtime).set(max(queue_depth, 0))

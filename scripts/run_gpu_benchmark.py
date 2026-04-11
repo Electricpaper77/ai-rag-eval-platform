@@ -1,88 +1,73 @@
 #!/usr/bin/env python3
-"""Run vendor-agnostic benchmark through /platform/route and emit JSONL artifacts."""
-
 from __future__ import annotations
 
 import json
-import os
 import time
-from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import requests
 
-OUTPUT = Path("artifacts/proof/benchmark_runs.jsonl")
+ARTIFACT_DIR = Path("artifacts")
+SUMMARY_PATH = ARTIFACT_DIR / "gpu_benchmark_summary.json"
 
 
-def append_jsonl(path: Path, payload: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(payload) + "\n")
+def _send_request(base_url: str, idx: int) -> dict:
+    payload = {
+        "messages": [{"role": "user", "content": f"ping {idx}"}],
+        "latency_budget_ms": 1500,
+        "quality_tier": "balanced",
+    }
+    started = time.perf_counter()
+    try:
+        response = requests.post(f"{base_url}/v1/chat/completions", json=payload, timeout=30)
+        elapsed_ms = (time.perf_counter() - started) * 1000
+        body = response.json() if response.headers.get("content-type", "").startswith("application/json") else {}
+        total_tokens = int(body.get("usage", {}).get("total_tokens", 0))
+        return {
+            "ok": response.status_code == 200,
+            "latency_ms": elapsed_ms,
+            "tokens": total_tokens,
+        }
+    except requests.RequestException:
+        return {"ok": False, "latency_ms": (time.perf_counter() - started) * 1000, "tokens": 0}
 
 
-def percentile(values: list[float], pct: int) -> float:
+def _percentile(values: list[float], pct: int) -> float:
     if not values:
         return 0.0
-    values = sorted(values)
-    idx = int((pct / 100) * (len(values) - 1))
-    return values[idx]
+    ordered = sorted(values)
+    idx = int((pct / 100) * (len(ordered) - 1))
+    return ordered[idx]
 
 
 def main() -> int:
-    base_url = os.getenv("BASE_URL", "http://localhost:8000")
-    requests_n = int(os.getenv("NUM_REQUESTS", "10"))
-    quality_tier = os.getenv("QUALITY_TIER", "balanced")
-    latency_budget_ms = int(os.getenv("LATENCY_BUDGET_MS", "1500"))
+    base_url = "http://localhost:8000"
+    n_requests = 50
+    workers = 50
+    results: list[dict] = []
 
-    rows: list[dict] = []
-    for i in range(requests_n):
-        payload = {
-            "prompt": f"Benchmark request {i}: summarize gpu control plane.",
-            "quality_tier": quality_tier,
-            "latency_budget_ms": latency_budget_ms,
-            "max_tokens": 128,
-            "queue_if_busy": True,
-        }
-        start = time.perf_counter()
-        try:
-            r = requests.post(f"{base_url.rstrip('/')}/platform/route", json=payload, timeout=30)
-            elapsed_ms = (time.perf_counter() - start) * 1000
-            body = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
-            row = {
-                "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-                "request_id": i,
-                "http_status": r.status_code,
-                "runtime": body.get("runtime"),
-                "status": body.get("status", "error"),
-                "latency_ms": round(float(body.get("latency_ms", elapsed_ms)), 2),
-                "tokens_per_sec": float(body.get("tokens_per_sec", 0.0)),
-                "autoscale_action": body.get("autoscaling", {}).get("action"),
-            }
-        except requests.RequestException as exc:
-            elapsed_ms = (time.perf_counter() - start) * 1000
-            row = {
-                "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-                "request_id": i,
-                "http_status": 0,
-                "runtime": None,
-                "status": "error",
-                "latency_ms": round(elapsed_ms, 2),
-                "tokens_per_sec": 0.0,
-                "autoscale_action": None,
-                "error": str(exc),
-            }
-        append_jsonl(OUTPUT, row)
-        rows.append(row)
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = [executor.submit(_send_request, base_url, i) for i in range(n_requests)]
+        for future in as_completed(futures):
+            results.append(future.result())
 
-    success = [r for r in rows if r["status"] == "ok"]
+    successes = [r for r in results if r["ok"]]
+    latencies = [r["latency_ms"] for r in successes]
+    elapsed_total_s = max(sum(r["latency_ms"] for r in results) / 1000.0, 0.001)
     summary = {
-        "requests": requests_n,
-        "success_rate": round(len(success) / max(len(rows), 1), 3),
-        "p50_latency_ms": round(percentile([r["latency_ms"] for r in success], 50), 2),
-        "p95_latency_ms": round(percentile([r["latency_ms"] for r in success], 95), 2),
-        "avg_tokens_per_sec": round(sum(r["tokens_per_sec"] for r in success) / max(len(success), 1), 2),
-        "artifact": str(OUTPUT),
+        "total_requests": n_requests,
+        "parallelism": workers,
+        "success_count": len(successes),
+        "success_rate": round(len(successes) / n_requests, 4),
+        "p50_latency_ms": round(_percentile(latencies, 50), 3),
+        "p95_latency_ms": round(_percentile(latencies, 95), 3),
+        "tokens_generated_total": int(sum(r["tokens"] for r in successes)),
+        "aggregate_tokens_per_second": round(sum(r["tokens"] for r in successes) / elapsed_total_s, 3),
     }
+
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
+    SUMMARY_PATH.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps(summary, indent=2))
     return 0
 
