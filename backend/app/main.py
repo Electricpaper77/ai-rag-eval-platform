@@ -9,6 +9,8 @@ import time
 
 from .guardrails import redact_pii, check_injection
 from .rag import COLLECTION_NAME, get_client, get_collection, query_rag
+from .graphrag_retriever import build_graph_index_from_collection, hybrid_retrieve
+from .metrics import GRAPHRAG_LATENCY_SECONDS, GRAPHRAG_REQUESTS_TOTAL
 from .routes.regression_eval import router as regression_router
 from .routes.eval_compare import router as eval_compare_router
 from .routes.dashboard import router as dashboard_router
@@ -133,6 +135,12 @@ class EvaluateRequest(BaseModel):
     top_k: int = 3
 
 
+class GraphRAGEvaluateRequest(BaseModel):
+    prompt: str
+    top_k: int = 5
+    depth: int = 1
+
+
 # ----------------------------
 # Helpers
 # ----------------------------
@@ -171,6 +179,36 @@ def _format_eval_output(result, start_time):
         "latency_ms": latency_ms,
         "tokens_used": tokens_used
     }
+
+
+def _retrieval_precision(prompt: str, citations: List[Dict[str, Any]]) -> float:
+    prompt_terms = {t for t in (prompt or "").lower().split() if len(t) > 2}
+    if not citations:
+        return 0.0
+    matches = 0
+    for citation in citations:
+        snippet = (citation.get("snippet") or "").lower()
+        if any(term in snippet for term in prompt_terms):
+            matches += 1
+    return matches / len(citations)
+
+
+def _citation_grounding_ratio(citations: List[Dict[str, Any]]) -> float:
+    if not citations:
+        return 0.0
+    grounded = 0
+    for c in citations:
+        if c.get("source") and c.get("snippet"):
+            grounded += 1
+    return grounded / len(citations)
+
+
+def _append_graphrag_eval_log(payload: Dict[str, Any]) -> str:
+    path = Path(PROJECT_ROOT) / "artifacts" / "graphrag_eval.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    return str(path)
 # Prometheus metrics endpoint
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from starlette.responses import Response
@@ -208,6 +246,52 @@ def query_guarded(request: QueryRequest):
 @app.post("/evaluate")
 def evaluate(request: EvaluateRequest):
     return query_guarded(QueryRequest(question=request.prompt, top_k=request.top_k))
+
+
+@app.post("/evaluate_graphrag")
+def evaluate_graphrag(request: GraphRAGEvaluateRequest):
+    build_graph_index_from_collection()
+    start = time.perf_counter()
+    baseline = query_rag(request.prompt, top_k=request.top_k)
+    hybrid = hybrid_retrieve(request.prompt, k=request.top_k)
+
+    baseline_citations = baseline.get("citations", [])
+    hybrid_citations = hybrid.get("citations", [])
+    baseline_latency_ms = float(baseline.get("latency_ms", 0.0))
+    hybrid_latency_ms = float(hybrid.get("latency_ms", 0.0))
+
+    evaluation = {
+        "retrieval_precision_baseline": _retrieval_precision(request.prompt, baseline_citations),
+        "retrieval_precision_hybrid": _retrieval_precision(request.prompt, hybrid_citations),
+        "citation_grounding_baseline": _citation_grounding_ratio(baseline_citations),
+        "citation_grounding_hybrid": _citation_grounding_ratio(hybrid_citations),
+        "latency_delta_ms": hybrid_latency_ms - baseline_latency_ms,
+    }
+    evaluation["citation_grounding_improvement"] = (
+        evaluation["citation_grounding_hybrid"] - evaluation["citation_grounding_baseline"]
+    )
+
+    record = {
+        "ts": int(time.time()),
+        "prompt": request.prompt,
+        "top_k": request.top_k,
+        "baseline": baseline,
+        "hybrid": hybrid,
+        "evaluation": evaluation,
+    }
+    log_path = _append_graphrag_eval_log(record)
+
+    elapsed_s = max(time.perf_counter() - start, 0.0)
+    GRAPHRAG_REQUESTS_TOTAL.inc()
+    GRAPHRAG_LATENCY_SECONDS.observe(elapsed_s)
+
+    return {
+        "status": "ok",
+        "baseline": baseline,
+        "hybrid": hybrid,
+        "evaluation": evaluation,
+        "log_path": log_path,
+    }
 
 
 @app.get("/leaderboard")
