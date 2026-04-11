@@ -1,0 +1,3 @@
+{"timestamp":"2026-04-11T00:00:00Z","runtime":"nvidia_dynamo_triton","latency_budget_ms":900,"quality_tier":"high","latency_ms":42.5,"tokens_per_sec":1200.0,"autoscale_action":"hold","admission_status":"accepted"}
+{"timestamp":"2026-04-11T00:00:01Z","runtime":"amd_vllm_rocm","latency_budget_ms":1800,"quality_tier":"cost","latency_ms":55.1,"tokens_per_sec":980.5,"autoscale_action":"hold","admission_status":"accepted"}
+{"timestamp": "2026-04-11T02:11:35.929648+00:00", "runtime": "amd_vllm_rocm", "latency_budget_ms": 1200, "quality_tier": "balanced", "latency_ms": 6.15, "tokens_per_sec": 3252.76, "autoscale_action": "scale_down", "admission_status": "accepted"}

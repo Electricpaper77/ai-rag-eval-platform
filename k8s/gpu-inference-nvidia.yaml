@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nvidia-dynamo-triton
+  labels:
+    app: gpu-inference
+    runtime: nvidia_dynamo_triton
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gpu-inference
+      runtime: nvidia_dynamo_triton
+  template:
+    metadata:
+      labels:
+        app: gpu-inference
+        runtime: nvidia_dynamo_triton
+    spec:
+      nodeSelector:
+        accelerator: nvidia
+      containers:
+      - name: triton
+        image: nvcr.io/nvidia/tritonserver:24.01-py3
+        args: ["tritonserver", "--model-repository=/models"]
+        ports:
+        - containerPort: 8000
+        resources:
+          limits:
+            nvidia.com/gpu: "1"
+            cpu: "8"
+            memory: 32Gi
+          requests:
+            nvidia.com/gpu: "1"
+            cpu: "4"
+            memory: 16Gi

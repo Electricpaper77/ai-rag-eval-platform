@@ -1,0 +1,3 @@
+{"timestamp":"2026-04-11T00:00:00Z","runtime":"nvidia_dynamo_triton","action":"hold","reason":"within_threshold","target_replicas":1}
+{"timestamp":"2026-04-11T00:00:01Z","runtime":"amd_vllm_rocm","action":"hold","reason":"within_threshold","target_replicas":1}
+{"timestamp": "2026-04-11T02:11:35.929648+00:00", "runtime": "amd_vllm_rocm", "action": "scale_down", "reason": "sustained_low_utilization", "target_replicas": 1}

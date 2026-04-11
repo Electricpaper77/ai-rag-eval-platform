@@ -1,0 +1,2 @@
+{"timestamp":"2026-04-11T00:05:00Z","runtime":"amd_vllm_rocm","reason":"capacity_exceeded"}
+{"timestamp": "2026-04-11T02:11:35.908779+00:00", "runtime": "amd_vllm_rocm", "reason": "capacity_exceeded"}
