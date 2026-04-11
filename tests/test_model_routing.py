@@ -57,3 +57,5 @@ def test_model_routing_metrics_are_exposed() -> None:
     assert "model_requests_total" in metrics.text
     assert "model_latency_seconds_bucket" in metrics.text
     assert "model_selection_count" in metrics.text
+    assert "model_selection_total" in metrics.text
+    assert "model_cost_estimate" in metrics.text

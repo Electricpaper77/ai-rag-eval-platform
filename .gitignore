@@ -41,6 +41,7 @@ README.md.bak
 
 # eval run artifacts
 runs/*.json
+!artifacts/model_benchmarks.json
 
 # local scratch / generated
 *.bak

@@ -1,0 +1,27 @@
+{
+  "gpt-4o-mini": {
+    "p50_latency": 420,
+    "quality_score": 0.87,
+    "cost_per_1k_tokens": 0.003
+  },
+  "mistral-7b": {
+    "p50_latency": 280,
+    "quality_score": 0.81,
+    "cost_per_1k_tokens": 0.0012
+  },
+  "openai": {
+    "p50_latency": 360,
+    "quality_score": 0.89,
+    "cost_per_1k_tokens": 0.004
+  },
+  "vllm": {
+    "p50_latency": 250,
+    "quality_score": 0.8,
+    "cost_per_1k_tokens": 0.0018
+  },
+  "mock": {
+    "p50_latency": 180,
+    "quality_score": 0.62,
+    "cost_per_1k_tokens": 0.0005
+  }
+}
