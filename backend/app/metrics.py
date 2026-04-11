@@ -142,3 +142,66 @@ GPU_QUEUE_DEPTH = Gauge(
 def record_router_metrics(runtime: str, quality_tier: str, queue_depth: int) -> None:
     ROUTER_DECISIONS_TOTAL.labels(runtime=runtime, quality_tier=quality_tier).inc()
     GPU_QUEUE_DEPTH.labels(runtime=runtime).set(max(queue_depth, 0))
+
+
+RELIABILITY_REQUESTS_TOTAL = Counter(
+    "reliability_requests_total",
+    "Reliability request outcomes",
+    labelnames=("status",),
+)
+
+RELIABILITY_RETRY_TOTAL = Counter(
+    "reliability_retry_total",
+    "Total retries observed",
+)
+
+RELIABILITY_TIMEOUT_TOTAL = Counter(
+    "reliability_timeout_total",
+    "Total timeouts observed",
+)
+
+RELIABILITY_ERROR_RATE = Gauge(
+    "reliability_error_rate",
+    "Current observed error rate",
+)
+
+RELIABILITY_SUCCESS_RATE = Gauge(
+    "reliability_success_rate",
+    "Current observed success rate",
+)
+
+DISTRIBUTED_RUNTIME_QUEUE_DEPTH = Gauge(
+    "distributed_runtime_queue_depth",
+    "Simulated distributed benchmark queue depth",
+    labelnames=("runtime",),
+)
+
+DISTRIBUTED_RUNTIME_LATENCY_MS = Histogram(
+    "distributed_runtime_latency_ms",
+    "Simulated distributed benchmark latency in milliseconds",
+    labelnames=("runtime",),
+)
+
+
+def record_reliability_metrics(
+    *,
+    status: str,
+    retries: int,
+    timed_out: bool,
+    total_requests: int,
+    error_count: int,
+    success_count: int,
+) -> None:
+    RELIABILITY_REQUESTS_TOTAL.labels(status=status).inc()
+    RELIABILITY_RETRY_TOTAL.inc(max(retries, 0))
+    if timed_out:
+        RELIABILITY_TIMEOUT_TOTAL.inc()
+
+    if total_requests > 0:
+        RELIABILITY_ERROR_RATE.set(max(error_count, 0) / total_requests)
+        RELIABILITY_SUCCESS_RATE.set(max(success_count, 0) / total_requests)
+
+
+def record_distributed_runtime_metrics(runtime: str, queue_depth: int, latency_ms: float) -> None:
+    DISTRIBUTED_RUNTIME_QUEUE_DEPTH.labels(runtime=runtime).set(max(queue_depth, 0))
+    DISTRIBUTED_RUNTIME_LATENCY_MS.labels(runtime=runtime).observe(max(latency_ms, 0.0))
