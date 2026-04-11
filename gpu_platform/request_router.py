@@ -9,10 +9,14 @@ from typing import Any
 from gpu_platform.canary_controller import CANARY_CONTROLLER
 from gpu_platform.metrics import (
     record_gpu_pool_selection,
+    record_model_latency_seconds,
+    record_model_request,
+    record_model_selection_policy,
     record_kv_cache_strategy,
     record_routing_decision,
     record_routing_latency,
 )
+from gpu_platform.model_registry import load_model_registry
 from gpu_platform.model_policy import select_model_by_policy
 from gpu_platform.router_policies import rank_backends
 from gpu_platform.shadow_eval import run_shadow_evaluation_async
@@ -114,6 +118,7 @@ def _route_chat_request(
     messages: list[dict[str, Any]],
     latency_budget_ms: int,
     quality_tier: str,
+    max_cost: float | None = None,
     *,
     request_id: str | None = None,
     force_shadow: bool | None = None,
@@ -122,6 +127,85 @@ def _route_chat_request(
 
     prefix = _get_prefix(messages)
     cache_hint_used = _is_repeated_prefix(prefix)
+
+    model_registry = load_model_registry()
+    policy_name = quality_tier if quality_tier in {"fast", "balanced", "high_quality"} else None
+
+    if policy_name and model_registry:
+        candidates = [
+            model
+            for model in model_registry
+            if model["avg_latency_ms"] <= latency_budget_ms and (max_cost is None or model["cost_per_1k_tokens"] <= max_cost)
+        ]
+        if not candidates:
+            candidates = [model for model in model_registry if max_cost is None or model["cost_per_1k_tokens"] <= max_cost]
+        if not candidates:
+            candidates = model_registry
+
+        max_latency = max(model["avg_latency_ms"] for model in candidates) or 1.0
+        max_cost_value = max(model["cost_per_1k_tokens"] for model in candidates) or 1.0
+        enriched = []
+        for model in candidates:
+            latency_norm = model["avg_latency_ms"] / max_latency
+            cost_norm = model["cost_per_1k_tokens"] / max_cost_value
+            score = (
+                (0.5 * model["quality_score"]) - (0.3 * latency_norm) - (0.2 * cost_norm)
+                if policy_name == "balanced"
+                else 0.0
+            )
+            enriched.append({**model, "score": score})
+
+        if policy_name == "fast":
+            selected_registry_model = min(enriched, key=lambda item: item["avg_latency_ms"])
+        elif policy_name == "high_quality":
+            selected_registry_model = max(enriched, key=lambda item: item["quality_score"])
+        else:
+            selected_registry_model = max(enriched, key=lambda item: item["score"])
+
+        selected_backend = selected_registry_model["id"]
+        selected_latency = _simulate_latency_ms(selected_registry_model["avg_latency_ms"], req_id, selected_backend)
+        pass_outcome = _simulate_pass_outcome(selected_registry_model["quality_score"], req_id, selected_backend)
+        hallucination_outcome = _simulate_hallucination_outcome(1.0 - selected_registry_model["quality_score"], req_id, selected_backend)
+        primary_response = _simulate_model_response(selected_backend, messages)
+        routing_reason = f"policy={policy_name}, provider={selected_registry_model['provider']}"
+        record_model_selection_policy(policy_name)
+        record_model_request(selected_backend)
+        record_model_latency_seconds(selected_backend, selected_latency / 1000.0)
+
+        decision_row = {
+            "request_id": req_id,
+            "selected_backend": selected_backend,
+            "routing_score": selected_registry_model["score"],
+            "cache_hint_used": cache_hint_used,
+            "latency_budget_ms": latency_budget_ms,
+            "quality_tier": quality_tier,
+            "policy_selected_model": selected_backend,
+            "routing_reason": routing_reason,
+            "canary_applied": False,
+            "rollback_triggered": False,
+            "timestamp": time(),
+        }
+        _log_routing_decision(decision_row)
+
+        log_job_run(
+            job_id=req_id,
+            model_used=selected_backend,
+            latency_ms=selected_latency,
+            success=pass_outcome,
+        )
+        return {
+            "request_id": req_id,
+            "selected_backend": selected_backend,
+            "active_backend": selected_backend,
+            "routing_score": selected_registry_model["score"],
+            "routing_reason": routing_reason,
+            "cache_hint_used": cache_hint_used,
+            "canary_applied": False,
+            "rollback_triggered": False,
+            "response": primary_response,
+            "policy": policy_name,
+            "hallucination_outcome": hallucination_outcome,
+        }
 
     ranked = rank_backends(
         latency_budget_ms=latency_budget_ms,
@@ -217,6 +301,7 @@ def route_request(
     workload_type: str | list[dict[str, Any]] | None = None,
     latency_budget_ms: int = 1500,
     priority_class: str = "balanced",
+    max_cost: float | None = None,
     gpu_required: bool = True,
     parallelism_config: dict[str, Any] | None = None,
     request_id: str | None = None,
@@ -232,6 +317,7 @@ def route_request(
             messages=messages,
             latency_budget_ms=latency_budget_ms,
             quality_tier=quality_tier or priority_class,
+            max_cost=max_cost,
             request_id=request_id,
             force_shadow=force_shadow,
         )
@@ -241,6 +327,7 @@ def route_request(
             messages=workload_type,
             latency_budget_ms=latency_budget_ms,
             quality_tier=quality_tier or priority_class,
+            max_cost=max_cost,
             request_id=request_id,
             force_shadow=force_shadow,
         )

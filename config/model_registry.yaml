@@ -1,0 +1,18 @@
+models:
+  - id: mistral_7b_instruct
+    provider: vllm
+    quality_score: 0.82
+    avg_latency_ms: 620
+    cost_per_1k_tokens: 0.18
+
+  - id: llama3_8b
+    provider: vllm
+    quality_score: 0.87
+    avg_latency_ms: 910
+    cost_per_1k_tokens: 0.21
+
+  - id: phi3_mini
+    provider: mock
+    quality_score: 0.74
+    avg_latency_ms: 280
+    cost_per_1k_tokens: 0.07

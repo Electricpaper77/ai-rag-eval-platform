@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Any, Dict, List
 import os
+import json
 import glob
 from pathlib import Path
 import time
@@ -104,6 +105,7 @@ def resolve_ingest_path(p: str) -> str:
 
 EVAL_DIR = os.path.join(PROJECT_ROOT, "data", "eval_sets")
 DEFAULT_EVAL_SET = os.path.join(EVAL_DIR, "policy_eval.json")
+LEADERBOARD_PATH = os.path.join(PROJECT_ROOT, "artifacts", "model_eval", "leaderboard.json")
 
 app = FastAPI(title="AI RAG Eval Platform")
 app.include_router(regression_router)
@@ -206,3 +208,11 @@ def query_guarded(request: QueryRequest):
 @app.post("/evaluate")
 def evaluate(request: EvaluateRequest):
     return query_guarded(QueryRequest(question=request.prompt, top_k=request.top_k))
+
+
+@app.get("/leaderboard")
+def get_leaderboard():
+    leaderboard_file = Path(LEADERBOARD_PATH)
+    if not leaderboard_file.exists():
+        raise HTTPException(status_code=404, detail="leaderboard.json not found. Run scripts/run_model_eval.py first.")
+    return json.loads(leaderboard_file.read_text(encoding="utf-8"))
