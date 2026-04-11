@@ -483,3 +483,41 @@ The platform now includes production-style model routing and benchmark leaderboa
   - `model_requests_total{model=...}`
   - `model_latency_seconds_bucket{model=...}`
   - `model_selection_count{policy=...}`
+
+## Model Benchmarking & Leaderboard
+
+Use the benchmark runner to evaluate multiple LLM backends with the same JSONL prompt dataset and produce reproducible artifacts.
+
+Run benchmark:
+
+```bash
+python scripts/run_model_benchmark.py \
+  --base-url http://127.0.0.1:8000 \
+  --dataset eval/prompts.jsonl \
+  --models openai/gpt-4o-mini mistral-7b-instruct mock/local-model
+```
+
+Generated artifacts:
+- `artifacts/leaderboard/model_benchmark_results.jsonl`
+- `artifacts/proof/benchmark_run_example.json`
+
+Then generate markdown leaderboard:
+
+```bash
+python scripts/generate_leaderboard.py \
+  --input artifacts/leaderboard/model_benchmark_results.jsonl \
+  --output artifacts/leaderboard_summary.md
+```
+
+Leaderboard columns:
+- `model`
+- `p50 latency`
+- `p95 latency`
+- `tokens/sec`
+- `pass rate`
+- `hallucination`
+
+Exported benchmark Prometheus metrics:
+- `benchmark_runs_total`
+- `benchmark_latency_ms`
+- `benchmark_tokens_per_second`

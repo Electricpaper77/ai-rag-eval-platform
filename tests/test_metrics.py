@@ -30,3 +30,6 @@ def test_metrics_endpoint_exposes_prometheus_text(monkeypatch):
     assert "llm_requests_total" in response.text
     assert "llm_tokens_total" in response.text
     assert "llm_request_latency_seconds" in response.text
+    assert "benchmark_runs_total" in response.text
+    assert "benchmark_latency_ms" in response.text
+    assert "benchmark_tokens_per_second" in response.text

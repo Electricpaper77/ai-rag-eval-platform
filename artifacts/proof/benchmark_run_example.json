@@ -1,0 +1,12 @@
+{
+  "base_url": "http://127.0.0.1:9",
+  "dataset": "eval/prompts.jsonl",
+  "models": [
+    "openai/gpt-4o-mini",
+    "mistral-7b-instruct",
+    "mock/local-model"
+  ],
+  "rows_written": 3,
+  "output_path": "artifacts/leaderboard/model_benchmark_results.jsonl",
+  "created_at_unix": 1775872648
+}
