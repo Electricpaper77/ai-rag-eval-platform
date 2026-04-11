@@ -45,6 +45,16 @@ LLM_REQUEST_LATENCY_SECONDS = Histogram(
     labelnames=("backend", "status"),
 )
 
+GRAPHRAG_REQUESTS_TOTAL = Counter(
+    "graphrag_requests_total",
+    "Total GraphRAG evaluation requests",
+)
+
+GRAPHRAG_LATENCY_SECONDS = Histogram(
+    "graphrag_latency_seconds",
+    "GraphRAG evaluation latency in seconds",
+)
+
 
 def record_inference_metrics(
     runtime_label: str,
