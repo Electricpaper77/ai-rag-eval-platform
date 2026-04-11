@@ -149,6 +149,19 @@ MODEL_SELECTION_COUNT = Counter(
     "Total model selections grouped by policy",
     labelnames=("policy",),
 )
+
+MODEL_COST_ESTIMATE = Gauge(
+    "model_cost_estimate",
+    "Estimated cost per 1k tokens for selected model",
+    labelnames=("model",),
+)
+
+MODEL_SELECTION_TOTAL = Counter(
+    "model_selection_total",
+    "Total model selections by selected model and quality tier",
+    labelnames=("model", "quality_tier"),
+)
+
 _completed_jobs: set[str] = set()
 _seen_benchmark_runs: set[str] = set()
 _state_lock = Lock()
@@ -276,3 +289,11 @@ def record_model_latency_seconds(model: str, latency_seconds: float) -> None:
 
 def record_model_selection_policy(policy: str) -> None:
     MODEL_SELECTION_COUNT.labels(policy=policy).inc()
+
+
+def record_model_selection_total(model: str, quality_tier: str) -> None:
+    MODEL_SELECTION_TOTAL.labels(model=model, quality_tier=quality_tier).inc()
+
+
+def record_model_cost_estimate(model: str, estimated_cost: float) -> None:
+    MODEL_COST_ESTIMATE.labels(model=model).set(max(estimated_cost, 0.0))

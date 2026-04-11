@@ -9,15 +9,17 @@ from typing import Any
 from gpu_platform.canary_controller import CANARY_CONTROLLER
 from gpu_platform.metrics import (
     record_gpu_pool_selection,
+    record_model_cost_estimate,
     record_model_latency_seconds,
     record_model_request,
     record_model_selection_policy,
+    record_model_selection_total,
     record_kv_cache_strategy,
     record_routing_decision,
     record_routing_latency,
 )
 from gpu_platform.model_registry import load_model_registry
-from gpu_platform.model_policy import select_model_by_policy
+from gpu_platform.model_policy import select_model, select_model_by_policy
 from gpu_platform.router_policies import rank_backends
 from gpu_platform.shadow_eval import run_shadow_evaluation_async
 from gpu_platform.job_status import log_job_run
@@ -207,6 +209,19 @@ def _route_chat_request(
             "hallucination_outcome": hallucination_outcome,
         }
 
+    policy_selected_model = None
+    model_policy_decision = select_model(
+        latency_budget_ms=latency_budget_ms,
+        quality_tier=quality_tier,
+        cost_budget=max_cost if max_cost is not None else 1.0,
+    )
+    if isinstance(model_policy_decision, dict):
+        policy_selected_model = model_policy_decision.get("selected_model")
+        if policy_selected_model:
+            record_model_selection_total(str(policy_selected_model), quality_tier)
+            selected_cost = float(model_policy_decision.get("selected_cost_per_1k_tokens", 0.0) or 0.0)
+            record_model_cost_estimate(str(policy_selected_model), selected_cost)
+
     ranked = rank_backends(
         latency_budget_ms=latency_budget_ms,
         quality_tier=quality_tier,
@@ -226,6 +241,8 @@ def _route_chat_request(
     canary_applied, forced_backend, rollback_triggered = CANARY_CONTROLLER.choose_backend(req_id)
     if canary_applied and forced_backend in ranked_by_backend:
         selected = ranked_by_backend[forced_backend]
+    elif policy_selected_model in ranked_by_backend:
+        selected = ranked_by_backend[policy_selected_model]
     elif policy_decision["selected_model"] in ranked_by_backend:
         selected = ranked_by_backend[policy_decision["selected_model"]]
     else:
@@ -255,6 +272,7 @@ def _route_chat_request(
         "latency_budget_ms": latency_budget_ms,
         "quality_tier": quality_tier,
         "policy_selected_model": policy_decision["selected_model"],
+        "performance_policy_selected_model": policy_selected_model,
         "routing_reason": policy_decision["routing_reason"],
         "canary_applied": canary_applied,
         "rollback_triggered": rollback_triggered,
