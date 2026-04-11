@@ -131,6 +131,24 @@ PLATFORM_RUNTIME_DEPLOYMENTS_TOTAL = Counter(
     "platform_runtime_deployments_total",
     "Total number of runtime deployment specs generated",
 )
+
+MODEL_REQUESTS_TOTAL = Counter(
+    "model_requests_total",
+    "Total routed requests by selected model",
+    labelnames=("model",),
+)
+
+MODEL_LATENCY_SECONDS = Histogram(
+    "model_latency_seconds",
+    "Per-model latency in seconds",
+    labelnames=("model",),
+)
+
+MODEL_SELECTION_COUNT = Counter(
+    "model_selection_count",
+    "Total model selections grouped by policy",
+    labelnames=("policy",),
+)
 _completed_jobs: set[str] = set()
 _seen_benchmark_runs: set[str] = set()
 _state_lock = Lock()
@@ -246,3 +264,15 @@ def record_platform_vllm_config_generated() -> None:
 
 def record_platform_runtime_deployment() -> None:
     PLATFORM_RUNTIME_DEPLOYMENTS_TOTAL.inc()
+
+
+def record_model_request(model: str) -> None:
+    MODEL_REQUESTS_TOTAL.labels(model=model).inc()
+
+
+def record_model_latency_seconds(model: str, latency_seconds: float) -> None:
+    MODEL_LATENCY_SECONDS.labels(model=model).observe(max(latency_seconds, 0.0))
+
+
+def record_model_selection_policy(policy: str) -> None:
+    MODEL_SELECTION_COUNT.labels(policy=policy).inc()

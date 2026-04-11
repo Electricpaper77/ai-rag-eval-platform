@@ -455,3 +455,31 @@ curl -s http://127.0.0.1:8000/v1/chat/completions \
 ```bash
 python scripts/run_benchmark.py --base-url http://127.0.0.1:8000 --requests 25
 ```
+
+## Model Selection Infrastructure
+
+The platform now includes production-style model routing and benchmark leaderboard generation designed for decision engineering workflows.
+
+### Tradeoff decision logic
+
+- Static model candidates live in `config/model_registry.yaml` with quality, latency, and cost metadata.
+- `gpu_platform/request_router.py` supports policy-driven model routing for chat-style requests:
+  - `fast`: picks the lowest-latency eligible model.
+  - `balanced`: computes weighted tradeoff score (`0.5*quality - 0.3*latency_norm - 0.2*cost_norm`).
+  - `high_quality`: picks the highest quality score.
+- Budget constraints (`latency_budget_ms`, `max_cost`) filter candidate models before policy selection.
+
+### Benchmark-driven routing
+
+- `scripts/run_model_eval.py` executes the same JSONL prompt dataset against every registered model.
+- The runner is mock-friendly and deterministic (hash-based simulation), so it does not require a GPU runtime.
+- Results are materialized in `artifacts/model_eval/leaderboard.json` and can be served via `GET /leaderboard`.
+
+### Evaluation reproducibility
+
+- Evaluation outcomes are deterministic per model/prompt pair, enabling repeatable CI checks.
+- Artifact output path is stable (`artifacts/model_eval/leaderboard.json`) for downstream dashboards and regression gates.
+- Prometheus now exports model-level routing telemetry:
+  - `model_requests_total{model=...}`
+  - `model_latency_seconds_bucket{model=...}`
+  - `model_selection_count{policy=...}`
