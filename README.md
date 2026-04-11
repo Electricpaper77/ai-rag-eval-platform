@@ -521,3 +521,57 @@ Exported benchmark Prometheus metrics:
 - `benchmark_runs_total`
 - `benchmark_latency_ms`
 - `benchmark_tokens_per_second`
+
+## GPU Inference Platform
+
+The repository now includes a recruiter-visible GPU inference control plane in the existing FastAPI service.
+
+### New endpoints
+
+- `POST /platform/route` — runtime routing based on latency budget, quality tier, runtime health, and admission capacity.
+- `POST /platform/deployments/validate` — validates deployment requests against runtime capabilities.
+- `GET /platform/status` — reports backend health, replica targets, and artifact paths.
+
+### AMD + NVIDIA runtime adapters
+
+- NVIDIA Dynamo Triton adapter: `backend/app/runtime_adapters/nvidia_dynamo_triton.py`
+- AMD ROCm vLLM adapter: `backend/app/runtime_adapters/amd_vllm_rocm.py`
+
+Both implement:
+- `health_check()`
+- `estimate_capacity()`
+- `invoke_chat_completion()`
+- `supported_hardware()`
+
+### Metrics exposed
+
+Prometheus metrics in `backend/app/metrics_gpu_platform.py` include:
+- request count
+- p50/p95 latency (derivable from histogram)
+- tokens/sec
+- queue depth
+- admission denials
+- autoscale recommendations
+
+### Benchmark and report artifacts
+
+Run benchmark:
+
+```bash
+python scripts/run_gpu_benchmark.py
+python scripts/generate_gpu_platform_report.py
+```
+
+Generated proof artifacts:
+- `artifacts/proof/benchmark_runs.jsonl`
+- `artifacts/proof/routing_decisions.jsonl`
+- `artifacts/proof/autoscaling_recommendations.jsonl`
+- `artifacts/proof/admission_failures.jsonl`
+- `artifacts/proof/gpu_platform_summary.json`
+
+### Recruiter-verifiable metric placeholders
+
+- p95 latency: `<fill from artifacts/proof/gpu_platform_summary.json>`
+- tokens/sec: `<fill from artifacts/proof/gpu_platform_summary.json>`
+- success rate: `<fill from artifacts/proof/gpu_platform_summary.json>`
+- queue rejection rate: `<fill from artifacts/proof/gpu_platform_summary.json>`
