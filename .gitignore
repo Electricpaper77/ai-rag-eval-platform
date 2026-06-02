@@ -80,3 +80,5 @@ artifacts/eval_runs/
 !artifacts/proof/eval_dashboard_summary.json
 .pytest_tmp/
 .pytest_cache/
+.pytest_tmp/
+.pytest_cache/
