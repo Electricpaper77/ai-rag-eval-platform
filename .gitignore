@@ -82,3 +82,6 @@ artifacts/eval_runs/
 .pytest_cache/
 .pytest_tmp/
 .pytest_cache/
+
+.venv311/
+.tmp/
