@@ -1,0 +1,1 @@
+{"run_id": "distributed-benchmark-003", "model": "meta-llama/Llama-2-7b-chat-hf", "gpu_count": 1, "batch_size": 1, "p95_latency_ms": 864.0, "tokens_per_sec": 33.75}

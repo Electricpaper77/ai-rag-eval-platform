@@ -1,0 +1,2 @@
+{"model": "openai/gpt-4o-mini", "p50_latency_ms": 220, "p95_latency_ms": 480, "tokens_per_second": 70, "eval_pass_rate": 0.92, "hallucination_rate": 0.03}
+{"model": "mock/local-model", "p50_latency_ms": 20, "p95_latency_ms": 40, "tokens_per_second": 130, "eval_pass_rate": 0.75, "hallucination_rate": 0.1}

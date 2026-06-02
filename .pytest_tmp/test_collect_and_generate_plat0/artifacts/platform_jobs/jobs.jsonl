@@ -1,0 +1,2 @@
+{"job_id": "job-1", "status": "failed", "failure_reason": "quota_exceeded,invalid_parallelism_config", "retry_count": 2}
+{"job_id": "job-2", "status": "queued", "retry_count": 0}

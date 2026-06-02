@@ -1,0 +1,1 @@
+{"job_id": "job-aafc88f26d", "failure_reason": "invalid_parallelism_config", "runtime_duration": 0.008869, "resource_config_snapshot": {"gpu_count": 1, "cpu": "4", "memory": "16Gi", "replicas": 1}, "retry_count": 1, "timestamp": "2026-06-02T00:49:46.408653+00:00"}

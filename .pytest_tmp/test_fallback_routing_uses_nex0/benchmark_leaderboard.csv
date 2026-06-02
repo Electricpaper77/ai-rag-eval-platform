@@ -1,0 +1,2 @@
+rank,backend,requests,p50_latency_ms,p95_latency_ms,ttft_p50_ms,tokens_per_second,error_rate,cost_per_request_usd,score
+1,vllm-a10g,1,62.64,62.64,20.0,207.54,0.0,3.25e-06,1019447.38

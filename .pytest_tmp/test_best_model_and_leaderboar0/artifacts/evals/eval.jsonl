@@ -1,0 +1,2 @@
+{"run_id": "model-x-run", "model_version": "model-x", "passed": true, "hallucination": false, "citation_precision": 0.95, "latency_ms": 1200, "cost_per_request": 0.005}
+{"run_id": "model-y-run", "model_version": "model-y", "passed": true, "hallucination": false, "citation_precision": 0.5, "latency_ms": 300, "cost_per_request": 0.015}

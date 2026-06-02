@@ -1,0 +1,2 @@
+{"backend": "mock-local", "error": "synthetic failure", "model": "gpt-4o-mini", "success": false, "trace_id": "4917a6607b343c4427bbc36a36ed3b53", "ts": 1780361386.8049252}
+{"backend": "vllm-a10g", "cost_usd": 3.25e-06, "latency_seconds": 0.06263940001372248, "model": "gpt-4o-mini", "success": true, "tokens": 13, "tokens_per_second": 111.75075110021014, "trace_id": "4917a6607b343c4427bbc36a36ed3b53", "ts": 1780361386.8727958, "ttft_seconds": 0.02}

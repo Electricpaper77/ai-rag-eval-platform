@@ -1,0 +1,1 @@
+{"job_id": "job-b79514b33c", "rejected_at": "2026-06-02T00:49:46.574367+00:00", "reason_codes": ["unsupported_priority_class"], "priority_class": "medium-priority", "total_gpu_requested": 1}

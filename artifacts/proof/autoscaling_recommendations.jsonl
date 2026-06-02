@@ -1,3 +1,9 @@
 {"timestamp":"2026-04-11T00:00:00Z","runtime":"nvidia_dynamo_triton","action":"hold","reason":"within_threshold","target_replicas":1}
 {"timestamp":"2026-04-11T00:00:01Z","runtime":"amd_vllm_rocm","action":"hold","reason":"within_threshold","target_replicas":1}
 {"timestamp": "2026-04-11T02:11:35.929648+00:00", "runtime": "amd_vllm_rocm", "action": "scale_down", "reason": "sustained_low_utilization", "target_replicas": 1}
+{"timestamp": "2026-06-02T00:40:09.037648+00:00", "runtime": "amd_vllm_rocm", "action": "scale_down", "reason": "sustained_low_utilization", "target_replicas": 1}
+{"timestamp": "2026-06-02T00:41:54.566856+00:00", "runtime": "amd_vllm_rocm", "action": "scale_down", "reason": "sustained_low_utilization", "target_replicas": 1}
+{"timestamp": "2026-06-02T00:42:41.879725+00:00", "runtime": "amd_vllm_rocm", "action": "scale_down", "reason": "sustained_low_utilization", "target_replicas": 1}
+{"timestamp": "2026-06-02T00:44:50.001791+00:00", "runtime": "amd_vllm_rocm", "action": "scale_down", "reason": "sustained_low_utilization", "target_replicas": 1}
+{"timestamp": "2026-06-02T00:46:39.622880+00:00", "runtime": "amd_vllm_rocm", "action": "scale_down", "reason": "sustained_low_utilization", "target_replicas": 1}
+{"timestamp": "2026-06-02T00:49:19.005123+00:00", "runtime": "amd_vllm_rocm", "action": "scale_down", "reason": "sustained_low_utilization", "target_replicas": 1}

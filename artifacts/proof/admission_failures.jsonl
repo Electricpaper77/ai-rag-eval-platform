@@ -1,2 +1,8 @@
 {"timestamp":"2026-04-11T00:05:00Z","runtime":"amd_vllm_rocm","reason":"capacity_exceeded"}
 {"timestamp": "2026-04-11T02:11:35.908779+00:00", "runtime": "amd_vllm_rocm", "reason": "capacity_exceeded"}
+{"timestamp": "2026-06-02T00:40:09.013254+00:00", "runtime": "amd_vllm_rocm", "reason": "capacity_exceeded"}
+{"timestamp": "2026-06-02T00:41:54.547367+00:00", "runtime": "amd_vllm_rocm", "reason": "capacity_exceeded"}
+{"timestamp": "2026-06-02T00:42:41.866166+00:00", "runtime": "amd_vllm_rocm", "reason": "capacity_exceeded"}
+{"timestamp": "2026-06-02T00:44:49.978574+00:00", "runtime": "amd_vllm_rocm", "reason": "capacity_exceeded"}
+{"timestamp": "2026-06-02T00:46:39.603388+00:00", "runtime": "amd_vllm_rocm", "reason": "capacity_exceeded"}
+{"timestamp": "2026-06-02T00:49:18.988478+00:00", "runtime": "amd_vllm_rocm", "reason": "capacity_exceeded"}

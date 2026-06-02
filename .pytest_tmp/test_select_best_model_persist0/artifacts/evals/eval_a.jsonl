@@ -1,0 +1,2 @@
+{"run_id": "run-a", "model_version": "mistral-7b-instruct", "passed": true, "hallucination": false, "citation_precision": 0.9, "latency_ms": 1180, "tokens_per_second": 70, "cost_per_request": 0.006}
+{"run_id": "run-a", "model_version": "mistral-7b-instruct", "passed": true, "hallucination": false, "citation_precision": 0.84, "latency_ms": 1100, "tokens_per_second": 74, "cost_per_request": 0.006}
