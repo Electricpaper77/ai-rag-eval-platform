@@ -10,3 +10,4 @@ chromadb==0.4.24
 prometheus-client==0.20.0
 numpy==1.26.4
 prometheus-client
+prometheus-client
