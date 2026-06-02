@@ -1,0 +1,61 @@
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_latency", "ts": 1780084925.3537815}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_cost", "ts": 1780084925.4123442}
+{"attempt": 1, "backend": "openai", "model": "gpt-4o-mini", "policy": "highest_quality", "ts": 1780084925.4730165}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "ts": 1780084925.533727}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "weighted_round_robin", "ts": 1780084925.5973418}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "ts": 1780093807.7653317}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_latency", "ts": 1780093847.0350277}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_cost", "ts": 1780093847.0904057}
+{"attempt": 1, "backend": "openai", "model": "gpt-4o-mini", "policy": "highest_quality", "ts": 1780093847.1447344}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "ts": 1780093847.2081983}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "weighted_round_robin", "ts": 1780093847.262829}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_latency", "trace_id": "bf8d857eced562b0f1815a8e265603e0", "ts": 1780101426.7296152}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_cost", "trace_id": "b504a9c433c6faff184dda2a92a1783d", "ts": 1780101426.7842996}
+{"attempt": 1, "backend": "openai", "model": "gpt-4o-mini", "policy": "highest_quality", "trace_id": "d90c2c6412cb28718cfb84ed4eb604c3", "ts": 1780101426.8581855}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "trace_id": "30ccd5c6ada64479eb5374721d8456f4", "ts": 1780101426.9309874}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "weighted_round_robin", "trace_id": "391735ed154a982e3b34e9eec2ebbb0c", "ts": 1780101426.994892}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_latency", "trace_id": "3bc046eb27a16e06dd8ae119c5a67416", "ts": 1780101427.0690684}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_cost", "trace_id": "4660cd6ffbfdc59670f3327c94e64f6c", "ts": 1780101427.122454}
+{"attempt": 1, "backend": "openai", "model": "gpt-4o-mini", "policy": "highest_quality", "trace_id": "2abe412840838d7ca1b029dee566916a", "ts": 1780101427.2046483}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "trace_id": "031b6f9bdc11c939fa71741dc220a074", "ts": 1780101427.2774124}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "weighted_round_robin", "trace_id": "acad5acc701ee6592f88168c2b077734", "ts": 1780101427.3371217}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_latency", "trace_id": "7baeb20ce9c93cbe3079262bc9c2337d", "ts": 1780101427.3936622}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_cost", "trace_id": "c3311b89a4368d258edc8d7b19d9b51d", "ts": 1780101427.457119}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_cost", "trace_id": "dd09720850b09a26bad89b06d09178df", "ts": 1780101453.2434742}
+{"attempt": 1, "backend": "openai", "model": "gpt-4o-mini", "policy": "highest_quality", "trace_id": "526ef51155666d11fafe15aae9a44a0b", "ts": 1780101453.2497904}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "trace_id": "c9d01bf9e53a1601dca4445bdccce447", "ts": 1780101453.2497904}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "weighted_round_robin", "trace_id": "0dc3eb1689d8834f87d1a60cbac8a1cd", "ts": 1780101453.257057}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_latency", "trace_id": "546a14e8aea4793efbe5226fd78ee485", "ts": 1780101453.2592108}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_latency", "trace_id": "c89f0b1fc16e7008f32f71b555b6e53e", "ts": 1780101453.419935}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "trace_id": "8c139d0f6745c2dbc79d53efac673c26", "ts": 1780101453.4219432}
+{"attempt": 1, "backend": "openai", "model": "gpt-4o-mini", "policy": "highest_quality", "trace_id": "40c6f9121ca3266d73d2da160d13eab5", "ts": 1780101453.425959}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "weighted_round_robin", "trace_id": "59ab5208a21cc07e2bd2ccee06233162", "ts": 1780101453.425959}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_cost", "trace_id": "5fd2daf7ff700f401f5f8390e207fdb3", "ts": 1780101453.433717}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_latency", "trace_id": "d1dc8e839fb38198f185a2d16d6b6854", "ts": 1780101453.578057}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_cost", "trace_id": "32d11f6d4a4b0849f1ca89300c9ef6ed", "ts": 1780101453.5860903}
+{"attempt": 1, "backend": "openai", "model": "gpt-4o-mini", "policy": "highest_quality", "trace_id": "69d11f392ac46dd22e76cae48f089994", "ts": 1780101453.5901077}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "trace_id": "f279d2b63d1ff1c1a6a044fa3fd8c26d", "ts": 1780101453.591125}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "weighted_round_robin", "trace_id": "bbebef542707187af9172f7d6f755108", "ts": 1780101453.5944152}
+{"attempt": 1, "backend": "triton-h100", "model": "gpt-4o-mini", "policy": "lowest_latency", "trace_id": "63d3910f57cc2545200a697bd7e642c5", "ts": 1780101453.8097544}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_cost", "trace_id": "ed2ea0666e3aefbe91b2b9eeb97471f0", "ts": 1780101453.8097544}
+{"attempt": 1, "backend": "vllm-a10g", "model": "gpt-4o-mini", "policy": "weighted_round_robin", "trace_id": "ba39ce98f1bcd7a8e8446afa3af91da1", "ts": 1780101453.8097544}
+{"attempt": 1, "backend": "openai", "model": "gpt-4o-mini", "policy": "highest_quality", "trace_id": "a640f75b3b0d393774d48ff4fb195445", "ts": 1780101453.8097544}
+{"attempt": 1, "backend": "triton-h100", "model": "gpt-4o-mini", "policy": "fallback_on_error", "trace_id": "b8e50c5c648e10c2bf625a10bb4fd52c", "ts": 1780101453.8097544}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "stream": true, "trace_id": "7c9f28ebc377215935f9b2a0a9278bc8", "ts": 1780101870.928269}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_latency", "trace_id": "9c0daf1f19a1eaf734c661d4ddf26714", "ts": 1780101888.7316794}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_cost", "trace_id": "308457d0db31e66af7c33d02df11bb78", "ts": 1780101888.810726}
+{"attempt": 1, "backend": "openai", "model": "gpt-4o-mini", "policy": "highest_quality", "trace_id": "12eaa6e97f7dc029dfded088d1022886", "ts": 1780101888.9063878}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "trace_id": "d3f439ba5b2898411c90bf5159d18c8c", "ts": 1780101888.994622}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "weighted_round_robin", "trace_id": "d179c7a75db1232d092a6221d756bf6f", "ts": 1780101889.0627444}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_latency", "trace_id": "e94c4cd8e683b0b0a6e46e2e2eaafa31", "ts": 1780101889.1336706}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_cost", "trace_id": "a0a5f3b8246c76dd56f697c94e7e336e", "ts": 1780101889.219683}
+{"attempt": 1, "backend": "openai", "model": "gpt-4o-mini", "policy": "highest_quality", "trace_id": "2510895281e3383161f237d84856e605", "ts": 1780101889.2939796}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "trace_id": "d41af516a8d5ed9d0ac82ce96135b91b", "ts": 1780101889.377387}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "weighted_round_robin", "trace_id": "12d64b0f1564ac98239082dadf9e96ac", "ts": 1780101889.4880066}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_latency", "stream": true, "trace_id": "bf55399234b056d99e1334990f6a13d3", "ts": 1780101889.616816}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "lowest_cost", "stream": true, "trace_id": "5329c5d74310ff21afefca2305fb341b", "ts": 1780101889.7861502}
+{"attempt": 1, "backend": "openai", "model": "gpt-4o-mini", "policy": "highest_quality", "stream": true, "trace_id": "88cb336220e2a342592afa78ed6418ac", "ts": 1780101889.9442487}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "stream": true, "trace_id": "7aa8925efbfb6541df9e248b145d32f4", "ts": 1780101890.096529}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "weighted_round_robin", "stream": true, "trace_id": "94e022f37532fe497b610568c06eb661", "ts": 1780101890.2420242}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "trace_id": "af6069a18d25b6a880b3cba98dfe18d1", "ts": 1780102179.2593472}
+{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "trace_id": "52f0056a197a668b8b5ac3ad6bade1f4", "ts": 1780102259.514545}

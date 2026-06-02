@@ -1,0 +1,35 @@
+{
+  "p50_latency_ms": 45.8,
+  "p95_latency_ms": 45.8,
+  "requests_per_second": 1000000000.0,
+  "tokens_per_second": 262.02,
+  "time_to_first_token_ms": 20.0,
+  "error_rate": 0.0,
+  "cost_per_request_usd": 1.2e-06,
+  "total_requests": 1,
+  "leaderboard": [
+    {
+      "backend": "mock-local",
+      "requests": 1,
+      "p50_latency_ms": 45.8,
+      "p95_latency_ms": 45.8,
+      "ttft_p50_ms": 20.0,
+      "tokens_per_second": 262.02,
+      "error_rate": 0.0,
+      "cost_per_request_usd": 1.2e-06,
+      "score": 4767657.82,
+      "rank": 1
+    }
+  ],
+  "by_backend": {
+    "mock-local": {
+      "requests": 1,
+      "error_rate": 0.0,
+      "p50_latency_ms": 45.8,
+      "p95_latency_ms": 45.8,
+      "ttft_p50_ms": 20.0,
+      "tokens_per_second": 262.02,
+      "tokens_generated": 7
+    }
+  }
+}

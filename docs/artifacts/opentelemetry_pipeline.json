@@ -1,0 +1,9 @@
+{
+  "otel_sdk_available": false,
+  "otlp_exporter_enabled": false,
+  "otlp_traces_endpoint": "",
+  "docker_runtime_installs_otel_sdk": true,
+  "docker_compose_runs_otel_collector": true,
+  "local_trace_artifact": "docs/artifacts/otel_traces.jsonl",
+  "collector_config": "observability/otel-collector/config.yaml"
+}
