@@ -1,1 +1,0 @@
-{"run_id": "distributed-benchmark-002", "model": "mistralai/Mistral-7B-Instruct-v0.2", "gpu_count": 2, "batch_size": 1, "p95_latency_ms": 514.29, "tokens_per_sec": 56.7}

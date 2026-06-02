@@ -1,3 +1,0 @@
-{"job_id": "job-25ba72d877", "partition": "gpu", "gpus": 1, "cpus": "4", "memory": "16Gi", "time_limit": 3600}
-{"job_id": "job-a06c0333af", "partition": "gpu", "gpus": 1, "cpus": "4", "memory": "16Gi", "time_limit": 3600}
-{"job_id": "job-07541bc0c4", "partition": "gpu", "gpus": 1, "cpus": "4", "memory": "16Gi", "time_limit": 3600}

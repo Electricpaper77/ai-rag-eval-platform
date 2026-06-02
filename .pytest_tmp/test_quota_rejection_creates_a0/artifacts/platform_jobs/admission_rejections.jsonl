@@ -1,1 +1,0 @@
-{"job_id": "job-efe660926a", "rejected_at": "2026-06-02T00:49:46.325213+00:00", "reason_codes": ["quota_exceeded"], "priority_class": "balanced", "total_gpu_requested": 10}

@@ -1,1 +1,0 @@
-{"backend": "mock-local", "cost_usd": 1.3e-06, "latency_seconds": 0.043281400052364916, "model": "gpt-4o-mini", "success": true, "tokens": 13, "tokens_per_second": 161.73229127363953, "trace_id": "956767533e2c2a7fbe97f1169dba45ac", "ts": 1780361388.2617733, "ttft_seconds": 0.02}

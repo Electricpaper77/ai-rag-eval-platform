@@ -1,1 +1,0 @@
-{"backend": "mock-local", "completion_tokens": 7, "latency_seconds": 0.1260063999798149, "model": "gpt-4o-mini", "success": true, "tokens_per_second": 55.55273383829185, "trace_id": "6c4ae60844776cf6bf0826ea71d317e7", "ts": 1780361335.6955416, "ttft_seconds": 0.025736099982168525}

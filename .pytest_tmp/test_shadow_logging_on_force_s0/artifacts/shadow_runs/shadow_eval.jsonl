@@ -1,1 +1,0 @@
-{"request_id": "shadow-force-001", "timestamp": "2026-06-02T00:49:48.441251Z", "primary_model": "mock", "shadow_model": "mock", "prompt_tokens": 4, "completion_tokens": 5, "primary_latency_ms": 353.0, "shadow_latency_ms": 353.0, "primary_response": "[mock] What is shadow eval?", "shadow_response": "[mock] What is shadow eval?"}

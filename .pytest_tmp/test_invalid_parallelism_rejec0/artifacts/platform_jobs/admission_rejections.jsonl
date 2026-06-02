@@ -1,1 +1,0 @@
-{"job_id": "job-aafc88f26d", "rejected_at": "2026-06-02T00:49:46.400265+00:00", "reason_codes": ["invalid_parallelism_config"], "priority_class": "balanced", "total_gpu_requested": 2}

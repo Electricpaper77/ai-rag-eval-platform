@@ -1,1 +1,0 @@
-{"run_id": "run-b", "eval_pass": true, "is_hallucination": false, "citation_precision": 0.8, "refusal_correct": true, "response_latency_ms": 300, "tokens_per_sec": 30, "cost_usd": 0.03}

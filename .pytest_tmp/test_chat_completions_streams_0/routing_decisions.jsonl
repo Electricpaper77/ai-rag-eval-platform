@@ -1,1 +1,0 @@
-{"attempt": 1, "backend": "mock-local", "model": "gpt-4o-mini", "policy": "fallback_on_error", "stream": true, "trace_id": "eb0b0ef545e37ed4ece06396d9cb0d5b", "ts": 1780361388.2913952}

@@ -1,2 +1,0 @@
-{"run_id": "run-a", "passed": true, "hallucination": false, "citation_precision": 0.9, "refusal_accuracy": 1.0, "latency_ms": 100, "tokens_per_second": 50, "cost_per_request": 0.01}
-{"run_id": "run-a", "passed": false, "hallucination": true, "citation_precision": 0.7, "refusal_accuracy": 0.0, "latency_ms": 200, "tokens_per_second": 40, "cost_per_request": 0.02}

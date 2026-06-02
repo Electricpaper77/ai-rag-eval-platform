@@ -1,1 +1,0 @@
-{"request_id": "8ae0a99972d712fecb11c38d5d81b89adf55fdf4", "selected_runtime": "mock_triton", "runtime": "mock_triton", "gpu_pool": "throughput_pool", "routing_reason": "balanced_default", "kv_cache_strategy": "reuse", "batching_strategy": "dynamic", "queue_depth": 0, "historical_failure_rate": 0.0, "pool_capacity": 24, "timestamp": 1780361387.0922718}

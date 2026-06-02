@@ -1,2 +1,0 @@
-{"job_id": "job-1", "topology": {"replicas": 1, "gpu_per_replica": 4}, "parallelism_config": {"tensor_parallel": 1}, "total_gpu_requested": 4}
-{"job_id": "job-2", "topology": {"replicas": 2, "gpu_per_replica": 1}, "parallelism_config": {"tensor_parallel": 2}, "total_gpu_requested": 2}

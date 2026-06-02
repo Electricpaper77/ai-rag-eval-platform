@@ -1,1 +1,0 @@
-{"job_id": "job-efe660926a", "partition": "gpu", "gpus": 1, "cpus": "4", "memory": "16Gi", "time_limit": 3600}

@@ -1,3 +1,0 @@
-min_pass_rate: 0.8
-max_p95_latency_ms: 1500
-min_tokens_per_sec: 5

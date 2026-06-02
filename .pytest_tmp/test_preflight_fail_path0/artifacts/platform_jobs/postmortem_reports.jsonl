@@ -1,1 +1,0 @@
-{"job_id": "job-9ca9a3a187", "failure_reason": "invalid_container_image,invalid_gpu_request", "runtime_duration": 0.017647, "resource_config_snapshot": {"gpu_count": 0, "cpu": "4", "memory": "16Gi", "replicas": 2}, "retry_count": 1, "timestamp": "2026-06-02T00:49:46.275613+00:00"}

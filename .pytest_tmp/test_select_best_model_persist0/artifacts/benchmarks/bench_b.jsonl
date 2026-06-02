@@ -1,2 +1,0 @@
-{"run_id": "run-b", "model_version": "llama-3.1-8b", "eval_pass": true, "is_hallucination": false, "citation_precision": 0.72, "response_latency_ms": 950, "output_tokens": 160, "cost": 0.01}
-{"run_id": "run-b", "model_version": "llama-3.1-8b", "eval_pass": false, "is_hallucination": true, "citation_precision": 0.68, "response_latency_ms": 990, "output_tokens": 120, "cost": 0.01}

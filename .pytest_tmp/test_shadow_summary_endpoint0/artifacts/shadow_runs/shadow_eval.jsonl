@@ -1,1 +1,0 @@
-{"request_id": "summary-001", "timestamp": "2026-01-01T00:00:00Z", "primary_model": "vllm", "shadow_model": "openai", "prompt_tokens": 100, "completion_tokens": 50, "primary_latency_ms": 300.0, "shadow_latency_ms": 420.0, "primary_response": "same", "shadow_response": "same"}

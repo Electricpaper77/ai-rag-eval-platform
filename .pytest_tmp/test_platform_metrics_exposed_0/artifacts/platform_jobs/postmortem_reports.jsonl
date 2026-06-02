@@ -1,1 +1,0 @@
-{"job_id": "job-b79514b33c", "failure_reason": "unsupported_priority_class", "runtime_duration": 0.0, "resource_config_snapshot": {"gpu_count": 1, "cpu": "4", "memory": "16Gi", "replicas": 1}, "retry_count": 1, "timestamp": "2026-06-02T00:49:46.590196+00:00"}
