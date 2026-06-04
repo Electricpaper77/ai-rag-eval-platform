@@ -6,6 +6,32 @@ Production-style FastAPI backend for evaluating AI-agent responses before deploy
 
 This repository demonstrates production AI platform skills: API compatibility, backend abstraction, routing policy design, reliability controls, observability, Kubernetes packaging, and pre-deployment LLM evaluation. It is positioned for AI infrastructure, AI safety, platform engineering, and applied LLM roles.
 
+## Recruiter / Reviewer Fast Path
+
+Production-style AI RAG evaluation platform with deterministic security evals, checksum-backed evidence artifacts, OpenAI-compatible inference, observability, and cloud deployment packaging.
+
+Validation: 131 passing pytest checks, plus 1 expected xfail.
+
+Top proof links:
+
+- [60-second demo walkthrough](docs/demo_walkthrough.md)
+- [Proof index](docs/proof_index.md)
+- [Security eval report](docs/security_eval_report.md)
+- [Evidence summary](docs/artifacts/eval_summary.md)
+- [Interview talk track](docs/interview_talk_track.md)
+
+Run commands:
+
+```bash
+python -m pytest tests/test_security_eval.py -q -s
+python -m pytest tests/test_generate_eval_evidence.py -q
+python -m pytest -q
+```
+
+Best resume bullet:
+
+Built a production-style AI RAG evaluation platform with deterministic red-team security checks, checksum-backed JSONL evidence summaries, Prometheus metrics, OpenAI-compatible inference, canary rollback validation, and 131 passing pytest checks for GenAI reliability validation.
+
 ## Problem
 
 Teams need to evaluate AI agents before deployment, not only serve them after launch. This platform combines an inference gateway with an `/evaluate` API that scores model responses, records auditable proof artifacts, and exposes dashboard-ready reliability metrics.
@@ -33,14 +59,16 @@ flowchart TD
     Gateway --> Artifacts["Proof Artifacts<br/>benchmark + routing + traces"]
 ```
 
-Expected screenshot locations:
+Planned screenshot checklist: [screenshots/README.md](screenshots/README.md)
 
-- [screenshots/architecture.png](screenshots/architecture.png)
-- [screenshots/metrics_dashboard.png](screenshots/metrics_dashboard.png)
-- [screenshots/benchmark_results.png](screenshots/benchmark_results.png)
-- [screenshots/traces.png](screenshots/traces.png)
-- [screenshots/gpu_status.png](screenshots/gpu_status.png)
-- [screenshots/gpu_metrics.png](screenshots/gpu_metrics.png)
+Suggested screenshot filenames:
+
+- `screenshots/architecture.png`
+- `screenshots/metrics_dashboard.png`
+- `screenshots/benchmark_results.png`
+- `screenshots/traces.png`
+- `screenshots/gpu_status.png`
+- `screenshots/gpu_metrics.png`
 
 ## Key Features
 
@@ -75,8 +103,76 @@ Generated from local benchmark and load-test artifacts.
 
 - Prometheus metrics: requests, latency histogram, TTFT histogram, generated tokens, prompt tokens, tokens/sec, routing decisions, backend errors, cost/request, and GPU serving signals.
 - Agent reliability metrics: `eval_requests_total`, `eval_pass_total`, `eval_fail_total`, `eval_latency_seconds`, `hallucination_failures_total`, `pii_leakage_failures_total`, `prompt_injection_failures_total`, `citation_failures_total`, `refusal_failures_total`.
+- AI security metrics: `security_eval_pass_rate`, `prompt_injection_block_rate`, `pii_redaction_success_rate`, `unsafe_response_rate`, `malformed_request_rejection_total`.
 - Grafana dashboard: request rate, p95 latency, TTFT, tokens/sec, backend errors, routing decisions, cost/request.
 - OpenTelemetry: OTLP HTTP export in Docker/Kubernetes plus local JSONL trace proof for offline review.
+
+## AI Security & Red-Team Evaluation
+
+This repository now includes a deterministic defensive AI security evaluation layer for RAG and LLM guardrail validation.
+
+Artifacts:
+
+- Red-team dataset: `data/security_eval_prompts.jsonl`
+- Security validators: `app/security/validators.py`
+- Test suite: `tests/test_security_eval.py`
+- Security report: `docs/security_eval_report.md`
+- Threat model: `docs/threat_model.md`
+
+Coverage:
+
+- 31 adversarial cases across prompt injection, PII leakage, unsafe retrieval, malformed input, jailbreak-style instruction conflicts, and irrelevant-context RAG abuse.
+- Structured reason codes: `prompt_injection`, `pii_detected`, `unsafe_request`, `unsafe_retrieval`, `malformed_input`, `irrelevant_context`.
+- Safe actions: `block`, `redact`, `reject`, and `allow`.
+- OWASP LLM Top 10 mapping for Prompt Injection, Sensitive Information Disclosure, Improper Output Handling, System Prompt Leakage, Vector and Embedding Weaknesses, and Misinformation.
+
+Resume-ready metrics from the deterministic suite:
+
+| Metric | Result |
+|---|---:|
+| `security_eval_pass_rate` | 1.00 |
+| `prompt_injection_block_rate` | 1.00 |
+| `pii_redaction_success_rate` | 1.00 |
+| `unsafe_response_rate` | 0.00 |
+| `malformed_request_rejection_total` | 5 |
+
+Run the security evaluation:
+
+```bash
+python -m pytest tests/test_security_eval.py -q
+```
+
+Run with pass/fail summary output:
+
+```bash
+python -m pytest tests/test_security_eval.py -q -s
+```
+
+## Evaluation Evidence
+
+Checksum-backed evaluation evidence is generated from checked-in JSONL artifacts. The 6-prompt guardrail run is labeled as a reproducible smoke sample with intentional negative controls, while the 125-prompt historical eval run is summarized separately as benchmark evidence.
+
+- Evidence JSON: `docs/artifacts/eval_summary.json`
+- Evidence report: `docs/artifacts/eval_summary.md`
+- Regenerate: `python scripts/generate_eval_evidence.py`
+
+## Validation Status
+
+Current local validation:
+
+| Check | Result |
+|---|---:|
+| Security eval suite: `python -m pytest tests/test_security_eval.py -q -s` | 5 passed |
+| Evidence integrity suite: `python -m pytest tests/test_generate_eval_evidence.py -q` | 3 passed |
+| Full test suite: `python -m pytest -q` | 131 passed, 1 xfailed |
+
+Validation artifacts:
+
+- `data/security_eval_prompts.jsonl`
+- `docs/security_eval_report.md`
+- `docs/threat_model.md`
+- `docs/artifacts/eval_summary.json`
+- `docs/artifacts/eval_summary.md`
 
 ## Reliability
 
@@ -107,6 +203,12 @@ Run tests:
 
 ```bash
 python -m pytest -q
+```
+
+Run only the deterministic AI security suite:
+
+```bash
+python -m pytest tests/test_security_eval.py -q
 ```
 
 Run locally without Docker:
@@ -272,6 +374,8 @@ The dashboard reads `docs/artifacts/eval_runs/eval_runs.jsonl` and summarizes to
 Proof artifacts:
 
 - JSONL run log: `docs/artifacts/eval_runs/eval_runs.jsonl`
+- Evaluation evidence JSON: `docs/artifacts/eval_summary.json`
+- Evaluation evidence report: `docs/artifacts/eval_summary.md`
 - Metrics snapshot: `docs/artifacts/metrics_sample.txt`
 - Automated test coverage: `tests/test_agent_evaluation.py`
 - Dashboard test coverage: `tests/test_dashboard.py`
@@ -307,6 +411,8 @@ Recruiter-facing positioning:
 - [routing_decisions.jsonl](docs/artifacts/routing_decisions.jsonl)
 - [evaluation_results.jsonl](docs/artifacts/evaluation_results.jsonl)
 - [eval_runs.jsonl](docs/artifacts/eval_runs/eval_runs.jsonl)
+- [eval_summary.json](docs/artifacts/eval_summary.json)
+- [eval_summary.md](docs/artifacts/eval_summary.md)
 - [gpu_observability_runs.jsonl](docs/artifacts/gpu_observability_runs.jsonl)
 - [otel_traces.jsonl](docs/artifacts/otel_traces.jsonl)
 - [performance_validation.md](docs/artifacts/performance_validation.md)
