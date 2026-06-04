@@ -1,51 +1,31 @@
+from __future__ import annotations
+
+import argparse
 import json
-import time
-import requests
+import sys
+from pathlib import Path
 
-API = "http://34.121.205.47/docs"
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+from app.eval_harness import run_eval_harness
 
-prompts = [
-    "What is Kubernetes?",
-    "Explain vector databases",
-    "What is hallucination in LLMs?",
-    "Explain retrieval augmented generation",
-    "What is container orchestration?"
-] * 25
 
-results = []
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Run the local LLM evaluation proof harness.")
+    parser.add_argument(
+        "--output",
+        default="docs/artifacts/eval_runs/hiring_eval.jsonl",
+        help="JSONL artifact path for case rows and summary metrics.",
+    )
+    parser.add_argument(
+        "--summary-output",
+        default="docs/artifacts/eval_runs/hiring_eval_summary.json",
+        help="Summary JSON artifact path.",
+    )
+    args = parser.parse_args()
 
-for i, prompt in enumerate(prompts):
-    start = time.time()
+    summary = run_eval_harness(output_path=args.output, summary_path=args.summary_output)
+    print(json.dumps(summary, indent=2, sort_keys=True))
 
-    try:
-        r = requests.get(API)
-        latency = int((time.time() - start) * 1000)
 
-        result = {
-            "prompt_id": i,
-            "prompt": prompt,
-            "latency_ms": latency,
-            "hallucination_flag": False,
-            "citation_count": 0,
-            "eval_pass": True
-        }
-
-    except Exception as e:
-        result = {
-            "prompt_id": i,
-            "prompt": prompt,
-            "latency_ms": None,
-            "error": str(e),
-            "eval_pass": False
-        }
-
-    results.append(result)
-
-import os
-os.makedirs("docs/artifacts/runs", exist_ok=True)
-
-with open("docs/artifacts/runs/eval_run_001.jsonl", "w") as f:
-    for r in results:
-        f.write(json.dumps(r) + "\n")
-
-print("Evaluation run complete. Artifact saved to docs/artifacts/runs/eval_run_001.jsonl")
+if __name__ == "__main__":
+    main()
