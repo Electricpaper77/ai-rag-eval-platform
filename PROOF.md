@@ -2,6 +2,8 @@
 
 This is the 60-second evidence path for AI Solutions Engineer, LLM Evaluation, and Applied GenAI interviews.
 
+Scope note: all metrics below are controlled deterministic eval fixture results from `docs/artifacts/eval_runs/hiring_eval_summary.json`. They are not broad production traffic claims, live customer metrics, or vendor benchmark claims. Cost is mock-estimated with no paid vendor model API call.
+
 ## Commands
 
 ```bash
@@ -22,7 +24,7 @@ curl -s http://localhost:8000/evaluate -H "Content-Type: application/json" -d '{
 | `tests/test_eval_harness.py` | Regression coverage for the artifact contract. |
 | `README.md` | Recruiter-facing proof section and exact commands. |
 
-## Current Metrics
+## Controlled Deterministic Fixture Metrics
 
 | Metric | Result |
 |---|---:|
@@ -35,6 +37,15 @@ curl -s http://localhost:8000/evaluate -H "Content-Type: application/json" -d '{
 | `cost_per_request_usd` | 0.00000654 |
 | `cost_estimate_label` | `estimated_mock_no_vendor_api` |
 
+## Proof Artifacts
+
+| Artifact | Recruiter proof |
+|---|---|
+| `docs/artifacts/eval_runs/hiring_eval.jsonl` | Per-case JSONL audit trail plus summary row for the controlled deterministic eval fixtures. |
+| `docs/artifacts/eval_runs/hiring_eval_summary.json` | Machine-readable summary metrics: pass rate, hallucination rate, citation precision, refusal accuracy, local p95 evaluator latency, and mock-estimated cost. |
+| `README.md` proof section | 60-second project positioning, exact reviewer commands, proof metrics, and hiring-signal map. |
+| Pytest full-suite result | `133 passed, 1 xfailed` from `python -m pytest -q`. |
+
 ## Screenshot Checklist
 
 - [ ] Save `/docs` OpenAPI screenshot as `screenshots/evaluate_openapi.png`.
@@ -45,4 +56,4 @@ curl -s http://localhost:8000/evaluate -H "Content-Type: application/json" -d '{
 
 ## Resume Bullet
 
-Built a production-style AI RAG evaluation platform with a deterministic `/evaluate`-equivalent harness that produced 100% eval pass rate, 0% hallucination rate, 100% citation precision, 100% refusal accuracy, 0.159 ms p95 evaluator latency, and mock-estimated $0.00000654/request JSONL proof artifacts.
+Built a FastAPI AI RAG evaluation platform with a deterministic `/evaluate`-equivalent harness that produced controlled fixture proof artifacts: 100% eval pass rate, 0% hallucination rate, 100% citation precision, 100% refusal accuracy, 0.159 ms local p95 evaluator latency, and mock-estimated $0.00000654/request cost with no vendor API call.
