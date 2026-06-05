@@ -18,6 +18,34 @@ This repository is positioned for AI Solutions Engineer, LLM Evaluation, and App
 
 Scope note: the proof metrics below come from controlled deterministic eval fixtures, not broad production traffic claims, live customer traffic, or vendor benchmark claims. Cost is mock-estimated; the proof harness does not call a paid vendor model API.
 
+### Resume Bullet
+
+Designed and deployed an AI Agent Reliability Platform for RAG and agent workflows, combining deterministic eval fixtures, citation validation, hallucination checks, refusal accuracy tests, JSONL audit logs, and regression testing; packaged a live Vercel demo with proof artifacts showing controlled-fixture reliability metrics across latency, cost/request, and output quality.
+
+### 60-Second Technical Review
+
+| Checkpoint | Summary |
+|---|---|
+| Problem | RAG and agent outputs need measurable release checks before production use. |
+| System | FastAPI evaluation path with grounding, citation, hallucination, refusal, and safety checks. |
+| Metrics | Pass rate, hallucination rate, citation precision, refusal accuracy, p95 latency, and cost/request. |
+| Proof | JSONL case logs, summary JSON, pytest regression coverage, API screenshots, and metrics evidence. |
+| Best-fit roles | AI Solutions Engineer, LLM Evaluation Engineer, Applied GenAI Engineer, and AI Reliability Engineer. |
+
+### Sample `/evaluate` Output
+
+```json
+{
+  "eval_pass_rate": 1.0,
+  "hallucination_rate": 0.0,
+  "citation_precision": 1.0,
+  "refusal_accuracy": 1.0,
+  "p95_latency_ms": 0.159,
+  "cost_per_request_usd": 0.00000654,
+  "benchmark_type": "controlled deterministic fixtures"
+}
+```
+
 ## Reviewer Fast Path
 
 Run full tests:
@@ -70,6 +98,39 @@ Checked-in proof artifact results from `docs/artifacts/eval_runs/hiring_eval_sum
 | Latency measurement | `latency_p95_ms` in summary JSON | Measures local evaluator p95 latency for the fixture run. |
 | Cost measurement | `cost_per_request_usd` and `cost_estimate_label` | Shows cost awareness with a clearly labeled mock estimate and no vendor API use. |
 | Guardrails/refusal accuracy | refusal and prompt-injection fixtures | Verifies refusal behavior for unsafe and injected prompts. |
+
+## README Proof Matrix
+
+This matrix is the recruiter fast path: each claim points to a file or artifact that can be opened directly.
+
+| Proof claim | Artifact | Reviewer action |
+|---|---|---|
+| The platform runs a deterministic LLM evaluation harness. | `scripts/run_eval.py`, `app/eval_harness.py` | Run `python scripts/run_eval.py`. |
+| Eval results are persisted as auditable JSONL. | `docs/artifacts/eval_runs/hiring_eval.jsonl` | Inspect per-case records and the summary row. |
+| RAG reliability checks include citation and hallucination scoring. | `app/evaluator.py`, `tests/test_eval_harness.py` | Review evaluator assertions and regression coverage. |
+| Safety checks cover refusal behavior, prompt injection, and PII risk. | `data/security_eval_prompts.jsonl`, `tests/test_security_eval.py` | Review adversarial fixtures and expected safe actions. |
+| Metrics are visible and controlled in scope. | `docs/artifacts/eval_runs/hiring_eval_summary.json`, `PROOF.md` | Confirm pass rate, hallucination rate, citation precision, refusal accuracy, and p95 latency. |
+| The repo includes proof screenshots and demo evidence. | `proof/metrics_endpoint.png`, `proof/evaluate_success.png` | Open metrics and API response screenshots. |
+| The test suite protects the proof path. | `tests/test_eval_harness.py`, `PROOF.md#proof-artifacts` | Run focused or full pytest validation. |
+
+## Screenshot Checklist
+
+- `01-homepage-hero.png`
+- `02-metrics-strip.png`
+- `03-architecture-flow.png`
+- `04-failure-cases.png`
+- `05-proof-artifacts.png`
+- `06-readme-proof-matrix.png`
+- `07-pytest-results.png`
+
+## What I Would Improve Next in Production
+
+- Connect a real model provider.
+- Add a larger evaluation dataset.
+- Add a human review workflow.
+- Add model and version comparison.
+- Add a CI regression gate.
+- Add OpenTelemetry or Prometheus metrics.
 
 ## Proof: LLM Evaluation Harness
 
