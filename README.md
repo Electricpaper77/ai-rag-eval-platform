@@ -29,11 +29,18 @@ python -m pytest -q
 
 ## Deployment
 
-The production Vercel deployment serves the root static files:
+The production Vercel deployment serves the root static files directly:
 - `index.html`
 - `styles.css`
 
-The `frontend/` directory is retained as the source copy, but root files remove ambiguity for Vercel static deployment.
+Vercel settings:
+- Root Directory: repository root / empty
+- Framework Preset: Other
+- Build Command: empty
+- Output Directory: empty
+- Install Command: empty
+
+The `frontend/` directory is retained as a source copy.
 
 ## Recruiter / Hiring Manager Fast Contact
 
