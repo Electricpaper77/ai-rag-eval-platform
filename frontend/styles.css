@@ -690,6 +690,79 @@ tr:last-child td {
   border-bottom: 0;
 }
 
+.case-study {
+  padding-top: 80px;
+}
+
+.case-study .section-heading h2 {
+  max-width: 800px;
+}
+
+.case-study-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.case-study-card {
+  min-height: 190px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.case-study-card span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 28px;
+  margin-bottom: 18px;
+  border-radius: 8px;
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.case-study-card h3 {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 1.08rem;
+  line-height: 1.3;
+}
+
+.case-study-card p,
+.interview-talk-track p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.case-study-card.business-impact {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+
+.interview-talk-track {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+  margin-top: 14px;
+  padding: 20px 22px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.interview-talk-track strong {
+  color: var(--teal);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+}
+
 .walkthrough {
   display: grid;
   grid-template-columns: 0.72fr 1.28fr;
@@ -849,6 +922,19 @@ blockquote {
   .review-list div {
     grid-template-columns: 1fr;
     gap: 7px;
+  }
+
+  .case-study-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .case-study-card.business-impact {
+    grid-column: auto;
+  }
+
+  .interview-talk-track {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 
   #architecture.evaluation-flow {

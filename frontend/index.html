@@ -277,48 +277,6 @@
         </div>
       </section>
 
-      <section id="proof" class="section-shell">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Evidence</p>
-            <h2>Proof Artifacts</h2>
-          </div>
-          <p class="section-note">
-            Short path for AI Solutions Engineer, LLM Evaluation, and Applied GenAI review.
-          </p>
-        </div>
-        <div class="artifact-grid">
-          <a
-            class="artifact-card"
-            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/README.md"
-          >
-            <strong>README.md</strong>
-            <p>Project overview, metrics, proof matrix, and recruiter fast path.</p>
-          </a>
-          <a
-            class="artifact-card"
-            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/PROOF.md"
-          >
-            <strong>PROOF.md</strong>
-            <p>Evidence checklist for screenshots, logs, tests, and demo validation.</p>
-          </a>
-          <a
-            class="artifact-card"
-            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/docs/artifacts/README_PROOF_GUIDE.md"
-          >
-            <strong>docs/artifacts/README_PROOF_GUIDE.md</strong>
-            <p>Guide for organizing technical screenshots and proof assets.</p>
-          </a>
-          <a
-            class="artifact-card"
-            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/docs/artifacts/eval_runs/hiring_eval.jsonl"
-          >
-            <strong>docs/artifacts/eval_run_hiring_eval.jsonl</strong>
-            <p>Sample JSONL evaluation log showing auditable eval results.</p>
-          </a>
-        </div>
-      </section>
-
       <section class="section-shell benchmark-notice" aria-label="Controlled benchmark notice">
         <div>
           <p class="eyebrow">Controlled Benchmark Notice</p>
@@ -409,6 +367,112 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <section class="section-shell case-study">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Employer Review</p>
+            <h2>Case Study: Evaluating RAG and AI Agent Outputs Before Production</h2>
+          </div>
+          <p class="section-note">
+            A concise view of the engineering problem, system design, tradeoffs, and deployment value.
+          </p>
+        </div>
+        <div class="case-study-grid">
+          <article class="case-study-card">
+            <span>01</span>
+            <h3>Problem</h3>
+            <p>
+              RAG and AI agent systems can produce unsupported answers, missing citations, unsafe
+              refusals, and behavior drift after prompt or model changes.
+            </p>
+          </article>
+          <article class="case-study-card">
+            <span>02</span>
+            <h3>Solution</h3>
+            <p>
+              Built a deterministic evaluation harness that scores groundedness, citation precision,
+              refusal accuracy, latency, cost/request, and regression behavior across repeatable test cases.
+            </p>
+          </article>
+          <article class="case-study-card">
+            <span>03</span>
+            <h3>System Design</h3>
+            <p>
+              Prompt/response fixtures feed an eval runner, which applies citation checks,
+              hallucination checks, refusal checks, JSONL logging, summary metrics, and pytest
+              regression validation.
+            </p>
+          </article>
+          <article class="case-study-card">
+            <span>04</span>
+            <h3>Production Tradeoffs</h3>
+            <p>
+              Current metrics are based on controlled deterministic fixtures, not broad vendor
+              benchmarks. In production, I would expand the dataset, add real provider outputs,
+              agent traces, human review, and CI regression gates.
+            </p>
+          </article>
+          <article class="case-study-card business-impact">
+            <span>05</span>
+            <h3>Business Impact</h3>
+            <p>
+              This workflow helps teams catch hallucinations, citation failures, unsafe responses,
+              and prompt/model regressions before customer-facing deployment.
+            </p>
+          </article>
+        </div>
+        <aside class="interview-talk-track">
+          <strong>Interview Talk Track</strong>
+          <p>
+            In an interview, I would walk through the eval design, why each metric matters, how
+            JSONL logs support reviewability, how pytest protects against behavior drift, and how I
+            would extend this into real model/provider and multi-agent trace evaluation.
+          </p>
+        </aside>
+      </section>
+
+      <section id="proof" class="section-shell">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Evidence</p>
+            <h2>Proof Artifacts</h2>
+          </div>
+          <p class="section-note">
+            Short path for AI Solutions Engineer, LLM Evaluation, and Applied GenAI review.
+          </p>
+        </div>
+        <div class="artifact-grid">
+          <a
+            class="artifact-card"
+            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/README.md"
+          >
+            <strong>README.md</strong>
+            <p>Project overview, metrics, proof matrix, and recruiter fast path.</p>
+          </a>
+          <a
+            class="artifact-card"
+            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/PROOF.md"
+          >
+            <strong>PROOF.md</strong>
+            <p>Evidence checklist for screenshots, logs, tests, and demo validation.</p>
+          </a>
+          <a
+            class="artifact-card"
+            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/docs/artifacts/README_PROOF_GUIDE.md"
+          >
+            <strong>docs/artifacts/README_PROOF_GUIDE.md</strong>
+            <p>Guide for organizing technical screenshots and proof assets.</p>
+          </a>
+          <a
+            class="artifact-card"
+            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/docs/artifacts/eval_runs/hiring_eval.jsonl"
+          >
+            <strong>docs/artifacts/eval_run_hiring_eval.jsonl</strong>
+            <p>Sample JSONL evaluation log showing auditable eval results.</p>
+          </a>
         </div>
       </section>
 

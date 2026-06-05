@@ -132,6 +132,34 @@ Checked-in proof artifact results from `docs/artifacts/eval_runs/hiring_eval_sum
 | Cost measurement | `cost_per_request_usd` and `cost_estimate_label` | Shows cost awareness with a clearly labeled mock estimate and no vendor API use. |
 | Guardrails/refusal accuracy | refusal and prompt-injection fixtures | Verifies refusal behavior for unsafe and injected prompts. |
 
+## Case Study
+
+### Evaluating RAG and AI Agent Outputs Before Production
+
+**Problem**
+
+RAG and AI agent systems can produce unsupported answers, missing citations, unsafe refusals, and behavior drift after prompt or model changes.
+
+**Solution**
+
+Built a deterministic evaluation harness that scores groundedness, citation precision, refusal accuracy, latency, cost/request, and regression behavior across repeatable test cases.
+
+**System Design**
+
+Prompt/response fixtures feed an eval runner, which applies citation checks, hallucination checks, refusal checks, JSONL logging, summary metrics, and pytest regression validation.
+
+**Production Tradeoffs**
+
+Current metrics are based on controlled deterministic fixtures, not broad vendor benchmarks. In production, I would expand the dataset, add real provider outputs, agent traces, human review, and CI regression gates.
+
+**Business Impact**
+
+This workflow helps teams catch hallucinations, citation failures, unsafe responses, and prompt/model regressions before customer-facing deployment.
+
+**Interview Talk Track**
+
+In an interview, I would walk through the eval design, why each metric matters, how JSONL logs support reviewability, how pytest protects against behavior drift, and how I would extend this into real model/provider and multi-agent trace evaluation.
+
 ## README Proof Matrix
 
 This matrix is the recruiter fast path: each claim points to a file or artifact that can be opened directly.
