@@ -181,57 +181,44 @@
         </div>
       </section>
 
-      <section id="architecture" class="section-shell">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Architecture Flow</p>
-            <h2>How It Works</h2>
-          </div>
+      <section id="architecture" class="section-shell evaluation-flow">
+        <div class="flow-heading">
+          <p class="eyebrow">Evaluation Flow</p>
+          <h2>How It Works</h2>
           <p class="section-note">
-            The page maps directly to repo artifacts, so a reviewer can inspect the implementation
-            instead of relying on screenshots alone.
+            From controlled fixtures to regression-tested reliability metrics.
           </p>
         </div>
         <ol class="pipeline" aria-label="Evaluation architecture pipeline">
           <li>
             <span>01</span>
-            <strong>Input prompts</strong>
-            <p>Controlled eval fixtures and API requests define expected behavior.</p>
+            <strong>Prompt/response fixture</strong>
+            <p>Controlled test cases define expected grounded, cited, and safe outputs.</p>
           </li>
           <li>
             <span>02</span>
-            <strong>RAG answer generation</strong>
-            <p>Responses are produced or replayed with retrieved context expectations.</p>
+            <strong>Evaluation harness</strong>
+            <p>Runs scoring checks across answer quality, safety, citations, and regressions.</p>
           </li>
           <li>
             <span>03</span>
-            <strong>Citation validation</strong>
-            <p>Grounded answers must include the required source references.</p>
+            <strong>JSONL log</strong>
+            <p>Stores each evaluation result as an auditable record for review.</p>
           </li>
           <li>
             <span>04</span>
-            <strong>Hallucination checks</strong>
-            <p>Unsupported claims and overconfident answers are flagged.</p>
+            <strong>Summary metrics</strong>
+            <p>Aggregates pass rate, hallucination rate, citation precision, refusal accuracy, latency, and cost/request.</p>
           </li>
           <li>
             <span>05</span>
-            <strong>Refusal / safety checks</strong>
-            <p>Unsafe, PII, and prompt-injection cases must be blocked or refused.</p>
+            <strong>Pytest regression check</strong>
+            <p>Blocks behavior drift by rerunning deterministic eval cases in the test suite.</p>
           </li>
           <li>
             <span>06</span>
-            <strong>JSONL logging</strong>
-            <p>Each case is persisted with metrics, risk category, and failure reasons.</p>
-          </li>
-          <li>
-            <span>07</span>
-            <strong>Regression test suite</strong>
-            <p>Pytest protects the evaluator contract and artifact schema.</p>
-          </li>
-          <li>
-            <span>08</span>
-            <strong>Metrics dashboard</strong>
-            <p>Summary cards expose pass rate, hallucinations, citations, refusals, and p95.</p>
+            <strong>Recruiter proof artifact</strong>
+            <p>Packages metrics, screenshots, logs, and README evidence for fast technical review.</p>
           </li>
         </ol>
       </section>

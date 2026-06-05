@@ -324,6 +324,21 @@ code {
   font-size: 0.98rem;
 }
 
+#architecture.evaluation-flow {
+  padding-top: 64px;
+}
+
+.flow-heading {
+  max-width: 720px;
+  margin-bottom: 20px;
+}
+
+.flow-heading .section-note {
+  max-width: none;
+  margin-top: 12px;
+  font-size: 1.02rem;
+}
+
 .fast-path-layout {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
@@ -426,16 +441,21 @@ code {
 
 .pipeline {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .pipeline li {
-  min-height: 186px;
-  padding: 20px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  align-content: start;
+  min-height: 132px;
+  padding: 18px 20px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
@@ -447,7 +467,8 @@ code {
   justify-content: center;
   width: 36px;
   height: 28px;
-  margin-bottom: 18px;
+  grid-row: 1 / span 2;
+  margin: 1px 0 0;
   border-radius: 8px;
   background: var(--blue-soft);
   color: var(--blue);
@@ -457,14 +478,21 @@ code {
 
 .pipeline strong {
   display: block;
-  margin-bottom: 10px;
-  font-size: 1.02rem;
+  margin: 0 0 7px;
+  color: var(--ink);
+  font-size: 1.03rem;
+  line-height: 1.3;
 }
 
 .pipeline p,
 .failure-card dd {
   margin: 0;
   color: var(--muted);
+}
+
+.pipeline p {
+  max-width: 56ch;
+  line-height: 1.5;
 }
 
 .failure-grid {
@@ -680,7 +708,6 @@ blockquote {
     min-height: auto;
   }
 
-  .pipeline,
   .failure-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -762,6 +789,15 @@ blockquote {
   .review-list div {
     grid-template-columns: 1fr;
     gap: 7px;
+  }
+
+  #architecture.evaluation-flow {
+    padding-top: 56px;
+  }
+
+  .pipeline li {
+    min-height: 0;
+    padding: 17px;
   }
 
   .proof-bullets,
