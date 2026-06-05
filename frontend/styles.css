@@ -538,15 +538,16 @@ dt:first-of-type {
 
 .artifact-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
 .artifact-card {
   display: flex;
-  min-height: 170px;
+  min-height: 156px;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 14px;
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -557,8 +558,16 @@ dt:first-of-type {
 .artifact-card strong {
   display: block;
   color: var(--ink);
-  font-size: 1.05rem;
+  font-size: 0.96rem;
   line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.artifact-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
 .benchmark-notice {
