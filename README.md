@@ -1,16 +1,39 @@
-# AI Agent Reliability Platform MVP
+# AI Agent Reliability Platform
 
-FastAPI RAG evaluation platform that turns deterministic `/evaluate`-equivalent fixtures into recruiter-readable JSONL proof for hallucination, citation, refusal, latency, and mock-estimated cost.
+Production-style evaluation platform for RAG and AI agent workflows, including deterministic eval fixtures, citation validation, hallucination checks, refusal accuracy tests, JSONL audit logs, regression testing, and recruiter-readable proof artifacts.
 
-## Project Links
+## Links
 
-- Live project site: https://ai-agent-reliability-platform-rtcd.vercel.app
-- GitHub repository: https://github.com/Electricpaper77/ai-rag-eval-platform
-- Proof artifacts: PROOF.md
-- JSONL eval logs: docs/artifacts/eval_runs/hiring_eval.jsonl
-- Eval summary: docs/artifacts/eval_runs/hiring_eval_summary.json
+- Live Demo: https://ai-agent-reliability-platform-rtcd.vercel.app/
+- GitHub: https://github.com/Electricpaper77/ai-rag-eval-platform
+- LinkedIn: https://www.linkedin.com/in/zohaib-a-1a8017174/
+- Email: azohaib.0150@gmail.com
 
-This static site is a recruiter-facing overview of the RAG evaluation harness, controlled metrics, JSONL proof logs, and regression-test evidence.
+## Quick Review
+
+| Area | Evidence |
+|---|---|
+| LLM evaluation | Deterministic pass/fail scoring |
+| RAG reliability | Citation and hallucination checks |
+| Guardrails | Refusal accuracy and prompt-injection fixtures |
+| Observability | JSONL audit trail |
+| Testing | 133 passing tests, 1 expected xfail |
+| Deployment | Live Vercel demo |
+| Hiring proof | Proof artifacts, metrics, screenshots, and resume bullet |
+
+## Run Locally
+
+```bash
+python -m pytest -q
+```
+
+## Recruiter / Hiring Manager Fast Contact
+
+- LinkedIn: https://www.linkedin.com/in/zohaib-a-1a8017174/
+- GitHub: https://github.com/Electricpaper77/ai-rag-eval-platform
+- Email: azohaib.0150@gmail.com
+- Live Demo: https://ai-agent-reliability-platform-rtcd.vercel.app/
+- Proof Artifacts: PROOF.md
 
 ## 60-Second Review
 
@@ -31,6 +54,16 @@ Designed and deployed an AI Agent Reliability Platform for RAG and agent workflo
 | Metrics | Pass rate, hallucination rate, citation precision, refusal accuracy, p95 latency, and cost/request. |
 | Proof | JSONL case logs, summary JSON, pytest regression coverage, API screenshots, and metrics evidence. |
 | Best-fit roles | AI Solutions Engineer, LLM Evaluation Engineer, Applied GenAI Engineer, and AI Reliability Engineer. |
+
+### AI Agent Reliability Use Case
+
+This platform can be extended to evaluate multi-step AI agents by scoring tool-use accuracy, citation grounding, refusal behavior, task completion, latency, and regression drift across repeatable test cases.
+
+- Tool-use correctness
+- Multi-step task completion
+- Prompt-injection resistance
+- Grounded answer validation
+- Regression checks before deployment
 
 ### Sample `/evaluate` Output
 
@@ -123,14 +156,13 @@ This matrix is the recruiter fast path: each claim points to a file or artifact 
 - `06-readme-proof-matrix.png`
 - `07-pytest-results.png`
 
-## What I Would Improve Next in Production
+## Next Production Upgrade
 
-- Connect a real model provider.
-- Add a larger evaluation dataset.
-- Add a human review workflow.
-- Add model and version comparison.
-- Add a CI regression gate.
-- Add OpenTelemetry or Prometheus metrics.
+- Connect real model/provider outputs.
+- Add larger adversarial eval dataset.
+- Add agent trace evaluation.
+- Add CI regression gate.
+- Add human review queue.
 
 ## Proof: LLM Evaluation Harness
 
