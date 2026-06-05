@@ -2,14 +2,15 @@
 
 FastAPI RAG evaluation platform that turns deterministic `/evaluate`-equivalent fixtures into recruiter-readable JSONL proof for hallucination, citation, refusal, latency, and mock-estimated cost.
 
-Live project site: https://ai-agent-reliability-platform-rtcd-fj3a52ijo.vercel.app/
-
 ## Project Links
 
+- Live project site: https://ai-agent-reliability-platform-rtcd.vercel.app
 - GitHub repository: https://github.com/Electricpaper77/ai-rag-eval-platform
-- Live project site: https://ai-agent-reliability-platform-rtcd-fj3a52ijo.vercel.app/
+- Proof artifacts: PROOF.md
+- JSONL eval logs: docs/artifacts/eval_runs/hiring_eval.jsonl
+- Eval summary: docs/artifacts/eval_runs/hiring_eval_summary.json
 
-The live site is a recruiter-facing static portfolio page for this RAG evaluation harness. It summarizes the proof path, controlled metrics, artifact links, and interview-ready hiring signals without changing the application or eval logic.
+This static site is a recruiter-facing overview of the RAG evaluation harness, controlled metrics, JSONL proof logs, and regression-test evidence.
 
 ## 60-Second Review
 
