@@ -2,7 +2,7 @@
 
 ## 30-Second Project Summary
 
-This is a production-style AI RAG evaluation platform for validating LLM and agent responses before deployment. It combines an OpenAI-compatible inference gateway, RAG evaluation, deterministic AI security checks, Prometheus metrics, JSONL audit logs, GPU/platform proof artifacts, and checksum-backed evidence summaries.
+This is a portfolio-grade AI RAG evaluation platform for validating LLM and model responses before deployment. It combines an OpenAI-compatible inference gateway, deterministic RAG and security evaluation, Prometheus metrics, JSONL audit logs, simulated GPU/platform evidence, and checksum-backed summaries.
 
 ## Problem This Project Solves
 
@@ -25,7 +25,7 @@ Teams need a repeatable way to prove that GenAI systems are safe, observable, an
 |---|---:|
 | Security eval tests | 5 passed |
 | Evidence integrity tests | 3 passed |
-| Full pytest suite | 131 passed, 1 xfailed |
+| Full pytest suite | 133 passed, 1 xfailed |
 
 ## Security Eval Layer Summary
 
@@ -66,13 +66,13 @@ python -m pytest -q
 
 ## Resume-Ready Bullets
 
-- Built a production-style AI RAG evaluation platform with deterministic red-team security checks, checksum-backed JSONL evidence summaries, Prometheus metrics, OpenAI-compatible inference, canary rollback validation, and 131 passing pytest checks for GenAI reliability validation.
+- Built a FastAPI RAG and LLM evaluation platform with deterministic security checks, checksum-backed JSONL evidence, Prometheus metrics, OpenAI-compatible inference, and 133 passing pytest checks in the current local working tree.
 - Implemented AI security evaluation coverage for prompt injection, PII redaction, unsafe retrieval, malformed input, jailbreak-style instruction conflicts, and irrelevant-context RAG abuse using deterministic validators and documented threat mapping.
 - Added recruiter-verifiable proof artifacts including eval JSONL logs, SHA256 evidence summaries, Prometheus metric samples, GPU benchmark proof logs, and Docker/Kubernetes/Cloud Build configuration.
 
 ## Interview Talking Points
 
-- I designed this as a proof-driven GenAI platform, not only a demo API: every major capability has tests or inspectable artifacts.
+- I designed this as a proof-driven GenAI portfolio project: core evaluation claims have tests or inspectable artifacts.
 - The security layer is deterministic so CI can catch regressions without relying on flaky model calls.
 - The evidence layer makes eval claims reviewable by tying metrics back to SHA256 checksums of source JSONL artifacts.
 - The platform demonstrates both customer-facing AI Solutions work and engineering depth: APIs, evaluation, observability, security, routing, and deployment packaging.

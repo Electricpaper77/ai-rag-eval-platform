@@ -2,7 +2,7 @@
 
 ## Senior NVIDIA AI Infrastructure Review
 
-Single highest-impact missing infrastructure feature: production OpenTelemetry trace export.
+Single highest-impact missing infrastructure feature: collector-compatible OpenTelemetry trace export.
 
 ## Why This Feature
 
@@ -13,7 +13,7 @@ The repository already had the other prioritized hiring signals:
 - backend comparison leaderboard
 - Kubernetes deployment manifests
 
-The missing gap was that traces existed only as local OTEL-shaped JSONL artifacts. For NVIDIA, AMD, Databricks, OpenAI, and Anthropic infrastructure roles, a real OTLP export path is a stronger production signal because it shows the candidate can connect gateway requests, routing decisions, and backend calls to a standard observability pipeline.
+The missing gap was that traces existed only as local OTEL-shaped JSONL artifacts. For infrastructure roles, an OTLP-compatible export path is a stronger engineering signal because it connects gateway requests, routing decisions, and backend calls to a standard observability pipeline.
 
 ## Implemented
 
@@ -29,7 +29,7 @@ The missing gap was that traces existed only as local OTEL-shaped JSONL artifact
 
 Before: trace-like JSONL artifacts showed local request/backend causality.
 
-After: the gateway has a production trace export path compatible with collector-backed observability stacks, while still generating offline proof artifacts for recruiters.
+After: the gateway has a collector-compatible trace export path while still generating offline proof artifacts for recruiters. No hosted collector deployment is claimed.
 
 ## Validation
 

@@ -8,22 +8,19 @@ Candidate target roles:
 
 ## Executive Assessment
 
-This repository now reads as a strong portfolio project for AI infrastructure and inference-platform roles. It shows the candidate can build an OpenAI-compatible gateway, reason about backend routing, expose production metrics, generate performance evidence, and package the system for Docker, Kubernetes, Prometheus, and Grafana.
+This repository is a portfolio project for AI infrastructure and inference-platform roles. It shows OpenAI-compatible API design, backend routing, operational metrics, evaluation evidence, and deployment packaging for Docker, Kubernetes, Prometheus, and Grafana.
 
 The project is not a low-level CUDA/kernel optimization project, so it is strongest for AI Infrastructure Engineer and Inference Platform Engineer. For GPU Systems Engineer, it demonstrates platform-level inference literacy but would need deeper GPU telemetry, batching, memory-pressure handling, MIG awareness, and Triton model-repository deployment examples to become top-tier.
 
-## Scores
+## Evidence-Based Role Fit
 
-| Category | Initial Score | Final Score | Hiring Signal |
-|---|---:|---:|---|
-| Architecture | 7.5 / 10 | 8.75 / 10 | Clear gateway/adapters/router split, OpenAI-compatible API, streaming and multi-backend design |
-| Reliability | 7.0 / 10 | 8.0 / 10 | Retry, timeout, circuit breaker, fallback, health checks, PDB |
-| Benchmarking | 6.5 / 10 | 8.5 / 10 | p50/p95, TTFT, tokens/sec, load-test output, backend leaderboard |
-| Observability | 7.0 / 10 | 8.5 / 10 | Prometheus metrics, TTFT histogram, token metrics, Grafana backend comparison, OTEL-shaped traces |
-| Inference Systems | 7.0 / 10 | 8.5 / 10 | vLLM/Triton/OpenAI adapter surfaces, streaming responses, routing policies, cost and quality-aware decisions |
-| Production Readiness | 6.5 / 10 | 8.0 / 10 | Docker Compose, Kubernetes deployment/service/HPA/PDB/ServiceMonitor, tests, artifacts |
-
-Overall final rating: 8.4 / 10 for AI Infrastructure and Inference Platform roles.
+| Area | Demonstrated evidence | Scope limit |
+|---|---|---|
+| Architecture | Gateway, adapters, router, evaluator, and artifact modules | Portfolio implementation, not a production service review |
+| Reliability | Retry, timeout, circuit breaker, fallback, and health-check paths | Mostly exercised with deterministic or mock backends |
+| Benchmarking | Latency, request-rate, error, and artifact generation | Local artifacts, not independent capacity testing |
+| Observability | Prometheus metrics and JSONL trace evidence | No hosted monitoring stack is claimed |
+| Deployment | Docker and Kubernetes packaging | No active production cluster is claimed |
 
 ## Evidence Reviewed
 
@@ -52,28 +49,25 @@ Overall final rating: 8.4 / 10 for AI Infrastructure and Inference Platform role
   - `k8s/pdb.yaml`
   - `k8s/servicemonitor.yaml`
 - Validation:
-  - `16 passed` in pytest
-  - Docker Compose config validates, with a local Docker config permission warning unrelated to the compose file
+  - `133 passed, 1 xfailed` in the current local working tree
+  - Docker and Kubernetes files provide packaging evidence, not deployment proof
 
 ## Performance Snapshot
 
 | Metric | Value |
 |---|---:|
-| Benchmark p50 latency | 59.55 ms |
-| Benchmark p95 latency | 135.51 ms |
-| Benchmark requests/sec | 9.43 |
-| Benchmark tokens/sec | 180.3 |
-| Benchmark TTFT p50 | 20.0 ms |
-| Benchmark error rate | 0.0 |
-| Load test requests/sec | 26.78 |
-| Load test tokens/sec | 374.88 |
-| Load test p95 latency | 227.15 ms |
-| Load test error rate | 0.0 |
+| Load-test requests | 290 |
+| Successful checks | 284 |
+| Load-test requests/sec | 9.39 |
+| Load-test p95 successful-response latency | 53.44 ms |
+| Load-test HTTP failure rate | 2.07% |
+| Single-request mock benchmark latency | 45.8 ms |
+| Single-request mock benchmark TTFT | 20.0 ms |
 
 ## Strengths
 
 - The project has a credible inference-gateway architecture with distinct adapters, routing policy logic, reliability wrappers, benchmark recording, and artifact generation.
-- Streaming support now proves production LLM API compatibility and captures TTFT and token cadence on the actual response path.
+- Streaming support demonstrates OpenAI-style API compatibility and captures TTFT and token cadence on the response path.
 - It exposes the metrics an inference-platform team would expect to inspect first: latency, p95, TTFT, tokens/sec, errors, routing decisions, and cost/request.
 - The benchmark leaderboard makes backend comparison concrete and reviewer-friendly.
 - The trace artifacts show request-to-backend causality with trace ids, span ids, parent span ids, span names, duration, status, and semantic attributes.
@@ -84,12 +78,12 @@ Overall final rating: 8.4 / 10 for AI Infrastructure and Inference Platform role
 
 - Real GPU serving systems would need batching controls, queue-depth tracking, KV-cache pressure metrics, GPU utilization, memory bandwidth, and per-model concurrency caps.
 - Triton support is interface-level; a stronger GPU Systems signal would include a Triton model repository, dynamic batching config, and sample model deployment.
-- OpenTelemetry is emitted as local OTEL-shaped JSONL rather than exported through an OTLP collector in the default path.
+- The repository includes an OTLP-compatible export path and JSONL fallback, but no hosted collector pipeline is claimed.
 - Redis is present in the stack but not yet used for distributed rate limiting, shared circuit-breaker state, or request caching.
 - Streaming fallback after partial token emission is intentionally conservative; once tokens have been emitted, the gateway records the partial stream rather than silently switching backend mid-answer.
 
 ## Hiring Recommendation
 
-Strong yes for an AI Infrastructure Engineer or Inference Platform Engineer portfolio screen. The repo demonstrates platform instincts: API compatibility, backend abstraction, routing tradeoffs, reliability controls, observability, and proof artifacts.
+Best aligned with AI Infrastructure Engineer or Inference Platform Engineer portfolio screens that value API compatibility, backend abstraction, routing tradeoffs, reliability controls, observability, and inspectable artifacts.
 
 For a GPU Systems Engineer screen, this is a good platform-adjacent artifact but should be paired with a lower-level GPU project or extended with Triton dynamic batching, GPU utilization telemetry, and model-serving deployment examples.

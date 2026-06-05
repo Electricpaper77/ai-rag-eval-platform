@@ -1,0 +1,53 @@
+{
+  "citation_precision": 0.8333,
+  "fail_count": 4,
+  "generated_at_utc": "2026-06-03T23:11:01+00:00",
+  "hallucination_count": 1,
+  "hallucination_rate": 0.0076,
+  "input_artifacts": [
+    {
+      "bytes": 3790,
+      "label": "guardrail_smoke_sample",
+      "path": "docs/artifacts/eval_runs/eval_runs.jsonl",
+      "prompt_count": 6,
+      "sha256": "94bc8f569f4a3cdb2b29ab69ff2a2cfd0e65db77ed2aebb48522d2e7298a6867"
+    },
+    {
+      "bytes": 18590,
+      "label": "historical_eval_benchmark",
+      "path": "docs/artifacts/runs/eval_run_001.jsonl",
+      "prompt_count": 125,
+      "sha256": "7df1a74d01a98b1e7d74457c3353129dbc82019b34632bd05f32389fa41db307"
+    }
+  ],
+  "pass_count": 127,
+  "pass_rate": 0.9695,
+  "per_artifact_summaries": [
+    {
+      "citation_precision": 0.8333,
+      "fail_count": 4,
+      "hallucination_count": 1,
+      "hallucination_rate": 0.1667,
+      "label": "guardrail_smoke_sample",
+      "pass_count": 2,
+      "pass_rate": 0.3333,
+      "path": "docs/artifacts/eval_runs/eval_runs.jsonl",
+      "refusal_guardrail_accuracy": 0.8333,
+      "total_prompt_count": 6
+    },
+    {
+      "citation_precision": null,
+      "fail_count": 0,
+      "hallucination_count": 0,
+      "hallucination_rate": 0.0,
+      "label": "historical_eval_benchmark",
+      "pass_count": 125,
+      "pass_rate": 1.0,
+      "path": "docs/artifacts/runs/eval_run_001.jsonl",
+      "refusal_guardrail_accuracy": null,
+      "total_prompt_count": 125
+    }
+  ],
+  "refusal_guardrail_accuracy": 0.8333,
+  "total_prompt_count": 131
+}

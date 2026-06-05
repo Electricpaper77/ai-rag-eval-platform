@@ -15,4 +15,4 @@ Key metrics:
 - throughput (req/s): 396.95229137587074
 
 Result: FAIL
-Policy: failure rate >1% is treated as a release blocker for production readiness.
+Local test policy: a failure rate above 1% fails this benchmark gate. This threshold is not evidence of production readiness.

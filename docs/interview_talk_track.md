@@ -2,7 +2,7 @@
 
 ## 60-Second Explanation
 
-This project is a production-style AI RAG evaluation platform. It exposes an OpenAI-compatible inference endpoint, evaluates model responses for hallucination risk, citation coverage, refusal behavior, PII leakage, and prompt-injection compliance, and records proof artifacts as JSONL logs and Prometheus metrics. I added a deterministic AI security evaluation layer with 31 red-team cases and a checksum-backed evidence layer that summarizes eval artifacts with SHA256 checksums. The current validation status is 5 passing security eval tests, 3 passing evidence integrity tests, and 131 passing pytest checks overall.
+This project is a portfolio-grade AI RAG evaluation platform. It exposes an OpenAI-compatible inference endpoint, evaluates model responses for hallucination risk, citation coverage, refusal behavior, PII leakage, and prompt-injection compliance, and records evidence as JSONL logs and Prometheus metrics. The deterministic security layer contains 31 cases, while the checksum-backed evidence report summarizes 131 fixture records. The current local working tree has 133 passing pytest checks and 1 expected xfail.
 
 ## Technical Deep-Dive Answers
 
@@ -40,10 +40,10 @@ The evidence layer records SHA256 checksums for each input artifact. A reviewer 
 ## Metrics-Focused Answers
 
 **What validation metrics should I quote?**  
-Quote 5 passing security eval tests, 3 passing evidence integrity tests, and 131 passing pytest checks. For evidence artifacts, quote 131 documented eval prompts aggregated across the smoke sample and historical benchmark.
+Quote 5 passing security eval tests, 3 passing evidence integrity tests, 2 passing LLM eval harness tests, and 133 passing pytest checks. For evidence artifacts, quote 131 documented eval prompts aggregated across the smoke sample and historical benchmark.
 
 **What operational metrics are exposed?**  
 The platform exposes Prometheus-format metrics for inference latency, TTFT, tokens/sec, routing decisions, eval pass/fail counts, category failures, GPU serving signals, and AI security gauges.
 
-**What proof artifacts show production readiness?**  
-Use `docs/artifacts/eval_summary.md`, `docs/security_eval_report.md`, `docs/artifacts/metrics_sample.txt`, `artifacts/proof/gpu_benchmark_run.jsonl`, `artifacts/proof/canary_summary.json`, `cloudbuild.yaml`, and the `k8s/` manifests.
+**What proof artifacts show engineering readiness?**
+Use `docs/artifacts/eval_summary.md`, `docs/security_eval_report.md`, `docs/artifacts/metrics_sample.txt`, `artifacts/proof/gpu_benchmark_run.jsonl`, `tests/test_canary_policy.py`, `cloudbuild.yaml`, and the `k8s/` manifests. These demonstrate implementation and packaging, not a live production cluster.

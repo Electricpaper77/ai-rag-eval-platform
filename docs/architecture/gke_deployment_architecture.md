@@ -1,22 +1,20 @@
-# GKE Deployment Architecture
+# GKE Deployment Packaging
 
+Proposed request path:
+
+```text
 Client
-  ↓
-Google Cloud LoadBalancer
-  ↓
-Kubernetes Service :80
-  ↓
-Pod :8080
-  ↓
-FastAPI GenAI Evaluation API
+  -> Google Cloud Load Balancer
+  -> Kubernetes Service
+  -> FastAPI pod
+  -> GenAI evaluation API
+```
 
-Components
+Repository assets cover:
 
-- Containerized FastAPI service
-- Docker image stored in Artifact Registry
-- CI/CD via Cloud Build
-- Deployment to Google Kubernetes Engine
-- Public LoadBalancer exposing the API endpoint
+- FastAPI container packaging.
+- Cloud Build configuration.
+- Kubernetes deployment and service manifests.
+- Health probes and scaling configuration.
 
-External endpoint:
-http://34.121.205.47/docs
+This document describes deployment packaging. The previously recorded public IP is retired, and this repository does not claim an active GKE service or production cluster.

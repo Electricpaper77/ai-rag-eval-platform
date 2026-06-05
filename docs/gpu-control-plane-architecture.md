@@ -31,4 +31,3 @@ This platform adds a vendor-agnostic inference control plane that routes request
 - `artifacts/proof/benchmark_runs.jsonl`
 - `artifacts/proof/autoscaling_recommendations.jsonl`
 - `artifacts/proof/admission_failures.jsonl`
-- `artifacts/proof/gpu_platform_summary.json`

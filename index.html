@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Working LLM evaluation and RAG reliability system with JSONL proof logs, regression tests, controlled metrics, and recruiter-readable artifacts."
+      content="Reproducible LLM evaluation and RAG reliability project with JSONL evidence, regression tests, controlled metrics, and recruiter-readable artifacts."
     />
     <title>AI Agent Reliability Platform</title>
     <link rel="stylesheet" href="./styles.css" />
@@ -42,13 +42,13 @@
           <p class="eyebrow">LLM evaluation / RAG reliability system</p>
           <h1>AI Agent Reliability Platform</h1>
           <p class="subtitle">
-            A working FastAPI evaluation harness for AI agents: RAG answers are checked for
-            grounding, citations, refusals, safety behavior, latency, and regression drift, then
-            written to reviewer-readable JSONL proof artifacts.
+            A reproducible FastAPI evaluation harness for RAG and model-response workflows:
+            outputs are checked for grounding, citations, refusals, safety behavior, latency, and
+            regression drift, then written to reviewer-readable JSONL evidence.
           </p>
           <div class="button-row hero-actions" aria-label="Primary actions">
-            <a class="button primary" href="https://ai-agent-reliability-platform-rtcd.vercel.app/">
-              Live Demo
+            <a class="button primary" href="#technical-review">
+              Project Walkthrough
             </a>
             <a class="button secondary" href="https://github.com/Electricpaper77/ai-rag-eval-platform">
               GitHub
@@ -58,27 +58,27 @@
           </div>
         </div>
 
-        <aside class="hero-panel" aria-label="Live proof summary">
-          <div class="panel-kicker">Controlled fixture run</div>
+        <aside class="hero-panel" aria-label="Controlled proof summary">
+          <div class="panel-kicker">Six-case controlled hiring run</div>
           <div class="hero-metrics">
             <div>
-              <span>Eval pass rate</span>
+              <span>6-case pass rate</span>
               <strong>100%</strong>
             </div>
             <div>
-              <span>Hallucination rate</span>
+              <span>6-case hallucination rate</span>
               <strong>0%</strong>
             </div>
             <div>
-              <span>Citation precision</span>
+              <span>6-case citation precision</span>
               <strong>100%</strong>
             </div>
             <div>
-              <span>Refusal accuracy</span>
+              <span>6-case refusal accuracy</span>
               <strong>100%</strong>
             </div>
             <div>
-              <span>p95 latency</span>
+              <span>Evaluator p95 latency</span>
               <strong>0.159 ms</strong>
             </div>
           </div>
@@ -101,11 +101,11 @@
             <ul>
               <li>Runs deterministic LLM eval fixtures through the same scoring path used by the API.</li>
               <li>Validates RAG grounding with citation checks, hallucination checks, and refusal behavior.</li>
-              <li>Persists JSONL logs, summary metrics, screenshots, and pytest coverage as proof artifacts.</li>
+              <li>Persists JSONL logs, summary metrics, checksums, and pytest coverage as proof artifacts.</li>
             </ul>
             <div class="button-row" aria-label="Recruiter links">
-              <a class="button primary" href="https://ai-agent-reliability-platform-rtcd.vercel.app/">
-                Live Demo
+              <a class="button primary" href="#technical-review">
+                Project Walkthrough
               </a>
               <a class="button secondary" href="https://github.com/Electricpaper77/ai-rag-eval-platform">
                 GitHub
@@ -116,23 +116,23 @@
           </div>
           <div id="metrics" class="metric-grid" aria-label="Proof metrics">
             <article class="metric-card">
-              <span>Eval pass rate</span>
+              <span>6-case pass rate</span>
               <strong>100%</strong>
             </article>
             <article class="metric-card">
-              <span>Hallucination rate</span>
+              <span>6-case hallucination rate</span>
               <strong>0%</strong>
             </article>
             <article class="metric-card">
-              <span>Citation precision</span>
+              <span>6-case citation precision</span>
               <strong>100%</strong>
             </article>
             <article class="metric-card">
-              <span>Refusal accuracy</span>
+              <span>6-case refusal accuracy</span>
               <strong>100%</strong>
             </article>
             <article class="metric-card">
-              <span>p95 latency</span>
+              <span>Evaluator p95 latency</span>
               <strong>0.159 ms</strong>
             </article>
           </div>
@@ -165,7 +165,7 @@
             </div>
             <div>
               <dt>Proof</dt>
-              <dd>JSONL case logs, summary JSON, pytest regression coverage, API screenshots, and metrics evidence.</dd>
+              <dd>JSONL case logs, summary JSON, checksums, pytest regression coverage, and metrics evidence.</dd>
             </div>
             <div>
               <dt>Best-fit roles</dt>
@@ -288,10 +288,10 @@
           <h2>Metrics are fixture results, not production benchmark claims.</h2>
         </div>
         <p>
-          The visible metrics come from deterministic controlled fixtures checked into the repo.
-          They should not be represented as general production benchmark claims, vendor model
-          comparisons, or live customer traffic results. Cost is mock-estimated and the proof run
-          does not require a paid vendor model API.
+          The headline metrics come from a six-case deterministic hiring run. A separate
+          checksum-backed 131-record evidence summary reports a 97.0% pass rate, 0.8%
+          hallucination rate, 83.3% citation precision, and 83.3% refusal accuracy. Neither set
+          represents production traffic, vendor model comparisons, or live customer results.
         </p>
       </section>
 
@@ -317,8 +317,8 @@
       <section class="section-shell production-next">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Production Roadmap</p>
-            <h2>Next Production Upgrade</h2>
+          <p class="eyebrow">Evaluation Roadmap</p>
+          <h2>Next Evaluation Upgrade</h2>
           </div>
         </div>
         <ul class="production-list">
@@ -475,7 +475,7 @@
             class="artifact-card"
             href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/docs/artifacts/eval_runs/hiring_eval.jsonl"
           >
-            <strong>docs/artifacts/eval_run_hiring_eval.jsonl</strong>
+            <strong>docs/artifacts/eval_runs/hiring_eval.jsonl</strong>
             <p>Sample JSONL evaluation log showing auditable eval results.</p>
           </a>
         </div>
@@ -498,8 +498,8 @@
           <p class="eyebrow">Fast Contact</p>
           <h2>Recruiter / Hiring Manager Fast Contact</h2>
           <p class="contact-note">
-            Review the live system and proof path, or contact me directly about AI agent,
-            evaluation, and applied GenAI roles.
+            Review the static walkthrough and reproducible proof path, or contact me directly
+            about LLM evaluation, RAG reliability, and applied GenAI roles.
           </p>
         </div>
         <div class="button-row contact-links">
@@ -516,8 +516,8 @@
           <a class="button secondary" href="mailto:azohaib.0150@gmail.com">
             Email
           </a>
-          <a class="button secondary" href="https://ai-agent-reliability-platform-rtcd.vercel.app/">
-            Live Demo
+          <a class="button secondary" href="#technical-review">
+            Project Walkthrough
           </a>
           <a class="button secondary" href="#proof">
             Proof Artifacts
@@ -525,12 +525,12 @@
         </div>
       </section>
       <p class="section-shell section-note">
-        Deployment: root-static | commit 34185c3 | LinkedIn verified
+        Static Vercel walkthrough | FastAPI service runs locally from the repository
       </p>
     </main>
     <script>
       const resumeBullet =
-        "Designed and deployed an AI Agent Reliability Platform for RAG and agent workflows, combining deterministic eval fixtures, citation validation, hallucination checks, refusal accuracy tests, JSONL audit logs, and regression testing; packaged a live Vercel demo with proof artifacts showing controlled-fixture reliability metrics across latency, cost/request, and output quality.";
+        "Built a FastAPI RAG and LLM evaluation platform with deterministic citation, hallucination, refusal, prompt-injection, and PII checks; generated checksum-backed JSONL evidence across 131 fixture records, exposed Prometheus metrics, and validated the current working tree with 133 passing pytest checks.";
       const copyButton = document.getElementById("copy-resume-bullet");
       const copyStatus = document.getElementById("copy-status");
 

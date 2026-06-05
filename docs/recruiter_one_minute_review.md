@@ -1,31 +1,41 @@
 # Recruiter One-Minute Review
 
-## Problem Solved
+## What It Solves
 
-AI teams need a single OpenAI-compatible gateway that can route inference traffic across multiple runtimes while preserving latency, reliability, cost visibility, and observability. This project implements that gateway and produces proof artifacts a reviewer can inspect quickly.
+RAG and LLM applications need repeatable checks for unsupported answers, missing citations, unsafe responses, prompt injection, and behavior drift. This project provides a FastAPI evaluation path, auditable JSONL evidence, Prometheus-format metrics, and pytest regression coverage.
 
-## Technologies
+## Strongest Hiring Signals
 
-- Python, FastAPI, Pydantic, pytest
-- OpenAI-compatible API surface and streaming SSE responses
-- vLLM-style and NVIDIA Triton-style backend adapters
-- Prometheus metrics and Grafana dashboard
-- OpenTelemetry OTLP export and JSONL trace artifacts
-- Docker Compose, Redis, Kubernetes manifests, HPA, PDB, ServiceMonitor
-- JSONL benchmark, evaluation, routing, and trace artifacts
+- Deterministic citation, hallucination, refusal, PII, and prompt-injection evaluation.
+- OpenAI-compatible inference and streaming interfaces.
+- Checksum-backed evidence across 131 fixture records.
+- JSONL logs, metrics, traces, and local load-test artifacts.
+- Docker, Kubernetes, Helm, and Terraform packaging without claiming a live production cluster.
 
-## Scale Metrics
+## Evidence Snapshot
+
+| Evidence | Result |
+|---|---:|
+| Controlled hiring smoke run | 6 / 6 passed |
+| Combined fixture evidence | 127 / 131 passed |
+| Combined hallucination rate | 0.8% |
+| Combined citation precision | 83.3% |
+| Combined refusal accuracy | 83.3% |
+| Current local pytest result | 133 passed, 1 expected xfail |
+
+## Operational Artifact
+
+The checked-in local load test contains 290 requests at 10 virtual users:
 
 | Metric | Result |
 |---|---:|
-| p50 latency | 174.39 ms |
-| p95 latency | 227.15 ms |
-| TTFT | 20.0 ms |
-| tokens/sec | 374.88 |
-| throughput | 26.78 req/sec |
-| success rate | 100% |
+| Successful checks | 284 / 290 |
+| Request rate | 9.39 req/sec |
+| HTTP failure rate | 2.07% |
+| p95 successful-response latency | 53.44 ms |
 
-## Why This Project Matters
+These numbers are local artifact results, not production capacity claims.
 
-This is not a toy chat wrapper. It demonstrates the infrastructure layer companies need around model serving: backend abstraction, routing policy, fallback reliability, streaming compatibility, metrics, traces, benchmark evidence, and deployment manifests. Those are direct hiring signals for AI Infrastructure Engineer, Inference Platform Engineer, and GPU serving platform roles.
+## Role Fit
 
+The strongest alignment is AI Solutions Engineer, LLM Evaluation Engineer, Applied GenAI Engineer, and AI Reliability Engineer. Infrastructure components provide useful supporting depth, while GPU execution and production cluster operation are explicitly outside the demonstrated scope.

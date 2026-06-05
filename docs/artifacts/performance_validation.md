@@ -14,7 +14,7 @@ This artifact documents the validation evidence expected by an inference-platfor
 | Streaming compatibility | OpenAI-style SSE chunks and `[DONE]` | `streaming_sse_sample.txt`, `streaming_results.jsonl` |
 | Routing quality | policy and backend decisions captured | `routing_decisions.jsonl` |
 | Traceability | request and backend spans emitted | `otel_traces.jsonl` |
-| Load readiness | async load script produces summary JSON | `scripts/load_test.py` |
+| Load readiness | checked-in local load artifact records request and latency results | `docs/artifacts/load_test_results.json` |
 
 ## Reviewer Notes
 
