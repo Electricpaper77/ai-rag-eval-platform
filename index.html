@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Working LLM evaluation and RAG reliability system with JSONL proof logs, regression tests, controlled metrics, and recruiter-readable artifacts."
+    />
+    <title>AI Agent Reliability Platform</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header" aria-label="Project navigation">
+      <a class="brand" href="#top" aria-label="AI Agent Reliability Platform home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>AI Agent Reliability Platform</span>
+      </a>
+      <div class="header-actions">
+        <nav class="nav-links" aria-label="Page sections">
+          <a href="#fast-path">Fast Path</a>
+          <a href="#technical-review">60-Second Review</a>
+          <a href="#architecture">How It Works</a>
+          <a href="#proof">Proof</a>
+          <a
+            href="https://www.linkedin.com/in/zohaib-a-1a8017174/"
+            aria-label="LinkedIn: https://www.linkedin.com/in/zohaib-a-1a8017174/"
+          >
+            LinkedIn
+          </a>
+        </nav>
+        <button class="button copy-button" id="copy-resume-bullet" type="button">
+          Copy Resume Bullet
+        </button>
+        <span class="copy-status" id="copy-status" role="status" aria-live="polite"></span>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero section-shell">
+        <div class="hero-copy">
+          <p class="eyebrow">LLM evaluation / RAG reliability system</p>
+          <h1>AI Agent Reliability Platform</h1>
+          <p class="subtitle">
+            A working FastAPI evaluation harness for AI agents: RAG answers are checked for
+            grounding, citations, refusals, safety behavior, latency, and regression drift, then
+            written to reviewer-readable JSONL proof artifacts.
+          </p>
+          <div class="button-row hero-actions" aria-label="Primary actions">
+            <a class="button primary" href="https://ai-agent-reliability-platform-rtcd.vercel.app/">
+              Live Demo
+            </a>
+            <a class="button secondary" href="https://github.com/Electricpaper77/ai-rag-eval-platform">
+              GitHub
+            </a>
+            <a class="button secondary" href="#proof">Proof Artifacts</a>
+            <a class="button secondary" href="#architecture">System Design</a>
+          </div>
+        </div>
+
+        <aside class="hero-panel" aria-label="Live proof summary">
+          <div class="panel-kicker">Controlled fixture run</div>
+          <div class="hero-metrics">
+            <div>
+              <span>Eval pass rate</span>
+              <strong>100%</strong>
+            </div>
+            <div>
+              <span>Hallucination rate</span>
+              <strong>0%</strong>
+            </div>
+            <div>
+              <span>Citation precision</span>
+              <strong>100%</strong>
+            </div>
+            <div>
+              <span>Refusal accuracy</span>
+              <strong>100%</strong>
+            </div>
+            <div>
+              <span>p95 latency</span>
+              <strong>0.159 ms</strong>
+            </div>
+          </div>
+          <pre><code>{
+  "artifact": "hiring_eval.jsonl",
+  "total_cases": 6,
+  "record_type": "summary",
+  "cost_label": "estimated_mock_no_vendor_api"
+}</code></pre>
+        </aside>
+      </section>
+
+      <section id="fast-path" class="section-shell fast-path">
+        <div class="section-heading compact">
+          <p class="eyebrow">Recruiter Fast Path</p>
+          <h2>What this project proves</h2>
+        </div>
+        <div class="fast-path-layout">
+          <div class="proof-bullets">
+            <ul>
+              <li>Runs deterministic LLM eval fixtures through the same scoring path used by the API.</li>
+              <li>Validates RAG grounding with citation checks, hallucination checks, and refusal behavior.</li>
+              <li>Persists JSONL logs, summary metrics, screenshots, and pytest coverage as proof artifacts.</li>
+            </ul>
+            <div class="button-row" aria-label="Recruiter links">
+              <a class="button primary" href="https://ai-agent-reliability-platform-rtcd.vercel.app/">
+                Live Demo
+              </a>
+              <a class="button secondary" href="https://github.com/Electricpaper77/ai-rag-eval-platform">
+                GitHub
+              </a>
+              <a class="button secondary" href="#proof">Proof Artifacts</a>
+              <a class="button secondary" href="#architecture">System Design</a>
+            </div>
+          </div>
+          <div id="metrics" class="metric-grid" aria-label="Proof metrics">
+            <article class="metric-card">
+              <span>Eval pass rate</span>
+              <strong>100%</strong>
+            </article>
+            <article class="metric-card">
+              <span>Hallucination rate</span>
+              <strong>0%</strong>
+            </article>
+            <article class="metric-card">
+              <span>Citation precision</span>
+              <strong>100%</strong>
+            </article>
+            <article class="metric-card">
+              <span>Refusal accuracy</span>
+              <strong>100%</strong>
+            </article>
+            <article class="metric-card">
+              <span>p95 latency</span>
+              <strong>0.159 ms</strong>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="technical-review" class="section-shell technical-review">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Hiring Manager Summary</p>
+            <h2>60-Second Technical Review</h2>
+          </div>
+          <p class="section-note">
+            Five checkpoints connect the system claim to implementation and inspectable evidence.
+          </p>
+        </div>
+        <div class="technical-review-layout">
+          <dl class="review-list">
+            <div>
+              <dt>Problem</dt>
+              <dd>RAG and agent outputs need measurable release checks before production use.</dd>
+            </div>
+            <div>
+              <dt>System</dt>
+              <dd>FastAPI evaluation path with grounding, citation, hallucination, refusal, and safety checks.</dd>
+            </div>
+            <div>
+              <dt>Metrics</dt>
+              <dd>Pass rate, hallucination rate, citation precision, refusal accuracy, p95 latency, and cost/request.</dd>
+            </div>
+            <div>
+              <dt>Proof</dt>
+              <dd>JSONL case logs, summary JSON, pytest regression coverage, API screenshots, and metrics evidence.</dd>
+            </div>
+            <div>
+              <dt>Best-fit roles</dt>
+              <dd>AI Solutions Engineer, LLM Evaluation Engineer, Applied GenAI Engineer, and AI Reliability Engineer.</dd>
+            </div>
+          </dl>
+          <div class="output-panel">
+            <div class="panel-kicker">Sample /evaluate Output</div>
+            <pre><code>{
+  "eval_pass_rate": 1.0,
+  "hallucination_rate": 0.0,
+  "citation_precision": 1.0,
+  "refusal_accuracy": 1.0,
+  "p95_latency_ms": 0.159,
+  "cost_per_request_usd": 0.00000654,
+  "benchmark_type": "controlled deterministic fixtures"
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="architecture" class="section-shell evaluation-flow">
+        <div class="flow-heading">
+          <p class="eyebrow">Evaluation Flow</p>
+          <h2>How It Works</h2>
+          <p class="section-note">
+            From controlled fixtures to regression-tested reliability metrics.
+          </p>
+        </div>
+        <ol class="pipeline" aria-label="Evaluation architecture pipeline">
+          <li>
+            <span>01</span>
+            <strong>Prompt/response fixture</strong>
+            <p>Controlled test cases define expected grounded, cited, and safe outputs.</p>
+          </li>
+          <li>
+            <span>02</span>
+            <strong>Evaluation harness</strong>
+            <p>Runs scoring checks across answer quality, safety, citations, and regressions.</p>
+          </li>
+          <li>
+            <span>03</span>
+            <strong>JSONL log</strong>
+            <p>Stores each evaluation result as an auditable record for review.</p>
+          </li>
+          <li>
+            <span>04</span>
+            <strong>Summary metrics</strong>
+            <p>Aggregates pass rate, hallucination rate, citation precision, refusal accuracy, latency, and cost/request.</p>
+          </li>
+          <li>
+            <span>05</span>
+            <strong>Pytest regression check</strong>
+            <p>Blocks behavior drift by rerunning deterministic eval cases in the test suite.</p>
+          </li>
+          <li>
+            <span>06</span>
+            <strong>Recruiter proof artifact</strong>
+            <p>Packages metrics, screenshots, logs, and README evidence for fast technical review.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section id="failures" class="section-shell">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Evaluator Coverage</p>
+            <h2>Failure Cases Caught</h2>
+          </div>
+          <p class="section-note">
+            These are the types of issues the evaluator is designed to catch before release.
+          </p>
+        </div>
+        <div class="failure-grid">
+          <article class="failure-card">
+            <div class="failure-label">Missing citation</div>
+            <dl>
+              <dt>User query</dt>
+              <dd>What is the refund window for enterprise accounts?</dd>
+              <dt>Model output problem</dt>
+              <dd>Gives a policy answer without citing the source document.</dd>
+              <dt>Evaluator result</dt>
+              <dd>Fails citation coverage and records a citation failure reason.</dd>
+              <dt>Metric impacted</dt>
+              <dd>Citation precision</dd>
+            </dl>
+          </article>
+          <article class="failure-card">
+            <div class="failure-label">Hallucinated claim</div>
+            <dl>
+              <dt>User query</dt>
+              <dd>Summarize the SLA guarantee from the retrieved contract.</dd>
+              <dt>Model output problem</dt>
+              <dd>Invents a 99.99% uptime guarantee not present in retrieved context.</dd>
+              <dt>Evaluator result</dt>
+              <dd>Flags unsupported claim and marks the case as a hallucination risk.</dd>
+              <dt>Metric impacted</dt>
+              <dd>Hallucination rate</dd>
+            </dl>
+          </article>
+          <article class="failure-card">
+            <div class="failure-label">Unsafe / PII request</div>
+            <dl>
+              <dt>User query</dt>
+              <dd>Reveal the customer's email and internal account notes.</dd>
+              <dt>Model output problem</dt>
+              <dd>Attempts to disclose sensitive data instead of refusing or redacting.</dd>
+              <dt>Evaluator result</dt>
+              <dd>Fails refusal accuracy and PII safety expectations.</dd>
+              <dt>Metric impacted</dt>
+              <dd>Refusal accuracy</dd>
+            </dl>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-shell benchmark-notice" aria-label="Controlled benchmark notice">
+        <div>
+          <p class="eyebrow">Controlled Benchmark Notice</p>
+          <h2>Metrics are fixture results, not production benchmark claims.</h2>
+        </div>
+        <p>
+          The visible metrics come from deterministic controlled fixtures checked into the repo.
+          They should not be represented as general production benchmark claims, vendor model
+          comparisons, or live customer traffic results. Cost is mock-estimated and the proof run
+          does not require a paid vendor model API.
+        </p>
+      </section>
+
+      <section class="section-shell agent-use-case">
+        <div class="agent-use-case-copy">
+          <p class="eyebrow">Agent Evaluation Extension</p>
+          <h2>AI Agent Reliability Use Case</h2>
+          <p>
+            This platform can be extended to evaluate multi-step AI agents by scoring tool-use
+            accuracy, citation grounding, refusal behavior, task completion, latency, and
+            regression drift across repeatable test cases.
+          </p>
+        </div>
+        <ul class="agent-capability-list">
+          <li>Tool-use correctness</li>
+          <li>Multi-step task completion</li>
+          <li>Prompt-injection resistance</li>
+          <li>Grounded answer validation</li>
+          <li>Regression checks before deployment</li>
+        </ul>
+      </section>
+
+      <section class="section-shell production-next">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Production Roadmap</p>
+            <h2>Next Production Upgrade</h2>
+          </div>
+        </div>
+        <ul class="production-list">
+          <li>Connect real model/provider outputs</li>
+          <li>Add larger adversarial eval dataset</li>
+          <li>Add agent trace evaluation</li>
+          <li>Add CI regression gate</li>
+          <li>Add human review queue</li>
+        </ul>
+      </section>
+
+      <section class="section-shell">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Role Fit</p>
+            <h2>Hiring Signals</h2>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Signal</th>
+                <th>Evidence in the project</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>LLM evaluation</td>
+                <td>Deterministic pass/fail scoring, JSONL artifacts, and regression tests.</td>
+              </tr>
+              <tr>
+                <td>RAG reliability</td>
+                <td>Citation validation and hallucination checks for grounded answers.</td>
+              </tr>
+              <tr>
+                <td>Guardrails</td>
+                <td>Refusal accuracy, PII safety checks, and prompt-injection fixtures.</td>
+              </tr>
+              <tr>
+                <td>Observability</td>
+                <td>Audit logs, metrics endpoint proof, and dashboard-ready summary records.</td>
+              </tr>
+              <tr>
+                <td>Testing</td>
+                <td>Pytest coverage for evaluator behavior and artifact schema.</td>
+              </tr>
+              <tr>
+                <td>Cost / latency awareness</td>
+                <td>p95 evaluator latency and clearly labeled mock cost/request tracking.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section-shell case-study">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Employer Review</p>
+            <h2>Case Study: Evaluating RAG and AI Agent Outputs Before Production</h2>
+          </div>
+          <p class="section-note">
+            A concise view of the engineering problem, system design, tradeoffs, and deployment value.
+          </p>
+        </div>
+        <div class="case-study-grid">
+          <article class="case-study-card">
+            <span>01</span>
+            <h3>Problem</h3>
+            <p>
+              RAG and AI agent systems can produce unsupported answers, missing citations, unsafe
+              refusals, and behavior drift after prompt or model changes.
+            </p>
+          </article>
+          <article class="case-study-card">
+            <span>02</span>
+            <h3>Solution</h3>
+            <p>
+              Built a deterministic evaluation harness that scores groundedness, citation precision,
+              refusal accuracy, latency, cost/request, and regression behavior across repeatable test cases.
+            </p>
+          </article>
+          <article class="case-study-card">
+            <span>03</span>
+            <h3>System Design</h3>
+            <p>
+              Prompt/response fixtures feed an eval runner, which applies citation checks,
+              hallucination checks, refusal checks, JSONL logging, summary metrics, and pytest
+              regression validation.
+            </p>
+          </article>
+          <article class="case-study-card">
+            <span>04</span>
+            <h3>Production Tradeoffs</h3>
+            <p>
+              Current metrics are based on controlled deterministic fixtures, not broad vendor
+              benchmarks. In production, I would expand the dataset, add real provider outputs,
+              agent traces, human review, and CI regression gates.
+            </p>
+          </article>
+          <article class="case-study-card business-impact">
+            <span>05</span>
+            <h3>Business Impact</h3>
+            <p>
+              This workflow helps teams catch hallucinations, citation failures, unsafe responses,
+              and prompt/model regressions before customer-facing deployment.
+            </p>
+          </article>
+        </div>
+        <aside class="interview-talk-track">
+          <strong>Interview Talk Track</strong>
+          <p>
+            In an interview, I would walk through the eval design, why each metric matters, how
+            JSONL logs support reviewability, how pytest protects against behavior drift, and how I
+            would extend this into real model/provider and multi-agent trace evaluation.
+          </p>
+        </aside>
+      </section>
+
+      <section id="proof" class="section-shell">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Evidence</p>
+            <h2>Proof Artifacts</h2>
+          </div>
+          <p class="section-note">
+            Short path for AI Solutions Engineer, LLM Evaluation, and Applied GenAI review.
+          </p>
+        </div>
+        <div class="artifact-grid">
+          <a
+            class="artifact-card"
+            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/README.md"
+          >
+            <strong>README.md</strong>
+            <p>Project overview, metrics, proof matrix, and recruiter fast path.</p>
+          </a>
+          <a
+            class="artifact-card"
+            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/PROOF.md"
+          >
+            <strong>PROOF.md</strong>
+            <p>Evidence checklist for screenshots, logs, tests, and demo validation.</p>
+          </a>
+          <a
+            class="artifact-card"
+            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/docs/artifacts/README_PROOF_GUIDE.md"
+          >
+            <strong>docs/artifacts/README_PROOF_GUIDE.md</strong>
+            <p>Guide for organizing technical screenshots and proof assets.</p>
+          </a>
+          <a
+            class="artifact-card"
+            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/docs/artifacts/eval_runs/hiring_eval.jsonl"
+          >
+            <strong>docs/artifacts/eval_run_hiring_eval.jsonl</strong>
+            <p>Sample JSONL evaluation log showing auditable eval results.</p>
+          </a>
+        </div>
+      </section>
+
+      <section id="walkthrough" class="section-shell walkthrough">
+        <div>
+          <p class="eyebrow">Interview Walkthrough</p>
+          <h2>60-second talk track</h2>
+        </div>
+        <blockquote>
+          This project demonstrates how I would validate GenAI systems before production:
+          repeatable eval fixtures, measurable reliability metrics, JSONL audit logs, regression
+          tests, and clear proof artifacts.
+        </blockquote>
+      </section>
+
+      <section class="cta section-shell recruiter-contact" aria-label="Recruiter and hiring manager contact">
+        <div>
+          <p class="eyebrow">Fast Contact</p>
+          <h2>Recruiter / Hiring Manager Fast Contact</h2>
+          <p class="contact-note">
+            Review the live system and proof path, or contact me directly about AI agent,
+            evaluation, and applied GenAI roles.
+          </p>
+        </div>
+        <div class="button-row contact-links">
+          <a
+            class="button primary"
+            href="https://www.linkedin.com/in/zohaib-a-1a8017174/"
+            aria-label="LinkedIn: https://www.linkedin.com/in/zohaib-a-1a8017174/"
+          >
+            LinkedIn
+          </a>
+          <a class="button primary" href="https://github.com/Electricpaper77/ai-rag-eval-platform">
+            GitHub
+          </a>
+          <a class="button secondary" href="mailto:azohaib.0150@gmail.com">
+            Email
+          </a>
+          <a class="button secondary" href="https://ai-agent-reliability-platform-rtcd.vercel.app/">
+            Live Demo
+          </a>
+          <a class="button secondary" href="#proof">
+            Proof Artifacts
+          </a>
+        </div>
+      </section>
+    </main>
+    <script>
+      const resumeBullet =
+        "Designed and deployed an AI Agent Reliability Platform for RAG and agent workflows, combining deterministic eval fixtures, citation validation, hallucination checks, refusal accuracy tests, JSONL audit logs, and regression testing; packaged a live Vercel demo with proof artifacts showing controlled-fixture reliability metrics across latency, cost/request, and output quality.";
+      const copyButton = document.getElementById("copy-resume-bullet");
+      const copyStatus = document.getElementById("copy-status");
+
+      async function copyResumeBullet() {
+        try {
+          await navigator.clipboard.writeText(resumeBullet);
+        } catch {
+          const textArea = document.createElement("textarea");
+          textArea.value = resumeBullet;
+          textArea.setAttribute("readonly", "");
+          textArea.style.position = "fixed";
+          textArea.style.opacity = "0";
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand("copy");
+          textArea.remove();
+        }
+
+        copyButton.textContent = "Copied";
+        copyStatus.textContent = "Resume bullet copied to clipboard.";
+        window.setTimeout(() => {
+          copyButton.textContent = "Copy Resume Bullet";
+          copyStatus.textContent = "";
+        }, 2000);
+      }
+
+      copyButton.addEventListener("click", copyResumeBullet);
+    </script>
+  </body>
+</html>

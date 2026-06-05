@@ -27,6 +27,14 @@ Production-style evaluation platform for RAG and AI agent workflows, including d
 python -m pytest -q
 ```
 
+## Deployment
+
+The production Vercel deployment serves the root static files:
+- `index.html`
+- `styles.css`
+
+The `frontend/` directory is retained as the source copy, but root files remove ambiguity for Vercel static deployment.
+
 ## Recruiter / Hiring Manager Fast Contact
 
 - LinkedIn: https://www.linkedin.com/in/zohaib-a-1a8017174/
