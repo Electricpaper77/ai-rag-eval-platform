@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Recruiter-facing portfolio page for a production-style RAG evaluation harness with proof logs, regression tests, and controlled reliability metrics."
+    />
+    <title>AI Agent Reliability Platform</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header" aria-label="Project navigation">
+      <a class="brand" href="#top" aria-label="AI Agent Reliability Platform home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>AI Agent Reliability Platform</span>
+      </a>
+      <nav class="nav-links" aria-label="Page sections">
+        <a href="#metrics">Metrics</a>
+        <a href="#proof">Proof</a>
+        <a href="#walkthrough">Walkthrough</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero section-shell">
+        <div class="hero-copy">
+          <p class="eyebrow">Flagship AI evaluation project</p>
+          <h1>AI Agent Reliability Platform</h1>
+          <p class="subtitle">
+            Production-style RAG evaluation harness with JSONL proof logs, regression tests, and
+            controlled metrics for hallucination rate, citation precision, refusal accuracy,
+            latency, and cost/request.
+          </p>
+          <div class="button-row" aria-label="Primary actions">
+            <a class="button primary" href="https://github.com/Electricpaper77/ai-rag-eval-platform">
+              GitHub: Electricpaper77/ai-rag-eval-platform
+            </a>
+            <a
+              class="button secondary"
+              href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/PROOF.md"
+            >
+              View Proof Artifacts
+            </a>
+          </div>
+        </div>
+
+        <aside class="artifact-preview" aria-label="Proof artifact preview">
+          <div class="preview-bar">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <pre><code>{
+  "eval_pass_rate": 1.0,
+  "hallucination_rate": 0.0,
+  "citation_precision": 1.0,
+  "refusal_accuracy": 1.0,
+  "latency_p95_ms": 0.159,
+  "cost_per_request_usd": 0.00000654
+}</code></pre>
+        </aside>
+      </section>
+
+      <section id="metrics" class="section-shell">
+        <div class="section-heading">
+          <p class="eyebrow">Controlled fixture results</p>
+          <h2>Proof Metrics</h2>
+        </div>
+        <div class="metric-grid">
+          <article class="metric-card">
+            <span>Eval pass rate</span>
+            <strong>100%</strong>
+          </article>
+          <article class="metric-card">
+            <span>Hallucination rate</span>
+            <strong>0%</strong>
+          </article>
+          <article class="metric-card">
+            <span>Citation precision</span>
+            <strong>100%</strong>
+          </article>
+          <article class="metric-card">
+            <span>Refusal accuracy</span>
+            <strong>100%</strong>
+          </article>
+          <article class="metric-card">
+            <span>p95 evaluator latency</span>
+            <strong>0.159 ms</strong>
+          </article>
+          <article class="metric-card">
+            <span>Cost/request</span>
+            <strong>$0.00000654</strong>
+            <small>mock-estimated</small>
+          </article>
+          <article class="metric-card wide">
+            <span>Test suite</span>
+            <strong>133 passed, 1 xfailed</strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-shell disclaimer-band" aria-label="Scope disclaimer">
+        <p>
+          Metrics are from controlled deterministic eval fixtures, not broad production traffic or
+          vendor benchmark claims. Cost is mock-estimated and does not use a paid vendor model API.
+        </p>
+      </section>
+
+      <section class="section-shell">
+        <div class="section-heading">
+          <p class="eyebrow">Evaluation flow</p>
+          <h2>How It Works</h2>
+        </div>
+        <ol class="pipeline" aria-label="Evaluation pipeline">
+          <li>Prompt/response fixture</li>
+          <li>Evaluation harness</li>
+          <li>JSONL log</li>
+          <li>Summary metrics</li>
+          <li>Pytest regression check</li>
+          <li>Recruiter proof artifact</li>
+        </ol>
+      </section>
+
+      <section class="section-shell">
+        <div class="section-heading">
+          <p class="eyebrow">Role fit</p>
+          <h2>Hiring Signals</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Signal</th>
+                <th>Evidence in the project</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>LLM evaluation</td>
+                <td>Deterministic pass/fail scoring</td>
+              </tr>
+              <tr>
+                <td>RAG reliability</td>
+                <td>Citation and hallucination checks</td>
+              </tr>
+              <tr>
+                <td>Guardrails</td>
+                <td>Refusal accuracy and prompt-injection fixtures</td>
+              </tr>
+              <tr>
+                <td>Observability</td>
+                <td>JSONL audit trail</td>
+              </tr>
+              <tr>
+                <td>Testing</td>
+                <td>Pytest regression suite</td>
+              </tr>
+              <tr>
+                <td>Cost/latency awareness</td>
+                <td>p95 latency and mock cost/request</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="proof" class="section-shell">
+        <div class="section-heading">
+          <p class="eyebrow">Reviewer fast path</p>
+          <h2>Proof Artifacts</h2>
+        </div>
+        <div class="artifact-links">
+          <a href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/README.md">README.md</a>
+          <a href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/PROOF.md">PROOF.md</a>
+          <a href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/docs/artifacts/README_PROOF_GUIDE.md">
+            docs/artifacts/README_PROOF_GUIDE.md
+          </a>
+          <a href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/docs/artifacts/eval_runs/hiring_eval.jsonl">
+            docs/artifacts/eval_runs/hiring_eval.jsonl
+          </a>
+          <a href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/docs/artifacts/eval_runs/hiring_eval_summary.json">
+            docs/artifacts/eval_runs/hiring_eval_summary.json
+          </a>
+          <a href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/tests/test_eval_harness.py">
+            tests/test_eval_harness.py
+          </a>
+        </div>
+      </section>
+
+      <section id="walkthrough" class="section-shell walkthrough">
+        <div>
+          <p class="eyebrow">Interview walkthrough</p>
+          <h2>60-Second Talk Track</h2>
+        </div>
+        <blockquote>
+          This project demonstrates how I would validate GenAI systems before production:
+          repeatable eval fixtures, measurable reliability metrics, JSONL audit logs, regression
+          tests, and clear proof artifacts.
+        </blockquote>
+      </section>
+
+      <section class="cta section-shell" aria-label="Contact actions">
+        <div>
+          <p class="eyebrow">Next step</p>
+          <h2>Review the proof path or start a conversation.</h2>
+        </div>
+        <div class="button-row">
+          <a class="button primary" href="https://github.com/Electricpaper77/ai-rag-eval-platform">
+            GitHub Repository
+          </a>
+          <span class="button secondary inactive" role="note">LinkedIn: add profile URL later</span>
+          <a class="button secondary" href="mailto:azohaib.0150@gmail.com">
+            Contact: azohaib.0150@gmail.com
+          </a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
