@@ -1132,6 +1132,111 @@ dt:first-of-type {
   text-transform: uppercase;
 }
 
+.proof-screenshot-checklist {
+  margin-top: 18px;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 12px 28px rgba(31, 49, 70, 0.06);
+}
+
+.proof-screenshot-heading h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.18rem, 2vw, 1.42rem);
+  line-height: 1.25;
+}
+
+.proof-screenshot-heading p {
+  max-width: 650px;
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+.proof-screenshot-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 28px;
+  margin: 18px 0 0;
+  padding: 4px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  list-style: none;
+}
+
+.proof-screenshot-list li {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.proof-screenshot-list li + li {
+  border-top: 1px solid rgba(217, 225, 234, 0.72);
+}
+
+.proof-screenshot-list li:nth-child(2) {
+  border-top: 0;
+}
+
+.proof-screenshot-list li > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.proof-screenshot-list strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.proof-screenshot-list code {
+  max-width: 100%;
+  padding: 3px 7px;
+  border-radius: 7px;
+  background: var(--blue-soft);
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.proof-check {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(15, 139, 141, 0.35);
+  border-radius: 6px;
+  background: var(--teal-soft);
+}
+
+.proof-check::after {
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--teal);
+  border-width: 0 2px 2px 0;
+  content: "";
+  transform: rotate(45deg);
+}
+
+.proof-screenshot-note {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
 .resume-section {
   display: grid;
   grid-template-columns: 0.6fr 1.4fr;
@@ -1625,6 +1730,24 @@ blockquote {
   .proof-strip-actions {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .proof-screenshot-checklist {
+    padding: 20px;
+  }
+
+  .proof-screenshot-list {
+    grid-template-columns: 1fr;
+  }
+
+  .proof-screenshot-list li:nth-child(2) {
+    border-top: 1px solid rgba(217, 225, 234, 0.72);
+  }
+
+  .proof-screenshot-list li > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
   }
 
   .hero {
