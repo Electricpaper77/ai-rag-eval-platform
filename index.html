@@ -504,7 +504,7 @@
             <h2>Case Study: Evaluating RAG and AI Agent Outputs Before Production</h2>
           </div>
           <p class="section-note">
-            A concise view of the engineering problem, system design, tradeoffs, and deployment value.
+            Built to show how AI outputs are tested before customer-facing deployment.
           </p>
         </div>
         <div class="case-study-grid">
@@ -528,9 +528,9 @@
             <span>03</span>
             <h3>System Design</h3>
             <p>
-              Prompt/response fixtures feed an eval runner, which applies citation checks,
-              hallucination checks, refusal checks, JSONL logging, summary metrics, and pytest
-              regression validation.
+              Prompt/response fixtures feed an evaluation runner that applies citation checks,
+              hallucination checks, refusal checks, JSONL logging, summary metrics, and pytest regression
+              validation.
             </p>
           </article>
           <article class="case-study-card">
@@ -542,14 +542,6 @@
               agent traces, human review, and CI regression gates.
             </p>
           </article>
-          <article class="case-study-card business-impact">
-            <span>05</span>
-            <h3>Business Impact</h3>
-            <p>
-              This workflow helps teams catch hallucinations, citation failures, unsafe responses,
-              and prompt/model regressions before customer-facing deployment.
-            </p>
-          </article>
         </div>
         <aside class="interview-talk-track">
           <strong>Interview Talk Track</strong>
@@ -559,6 +551,30 @@
             would extend this into real model/provider and multi-agent trace evaluation.
           </p>
         </aside>
+      </section>
+
+      <section class="section-shell run-evidence">
+        <div class="section-heading compact">
+          <p class="eyebrow">Proof Artifacts</p>
+          <h2>Run Evidence</h2>
+        </div>
+        <div class="run-evidence-grid">
+          <article class="run-evidence-card">
+            <h3>JSONL Eval Logs</h3>
+            <p>Structured prompt/response outputs with pass/fail labels and metric fields.</p>
+          </article>
+          <article class="run-evidence-card">
+            <h3>Regression Tests</h3>
+            <p>Pytest validation for citation checks, refusal behavior, and hallucination risk.</p>
+          </article>
+          <article class="run-evidence-card">
+            <h3>Dashboard Metrics</h3>
+            <p>
+              Summary view for pass rate, citation precision, refusal accuracy, latency, and
+              cost/request.
+            </p>
+          </article>
+        </div>
       </section>
 
       <section id="walkthrough" class="section-shell walkthrough">
