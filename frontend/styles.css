@@ -48,21 +48,21 @@ a {
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 20;
-  display: flex;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  gap: clamp(14px, 2.4vw, 32px);
   width: 100%;
-  padding: 16px clamp(18px, 5vw, 72px);
+  padding: 12px max(20px, calc((100% - var(--content-max)) / 2));
   border-bottom: 1px solid rgba(216, 225, 235, 0.84);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(247, 248, 244, 0.94);
   backdrop-filter: blur(16px);
+  box-shadow: 0 8px 24px rgba(16, 35, 63, 0.05);
 }
 
 .brand,
 .nav-links,
-.header-actions,
 .button-row {
   display: flex;
   align-items: center;
@@ -86,15 +86,11 @@ a {
 }
 
 .nav-links {
-  gap: 18px;
+  justify-content: center;
+  gap: 4px;
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 700;
-}
-
-.header-actions {
-  position: relative;
-  gap: 18px;
 }
 
 .copy-button {
@@ -119,30 +115,63 @@ button.button {
   font: inherit;
 }
 
-.copy-status {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  width: max-content;
-  max-width: 260px;
-  color: var(--teal);
-  font-size: 0.8rem;
-  font-weight: 800;
-}
-
 .nav-links a,
 .artifact-card {
   text-decoration: none;
 }
 
+.nav-links a {
+  padding: 8px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
+}
+
 .nav-links a:hover,
+.nav-links a:active,
+.nav-links a:focus-visible,
 .artifact-card:hover {
-  color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--ink);
+}
+
+.brand:focus-visible,
+.button:focus-visible,
+.nav-links a:focus-visible {
+  outline: 3px solid rgba(15, 139, 141, 0.28);
+  outline-offset: 3px;
+}
+
+.header-github {
+  min-height: 40px;
+  padding: 9px 14px;
+  white-space: nowrap;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .section-shell {
   width: min(var(--content-max), calc(100% - 40px));
   margin: 0 auto;
+}
+
+[id] {
+  scroll-margin-top: 88px;
+}
+
+#demo {
+  scroll-margin-top: 112px;
 }
 
 .hero {
@@ -442,6 +471,60 @@ code {
   margin: 0 0 20px;
   font-size: clamp(1.55rem, 2.6vw, 2.35rem);
   overflow-wrap: anywhere;
+}
+
+.recruiter-proof-strip {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.2fr) auto auto;
+  gap: 20px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  background: var(--surface);
+  box-shadow: 0 14px 34px rgba(16, 35, 63, 0.08);
+}
+
+.recruiter-proof-strip p {
+  max-width: 590px;
+  margin: 0;
+  color: var(--ink);
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.proof-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.proof-chips li {
+  padding: 7px 10px;
+  border: 1px solid rgba(15, 139, 141, 0.2);
+  border-radius: 999px;
+  background: var(--teal-soft);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.proof-strip-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.proof-strip-actions .button {
+  min-height: 40px;
+  padding: 9px 13px;
+  font-size: 0.84rem;
+  white-space: nowrap;
 }
 
 .recruiter-path {
@@ -1286,6 +1369,14 @@ blockquote {
 }
 
 @media (max-width: 1080px) {
+  .recruiter-proof-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .proof-strip-actions {
+    justify-content: flex-start;
+  }
+
   .demo-workflow {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -1313,9 +1404,30 @@ blockquote {
 
 @media (max-width: 920px) {
   .site-header {
-    position: static;
-    align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 14px;
+    padding: 10px 20px;
+  }
+
+  .nav-links {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  [id] {
+    scroll-margin-top: 126px;
+  }
+
+  #demo {
+    scroll-margin-top: 142px;
   }
 
   .hero,
@@ -1341,17 +1453,6 @@ blockquote {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .header-actions {
-    width: 100%;
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .copy-status {
-    position: static;
-    width: 100%;
-  }
-
   .cta {
     display: block;
   }
@@ -1373,12 +1474,37 @@ blockquote {
 
   .nav-links {
     width: 100%;
-    flex-wrap: wrap;
-    gap: 10px 16px;
+    flex-wrap: nowrap;
+    gap: 2px;
+    font-size: 0.78rem;
   }
 
-  .header-actions {
-    gap: 14px;
+  .nav-links a {
+    padding: 6px 8px;
+  }
+
+  .site-header {
+    padding-inline: 14px;
+  }
+
+  .brand {
+    font-size: 0.88rem;
+  }
+
+  .site-header .header-github {
+    width: auto;
+    min-height: 36px;
+    padding: 7px 10px;
+    font-size: 0.78rem;
+  }
+
+  .recruiter-proof-strip {
+    padding: 20px;
+  }
+
+  .proof-strip-actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .hero {

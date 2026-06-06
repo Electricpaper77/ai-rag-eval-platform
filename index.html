@@ -11,29 +11,27 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header class="site-header" aria-label="Project navigation">
-      <a class="brand" href="#top" aria-label="AI RAG Evaluation and Reliability Platform home">
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="AI Agent Reliability home">
         <span class="brand-mark" aria-hidden="true"></span>
-        <span>AI RAG Evaluation &amp; Reliability</span>
+        <span>AI Agent Reliability</span>
       </a>
-      <div class="header-actions">
-        <nav class="nav-links" aria-label="Page sections">
-          <a href="#proof-path">Proof Path</a>
-          <a href="#proof">Artifacts</a>
-          <a href="#resume-bullet">Resume Bullet</a>
-          <a href="#architecture">How It Works</a>
-          <a
-            href="https://www.linkedin.com/in/zohaib-a-1a8017174/"
-            aria-label="LinkedIn: https://www.linkedin.com/in/zohaib-a-1a8017174/"
-          >
-            LinkedIn
-          </a>
-        </nav>
-        <button class="button copy-button copy-resume-bullet" type="button">
-          Copy Resume Bullet
-        </button>
-        <span class="copy-status" id="copy-status" role="status" aria-live="polite"></span>
-      </div>
+      <nav class="nav-links" aria-label="Recruiter navigation">
+        <a href="#metrics">Metrics</a>
+        <a href="#demo">Demo</a>
+        <a href="#proof">Proof</a>
+        <a href="#case-study">Case Study</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <a
+        class="button primary header-github"
+        href="https://github.com/Electricpaper77/ai-rag-eval-platform"
+        target="_blank"
+        rel="noreferrer"
+      >
+        View GitHub
+      </a>
+      <span class="sr-only" id="copy-status" role="status" aria-live="polite"></span>
     </header>
 
     <main id="top">
@@ -87,7 +85,7 @@
         </aside>
       </section>
 
-      <section id="proof-metrics" class="section-shell proof-metrics">
+      <section id="metrics" class="section-shell proof-metrics">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Verified project signals</p>
@@ -122,6 +120,29 @@
           </article>
         </div>
       </section>
+
+      <aside class="section-shell recruiter-proof-strip" aria-label="Recruiter proof summary">
+        <p>
+          Built to show how RAG and AI agent outputs are evaluated before customer-facing
+          deployment.
+        </p>
+        <ul class="proof-chips" aria-label="Key proof signals">
+          <li>JSONL logs</li>
+          <li>Pytest regression</li>
+          <li>Citation + refusal checks</li>
+        </ul>
+        <div class="proof-strip-actions">
+          <a
+            class="button primary"
+            href="https://github.com/Electricpaper77/ai-rag-eval-platform"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open GitHub
+          </a>
+          <a class="button secondary" href="#proof">View Proof Artifacts</a>
+        </div>
+      </aside>
 
       <section id="proof-path" class="section-shell proof-path">
         <div class="section-heading">
@@ -351,7 +372,7 @@
         </ol>
       </section>
 
-      <section id="interactive-demo" class="section-shell interactive-demo demo-reveal">
+      <section id="demo" class="section-shell interactive-demo demo-reveal">
         <div class="demo-heading">
           <p class="eyebrow">Product Demo</p>
           <h2>Interactive Agent Reliability Demo</h2>
@@ -560,7 +581,7 @@
         </div>
       </section>
 
-      <section class="section-shell case-study">
+      <section id="case-study" class="section-shell case-study">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Employer Review</p>
@@ -652,7 +673,7 @@
         </blockquote>
       </section>
 
-      <section class="cta section-shell recruiter-contact" aria-label="Recruiter and hiring manager contact">
+      <section id="contact" class="cta section-shell recruiter-contact" aria-label="Recruiter and hiring manager contact">
         <div>
           <p class="eyebrow">Fast Contact</p>
           <h2>Recruiter / Hiring Manager Fast Contact</h2>
