@@ -72,6 +72,21 @@ async function inspectViewport(browser, viewport) {
         document.querySelectorAll("#live-eval-simulator .simulator-tab"),
       ).map((button) => button.textContent.trim()),
       liveConsoleJsonlPreviewExists: Boolean(document.getElementById("simulator-json")),
+      executiveProofExists:
+        document.querySelector("#executive-proof h2")?.textContent.trim() ===
+        "Executive Proof Mode",
+      executiveProofCards: document.querySelectorAll(
+        "#executive-proof .executive-proof-card",
+      ).length,
+      executiveMetricStripExists: Boolean(
+        document.querySelector("#executive-proof .executive-metric-strip"),
+      ),
+      executivePitchExists:
+        document.querySelector("#executive-proof .executive-pitch h3")?.textContent.trim() ===
+        "60-second interview pitch",
+      copyProjectPitchButtonExists:
+        document.querySelector("#copy-project-pitch")?.textContent.trim() ===
+        "Copy Project Pitch",
       duplicateIds,
       missingLocalAnchors,
       ctaRoutes: Object.fromEntries(
@@ -111,6 +126,13 @@ async function inspectViewport(browser, viewport) {
       traceBadges: await page.locator("#simulator-trace .trace-badge").count(),
     });
   }
+  await page.locator("#copy-project-pitch").click();
+  await page.waitForFunction(
+    () => document.getElementById("project-pitch-status")?.textContent.trim() === "Copied",
+  );
+  const projectPitchCopyStatus = (
+    await page.locator("#project-pitch-status").textContent()
+  )?.trim();
   await page.close();
 
   return {
@@ -119,6 +141,7 @@ async function inspectViewport(browser, viewport) {
     proofAnchorWorks,
     walkthroughAnchorWorks,
     liveConsoleRuns,
+    projectPitchCopyStatus,
     consoleErrors,
   };
 }
@@ -145,6 +168,12 @@ function assertResult(result) {
     failures.push("live console scenario buttons");
   }
   if (!result.liveConsoleJsonlPreviewExists) failures.push("live console JSONL preview");
+  if (!result.executiveProofExists) failures.push("executive proof section");
+  if (result.executiveProofCards !== 5) failures.push("executive proof cards");
+  if (!result.executiveMetricStripExists) failures.push("executive metric strip");
+  if (!result.executivePitchExists) failures.push("executive interview pitch");
+  if (!result.copyProjectPitchButtonExists) failures.push("copy project pitch button");
+  if (result.projectPitchCopyStatus !== "Copied") failures.push("project pitch copy behavior");
   if (result.duplicateIds.length) failures.push("duplicate IDs");
   if (result.missingLocalAnchors.length) failures.push("missing local anchors");
   if (

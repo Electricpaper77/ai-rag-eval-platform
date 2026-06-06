@@ -828,6 +828,97 @@
         </div>
       </section>
 
+      <section id="executive-proof" class="section-shell executive-proof">
+        <div class="executive-proof-heading">
+          <div>
+            <p class="eyebrow">HIRING MANAGER SUMMARY</p>
+            <h2>Executive Proof Mode</h2>
+          </div>
+          <p class="section-note">
+            A 30-second summary of what this project proves for AI Solutions Engineer, LLM
+            Evaluation, and Applied GenAI roles.
+          </p>
+        </div>
+
+        <div class="executive-proof-grid">
+          <article class="executive-proof-card">
+            <span>01 / Problem</span>
+            <h3>GenAI systems fail silently before production</h3>
+            <p>
+              RAG answers can hallucinate, omit citations, leak sensitive data, or ignore safety
+              boundaries unless teams define measurable release gates.
+            </p>
+          </article>
+          <article class="executive-proof-card">
+            <span>02 / Solution</span>
+            <h3>Deterministic reliability checks</h3>
+            <p>
+              This platform turns GenAI risk into repeatable evaluations for citation precision,
+              groundedness, refusal behavior, PII redaction, latency, and regression status.
+            </p>
+          </article>
+          <article class="executive-proof-card">
+            <span>03 / Proof</span>
+            <h3>Evidence-backed validation</h3>
+            <p>
+              Proof artifacts include JSONL audit logs, checksum-backed fixture records, pytest
+              regression results, Prometheus-style metrics, and clickable screenshots.
+            </p>
+          </article>
+          <article class="executive-proof-card">
+            <span>04 / Business Value</span>
+            <h3>Lower production risk</h3>
+            <p>
+              Teams can catch reliability failures before release, compare model behavior across
+              versions, and give engineering/product teams auditable evidence.
+            </p>
+          </article>
+          <article class="executive-proof-card executive-proof-card-wide">
+            <span>05 / Role Fit</span>
+            <h3>Why this maps to AI Solutions Engineering</h3>
+            <p>
+              This demonstrates customer-facing technical explanation, applied GenAI evaluation,
+              RAG debugging, guardrail thinking, and production-readiness communication.
+            </p>
+          </article>
+        </div>
+
+        <dl class="executive-metric-strip" aria-label="Executive proof metrics">
+          <div><dt>pytest checks</dt><dd>133</dd></div>
+          <div><dt>fixture records</dt><dd>131</dd></div>
+          <div><dt>security eval checks</dt><dd>5</dd></div>
+          <div><dt>evidence integrity checks</dt><dd>3</dd></div>
+          <div><dt>audit trail</dt><dd>JSONL</dd></div>
+        </dl>
+
+        <div class="executive-pitch">
+          <div class="executive-pitch-copy">
+            <p class="eyebrow">Interview-ready positioning</p>
+            <h3>60-second interview pitch</h3>
+            <p id="project-pitch-text">
+              I built an AI Agent Reliability Platform to show how I would validate GenAI systems
+              before production. The system evaluates RAG citation quality, groundedness,
+              prompt-injection resistance, PII redaction, latency, and regression status. Instead
+              of presenting a one-off chatbot demo, I built proof artifacts hiring managers can
+              inspect: JSONL audit logs, deterministic fixtures, pytest checks, and metrics. This
+              maps directly to AI Solutions Engineer and LLM Evaluation work because it shows I can
+              translate vague AI risk into measurable release criteria.
+            </p>
+          </div>
+          <div class="executive-pitch-action">
+            <button
+              id="copy-project-pitch"
+              class="button primary"
+              type="button"
+              aria-label="Copy project pitch to clipboard"
+            >
+              Copy Project Pitch
+            </button>
+            <span id="project-pitch-status" role="status" aria-live="polite"></span>
+          </div>
+        </div>
+      </section>
+
       <section id="failures" class="section-shell">
         <div class="section-heading">
           <div>
@@ -1149,6 +1240,46 @@
       }
 
       copyButtons.forEach((button) => button.addEventListener("click", copyResumeBullet));
+
+      const projectPitchButton = document.getElementById("copy-project-pitch");
+      const projectPitchText = document.getElementById("project-pitch-text");
+      const projectPitchStatus = document.getElementById("project-pitch-status");
+
+      async function copyProjectPitch() {
+        const pitch = projectPitchText?.textContent.replace(/\s+/g, " ").trim();
+        if (!pitch || !projectPitchButton || !projectPitchStatus) return;
+
+        let copied = false;
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+          await Promise.race([
+            navigator.clipboard.writeText(pitch),
+            new Promise((_, reject) => {
+              window.setTimeout(() => reject(new Error("Clipboard API timed out")), 500);
+            }),
+          ]);
+          copied = true;
+        } catch {}
+
+        if (!copied) {
+          const textArea = document.createElement("textarea");
+          textArea.value = pitch;
+          textArea.setAttribute("readonly", "");
+          textArea.style.position = "fixed";
+          textArea.style.opacity = "0";
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand("copy");
+          textArea.remove();
+        }
+
+        projectPitchStatus.textContent = "Copied";
+        window.setTimeout(() => {
+          projectPitchStatus.textContent = "";
+        }, 2000);
+      }
+
+      projectPitchButton?.addEventListener("click", copyProjectPitch);
 
       const liveConsoleScenarios = {
         rag: {
