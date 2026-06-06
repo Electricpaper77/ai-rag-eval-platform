@@ -351,6 +351,69 @@
         </ol>
       </section>
 
+      <section id="interactive-demo" class="section-shell interactive-demo demo-reveal">
+        <div class="demo-heading">
+          <p class="eyebrow">Product Demo</p>
+          <h2>Interactive Agent Reliability Demo</h2>
+          <p class="section-note">
+            A simplified view of how prompts, retrieval, guardrails, and evaluation checks work
+            before deployment.
+          </p>
+        </div>
+
+        <ol class="demo-workflow" aria-label="Agent reliability workflow">
+          <li class="demo-step is-active"><span>01</span><strong>User Query</strong><p>Incoming prompt or task request.</p></li>
+          <li class="demo-step"><span>02</span><strong>Retrieval</strong><p>Relevant context is fetched from the knowledge base.</p></li>
+          <li class="demo-step"><span>03</span><strong>Guardrails</strong><p>PII, prompt injection, and policy checks run first.</p></li>
+          <li class="demo-step"><span>04</span><strong>LLM Response</strong><p>The model generates a grounded draft answer.</p></li>
+          <li class="demo-step"><span>05</span><strong>Evaluation</strong><p>Citation, refusal, hallucination, latency, and cost checks run.</p></li>
+          <li class="demo-step"><span>06</span><strong>Release Decision</strong><p>Pass, fail, or route to human review.</p></li>
+        </ol>
+
+        <div class="demo-console">
+          <div class="demo-tabs" role="tablist" aria-label="Interactive demo views">
+            <button id="demo-tab-input" class="demo-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="demo-panel-input">Input</button>
+            <button id="demo-tab-trace" class="demo-tab" type="button" role="tab" aria-selected="false" aria-controls="demo-panel-trace" tabindex="-1">Trace</button>
+            <button id="demo-tab-output" class="demo-tab" type="button" role="tab" aria-selected="false" aria-controls="demo-panel-output" tabindex="-1">Output</button>
+            <button id="demo-tab-eval" class="demo-tab" type="button" role="tab" aria-selected="false" aria-controls="demo-panel-eval" tabindex="-1">Eval Result</button>
+          </div>
+
+          <div id="demo-panel-input" class="demo-tab-panel" role="tabpanel" aria-labelledby="demo-tab-input" tabindex="0">
+            <p class="demo-prompt">Summarize the policy and cite the supporting source.</p>
+          </div>
+          <div id="demo-panel-trace" class="demo-tab-panel" role="tabpanel" aria-labelledby="demo-tab-trace" tabindex="0" hidden>
+            <ul class="demo-trace">
+              <li>Retrieved 3 relevant chunks</li>
+              <li>Guardrail check: passed</li>
+              <li>Model response generated</li>
+              <li>Eval checks completed</li>
+            </ul>
+          </div>
+          <div id="demo-panel-output" class="demo-tab-panel" role="tabpanel" aria-labelledby="demo-tab-output" tabindex="0" hidden>
+            <p class="demo-output">
+              The policy requires source-backed answers for customer-facing responses. Unsupported
+              claims should be blocked or routed for review. <strong>[Doc 2]</strong>
+            </p>
+          </div>
+          <div id="demo-panel-eval" class="demo-tab-panel" role="tabpanel" aria-labelledby="demo-tab-eval" tabindex="0" hidden>
+            <dl class="demo-eval-grid">
+              <div><dt>Groundedness</dt><dd>Pass</dd></div>
+              <div><dt>Citation Precision</dt><dd>0.92</dd></div>
+              <div><dt>Refusal Accuracy</dt><dd>0.97</dd></div>
+              <div><dt>Latency p95</dt><dd>1.4s</dd></div>
+              <div><dt>Cost / Request</dt><dd>$0.012</dd></div>
+              <div><dt>Regression Status</dt><dd>Pass</dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <div class="button-row demo-actions" aria-label="Interactive demo actions">
+          <a class="button primary" href="https://github.com/Electricpaper77/ai-rag-eval-platform" target="_blank" rel="noreferrer">View GitHub</a>
+          <a class="button secondary" href="#proof">See Proof</a>
+          <a class="button secondary" href="mailto:azohaib.0150@gmail.com">Contact</a>
+        </div>
+      </section>
+
       <section id="failures" class="section-shell">
         <div class="section-heading">
           <div>
@@ -657,6 +720,74 @@
       }
 
       copyButtons.forEach((button) => button.addEventListener("click", copyResumeBullet));
+
+      const demoSection = document.querySelector(".interactive-demo");
+      const demoTabs = Array.from(document.querySelectorAll(".demo-tab"));
+      const demoPanels = Array.from(document.querySelectorAll(".demo-tab-panel"));
+      const demoSteps = Array.from(document.querySelectorAll(".demo-step"));
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      let activeStep = 0;
+      let workflowTimer;
+
+      function activateDemoTab(tab) {
+        const panelId = tab.getAttribute("aria-controls");
+        demoTabs.forEach((item) => {
+          const isActive = item === tab;
+          item.classList.toggle("is-active", isActive);
+          item.setAttribute("aria-selected", String(isActive));
+          item.tabIndex = isActive ? 0 : -1;
+        });
+        demoPanels.forEach((panel) => {
+          panel.hidden = panel.id !== panelId;
+        });
+      }
+
+      demoTabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => activateDemoTab(tab));
+        tab.addEventListener("keydown", (event) => {
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+          event.preventDefault();
+          let nextIndex = index;
+          if (event.key === "ArrowRight") nextIndex = (index + 1) % demoTabs.length;
+          if (event.key === "ArrowLeft") nextIndex = (index - 1 + demoTabs.length) % demoTabs.length;
+          if (event.key === "Home") nextIndex = 0;
+          if (event.key === "End") nextIndex = demoTabs.length - 1;
+          activateDemoTab(demoTabs[nextIndex]);
+          demoTabs[nextIndex].focus();
+        });
+      });
+
+      function setActiveStep(index) {
+        activeStep = index;
+        demoSteps.forEach((step, stepIndex) => {
+          step.classList.toggle("is-active", stepIndex === activeStep);
+        });
+      }
+
+      function startWorkflowMotion() {
+        window.clearInterval(workflowTimer);
+        if (reducedMotion.matches || !demoSection) return;
+        workflowTimer = window.setInterval(() => {
+          setActiveStep((activeStep + 1) % demoSteps.length);
+        }, 1800);
+      }
+
+      if (demoSection) {
+        document.documentElement.classList.add("motion-ready");
+        const demoObserver = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              entry.target.classList.add("is-visible");
+              demoObserver.unobserve(entry.target);
+              startWorkflowMotion();
+            });
+          },
+          { threshold: 0.18 },
+        );
+        demoObserver.observe(demoSection);
+        reducedMotion.addEventListener("change", startWorkflowMotion);
+      }
     </script>
     <!-- redeploy trigger: recruiter proof path -->
   </body>
