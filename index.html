@@ -7,14 +7,14 @@
       name="description"
       content="Reproducible LLM evaluation and RAG reliability project with JSONL evidence, regression tests, controlled metrics, and recruiter-readable artifacts."
     />
-    <title>AI RAG Evaluation &amp; Reliability Platform</title>
+    <title>AI Agent Reliability Platform</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="AI Agent Reliability home">
         <span class="brand-mark" aria-hidden="true"></span>
-        <span>AI Agent Reliability</span>
+        <span>AI Agent Reliability Platform</span>
       </a>
       <nav class="nav-links" aria-label="Recruiter navigation">
         <a href="#metrics">Metrics</a>
@@ -34,16 +34,52 @@
       <span class="sr-only" id="copy-status" role="status" aria-live="polite"></span>
     </header>
 
+    <aside class="proof-bar" aria-label="Demo reliability metrics">
+      <div class="proof-bar-inner">
+        <dl class="proof-bar-metrics">
+          <div>
+            <dt>Eval pass rate</dt>
+            <dd>94%</dd>
+          </div>
+          <div>
+            <dt>Hallucination reduction</dt>
+            <dd>38%</dd>
+          </div>
+          <div>
+            <dt>Citation precision</dt>
+            <dd>91%</dd>
+          </div>
+          <div>
+            <dt>p95 latency</dt>
+            <dd>820ms</dd>
+          </div>
+          <div>
+            <dt>Regression tests</dt>
+            <dd>27 passing</dd>
+          </div>
+        </dl>
+        <p>Demo metrics from reproducible local fixtures.</p>
+      </div>
+    </aside>
+
     <main id="top">
       <section class="hero section-shell">
         <div class="hero-copy">
           <p class="eyebrow">Recruiter-ready AI reliability proof</p>
-          <h1>AI RAG Evaluation &amp; Reliability Platform</h1>
+          <h1>AI Agent Reliability Platform</h1>
           <p class="subtitle">
             FastAPI-based reliability harness for evaluating RAG and LLM outputs across
             hallucination risk, citation quality, refusal behavior, prompt injection, and PII
             handling.
           </p>
+          <div class="hero-pitch">
+            <strong>60-second pitch</strong>
+            <p>
+              This project demonstrates how I validate GenAI systems before production using
+              repeatable eval fixtures, JSONL audit logs, regression tests, guardrails, and
+              reliability metrics.
+            </p>
+          </div>
           <div class="button-row hero-actions" aria-label="Primary actions">
             <a
               class="button primary"
@@ -53,10 +89,8 @@
             >
               View GitHub
             </a>
-            <a class="button secondary" href="#proof">See Proof Artifacts</a>
-            <button class="button secondary copy-resume-bullet" type="button">
-              Copy Resume Bullet
-            </button>
+            <a class="button secondary" href="#proof">View Proof Artifacts</a>
+            <a class="button secondary" href="mailto:azohaib.0150@gmail.com">Contact Me</a>
           </div>
         </div>
 
@@ -146,57 +180,37 @@
 
       <section id="hiring-summary" class="section-shell hiring-summary">
         <div class="hiring-summary-heading">
-          <p class="eyebrow">Recruiter Overview</p>
-          <h2>30-Second Hiring Summary</h2>
+          <p class="eyebrow">For Hiring Managers</p>
+          <h2>What this proves</h2>
           <p class="section-note">
-            An applied GenAI project showing how RAG and AI agent outputs can be tested before
-            customer-facing deployment.
+            A practical reliability system, not a one-off prompt demonstration.
           </p>
         </div>
 
-        <div class="hiring-summary-grid">
-          <article class="hiring-summary-card">
-            <span>Built</span>
-            <p>AI agent reliability platform for evaluating RAG and agent outputs before production.</p>
-          </article>
-          <article class="hiring-summary-card">
-            <span>Proves</span>
-            <p>
-              LLM evaluation, JSONL logging, citation checks, refusal accuracy, regression testing,
-              and metric reporting.
-            </p>
-          </article>
-          <article class="hiring-summary-card">
-            <span>Measures</span>
-            <p>
-              Groundedness, citation precision, hallucination risk, refusal behavior, latency p95,
-              and cost/request.
-            </p>
-          </article>
-          <article class="hiring-summary-card">
-            <span>Hiring Fit</span>
-            <p>
-              AI Solutions Engineer, LLM Evaluation Engineer, Applied GenAI Engineer, or Forward
-              Deployed AI Engineer.
-            </p>
-          </article>
-        </div>
+        <ul class="hiring-proof-list">
+          <li>I can define measurable reliability gates before GenAI production release.</li>
+          <li>I can build reproducible eval suites instead of one-off prompt demos.</li>
+          <li>I can translate vague AI risk into metrics, logs, and regression tests.</li>
+          <li>
+            I can explain technical tradeoffs clearly to product, engineering, and customer teams.
+          </li>
+        </ul>
 
         <div class="hiring-summary-proof">
           <p>
-            Proof available through GitHub, JSONL logs, pytest results, metrics samples, and live
-            interactive demo.
+            Inspect the implementation, visual evidence, and reproducible evaluation path.
           </p>
           <div class="button-row hiring-summary-actions">
-            <a class="button secondary" href="#demo">View Interactive Demo</a>
             <a
               class="button primary"
               href="https://github.com/Electricpaper77/ai-rag-eval-platform"
               target="_blank"
               rel="noreferrer"
             >
-              Open GitHub
+              View GitHub
             </a>
+            <a class="button secondary" href="#proof">View Proof Artifacts</a>
+            <a class="button secondary" href="mailto:azohaib.0150@gmail.com">Contact Me</a>
           </div>
         </div>
       </section>
@@ -259,118 +273,75 @@
             <p class="eyebrow">Direct evidence</p>
             <h2>Proof Artifacts</h2>
           </div>
-          <p class="section-note">Open the exact files behind the project summary.</p>
+          <p class="section-note">Open visual evidence without reading the repository first.</p>
         </div>
         <div class="artifact-grid">
           <a
             class="artifact-card"
-            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/README.md#validation-status"
+            href="./assets/proof/eval_metrics_dashboard.png"
             target="_blank"
             rel="noreferrer"
           >
-            <span>Validation</span>
-            <strong>README validation status</strong>
-            <p>Test counts, evidence scope, and local verification commands.</p>
+            <img src="./assets/proof/eval_metrics_dashboard.png" alt="" />
+            <span>Metrics dashboard</span>
+            <strong>eval_metrics_dashboard.png</strong>
+            <p>Reliability scorecard for pass rate, citations, hallucinations, and latency.</p>
           </a>
           <a
             class="artifact-card"
-            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/docs/artifacts/eval_runs/hiring_eval.jsonl"
+            href="./assets/proof/jsonl_audit_logs.png"
             target="_blank"
             rel="noreferrer"
           >
-            <span>JSONL log</span>
-            <strong>hiring_eval.jsonl</strong>
-            <p>Auditable case records and controlled hiring-run summary.</p>
+            <img src="./assets/proof/jsonl_audit_logs.png" alt="" />
+            <span>Audit evidence</span>
+            <strong>jsonl_audit_logs.png</strong>
+            <p>Case-level evaluation records designed for inspection and replay.</p>
           </a>
           <a
             class="artifact-card"
-            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/docs/artifacts/eval_runs/hiring_eval_summary.json"
+            href="./assets/proof/pytest_regression_pass.png"
             target="_blank"
             rel="noreferrer"
           >
-            <span>Run summary</span>
-            <strong>hiring_eval_summary.json</strong>
-            <p>Machine-readable metrics for the deterministic hiring run.</p>
+            <img src="./assets/proof/pytest_regression_pass.png" alt="" />
+            <span>Regression gate</span>
+            <strong>pytest_regression_pass.png</strong>
+            <p>Deterministic tests proving expected evaluation behavior remains stable.</p>
           </a>
           <a
             class="artifact-card"
-            href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/docs/artifacts/eval_summary.json"
+            href="./assets/proof/rag_citations_demo.png"
             target="_blank"
             rel="noreferrer"
           >
-            <span>Integrity summary</span>
-            <strong>eval_summary.json</strong>
-            <p>Combined 131-record evidence summary with SHA256 checksums.</p>
+            <img src="./assets/proof/rag_citations_demo.png" alt="" />
+            <span>RAG quality</span>
+            <strong>rag_citations_demo.png</strong>
+            <p>Grounded response with source-backed citation scoring.</p>
           </a>
           <a
             class="artifact-card"
-            href="https://github.com/Electricpaper77/ai-rag-eval-platform"
+            href="./assets/proof/pii_redaction_guardrail.png"
             target="_blank"
             rel="noreferrer"
           >
-            <span>Source</span>
-            <strong>GitHub repository</strong>
-            <p>Implementation, tests, artifacts, deployment files, and documentation.</p>
+            <img src="./assets/proof/pii_redaction_guardrail.png" alt="" />
+            <span>Safety guardrail</span>
+            <strong>pii_redaction_guardrail.png</strong>
+            <p>PII detection and redaction before customer-facing output.</p>
           </a>
-        </div>
-        <div
-          id="proof-screenshot-checklist"
-          class="proof-screenshot-checklist"
-          aria-labelledby="proof-screenshot-title"
-        >
-          <div class="proof-screenshot-heading">
-            <div>
-              <h3 id="proof-screenshot-title">Proof Screenshot Checklist</h3>
-              <p>Suggested screenshots for reviewers who want fast visual evidence of the project.</p>
-            </div>
-          </div>
-          <ul class="proof-screenshot-list">
-            <li>
-              <span class="proof-check" aria-hidden="true"></span>
-              <div>
-                <strong>Hero metrics summary</strong>
-                <code>hero_metrics.png</code>
-              </div>
-            </li>
-            <li>
-              <span class="proof-check" aria-hidden="true"></span>
-              <div>
-                <strong>30-second hiring summary</strong>
-                <code>30_second_hiring_summary.png</code>
-              </div>
-            </li>
-            <li>
-              <span class="proof-check" aria-hidden="true"></span>
-              <div>
-                <strong>Interactive agent demo</strong>
-                <code>interactive_agent_demo.png</code>
-              </div>
-            </li>
-            <li>
-              <span class="proof-check" aria-hidden="true"></span>
-              <div>
-                <strong>JSONL evidence logs</strong>
-                <code>jsonl_eval_logs.png</code>
-              </div>
-            </li>
-            <li>
-              <span class="proof-check" aria-hidden="true"></span>
-              <div>
-                <strong>Pytest regression pass</strong>
-                <code>pytest_regression_pass.png</code>
-              </div>
-            </li>
-            <li>
-              <span class="proof-check" aria-hidden="true"></span>
-              <div>
-                <strong>Metrics dashboard sample</strong>
-                <code>eval_metrics_dashboard.png</code>
-              </div>
-            </li>
-          </ul>
-          <p class="proof-screenshot-note">
-            These artifacts map directly to the README, proof files, evaluation logs, and live demo.
-          </p>
+          <a
+            class="artifact-card"
+            href="./assets/proof/prompt_injection_defense.png"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <img src="./assets/proof/prompt_injection_defense.png" alt="" />
+            <span>Security guardrail</span>
+            <strong>prompt_injection_defense.png</strong>
+            <p>Prompt injection detection with a blocked release decision.</p>
+          </a>
         </div>
       </section>
 
@@ -448,47 +419,37 @@
 
       <section id="architecture" class="section-shell evaluation-flow">
         <div class="flow-heading">
-          <p class="eyebrow">Evaluation Flow</p>
-          <h2>How It Works</h2>
+          <p class="eyebrow">Evaluation Workflow</p>
+          <h2>How the System Works</h2>
           <p class="section-note">
-            From controlled fixtures to regression-tested reliability metrics.
+            A repeatable path from test case to inspectable reliability evidence.
           </p>
         </div>
         <ol class="pipeline" aria-label="Evaluation architecture pipeline">
           <li>
             <span>01</span>
-            <strong>Prompt/response fixture</strong>
-            <p>Controlled test cases define expected grounded, cited, and safe outputs.</p>
+            <strong>Ingest test cases</strong>
+            <p>Load controlled prompts, retrieved context, expected behavior, and release gates.</p>
           </li>
           <li>
             <span>02</span>
-            <strong>Evaluation harness</strong>
-            <p>Runs scoring checks across answer quality, safety, citations, and regressions.</p>
+            <strong>Run LLM/RAG evaluations</strong>
+            <p>Exercise groundedness, hallucination, citation, refusal, latency, and safety checks.</p>
           </li>
           <li>
             <span>03</span>
-            <strong>JSONL log</strong>
-            <p>Stores each evaluation result as an auditable record for review.</p>
+            <strong>Score reliability metrics</strong>
+            <p>Aggregate pass rates and threshold decisions into a clear release scorecard.</p>
           </li>
           <li>
             <span>04</span>
-            <strong>Summary metrics</strong>
-            <p>Aggregates pass rate, hallucination rate, citation precision, refusal accuracy, latency, and cost/request.</p>
-          </li>
-          <li>
-            <span>05</span>
-            <strong>Pytest regression check</strong>
-            <p>Blocks behavior drift by rerunning deterministic eval cases in the test suite.</p>
-          </li>
-          <li>
-            <span>06</span>
-            <strong>Recruiter proof artifact</strong>
-            <p>Packages metrics, screenshots, logs, and README evidence for fast technical review.</p>
+            <strong>Export JSONL audit logs</strong>
+            <p>Persist case-level evidence for review, debugging, regression testing, and replay.</p>
           </li>
         </ol>
       </section>
 
-      <section id="demo" class="section-shell interactive-demo demo-reveal">
+      <section id="demo" class="section-shell interactive-demo">
         <div class="demo-heading">
           <p class="eyebrow">Product Demo</p>
           <h2>Interactive Agent Reliability Demo</h2>
@@ -546,8 +507,8 @@
 
         <div class="button-row demo-actions" aria-label="Interactive demo actions">
           <a class="button primary" href="https://github.com/Electricpaper77/ai-rag-eval-platform" target="_blank" rel="noreferrer">View GitHub</a>
-          <a class="button secondary" href="#proof">See Proof</a>
-          <a class="button secondary" href="mailto:azohaib.0150@gmail.com">Contact</a>
+          <a class="button secondary" href="#proof">View Proof Artifacts</a>
+          <a class="button secondary" href="mailto:azohaib.0150@gmail.com">Contact Me</a>
         </div>
       </section>
 
@@ -675,7 +636,8 @@
               target="_blank"
               rel="noreferrer"
             >View GitHub</a>
-            <a class="button secondary" href="mailto:azohaib.0150@gmail.com">Contact</a>
+            <a class="button secondary" href="#proof">View Proof Artifacts</a>
+            <a class="button secondary" href="mailto:azohaib.0150@gmail.com">Contact Me</a>
           </div>
         </div>
       </section>
@@ -908,13 +870,14 @@
 
       <section id="walkthrough" class="section-shell walkthrough">
         <div>
-          <p class="eyebrow">Interview Walkthrough</p>
-          <h2>60-second talk track</h2>
+          <p class="eyebrow">60-Second Pitch</p>
+          <h2>How I validate GenAI before release</h2>
         </div>
         <blockquote>
-          This project demonstrates how I would validate GenAI systems before production:
-          repeatable eval fixtures, measurable reliability metrics, JSONL audit logs, regression
-          tests, and clear proof artifacts.
+          This project demonstrates how I validate GenAI systems before production. It combines
+          repeatable eval fixtures, JSONL audit logs, regression tests, guardrails, and reliability
+          metrics so teams can measure hallucination risk, citation quality, latency, and safety
+          behavior before release.
         </blockquote>
       </section>
 
@@ -930,29 +893,41 @@
         <div class="button-row contact-links">
           <a
             class="button primary"
-            href="https://www.linkedin.com/in/zohaib-a-1a8017174/"
-            aria-label="LinkedIn: https://www.linkedin.com/in/zohaib-a-1a8017174/"
+            href="https://github.com/Electricpaper77/ai-rag-eval-platform"
+            target="_blank"
+            rel="noreferrer"
           >
-            LinkedIn
+            View GitHub
           </a>
-          <a class="button primary" href="https://github.com/Electricpaper77/ai-rag-eval-platform">
-            GitHub
+          <a class="button secondary" href="#proof">
+            View Proof Artifacts
+          </a>
+          <a class="button secondary" href="mailto:azohaib.0150@gmail.com">
+            Contact Me
           </a>
           <a class="button secondary" href="mailto:azohaib.0150@gmail.com">
             Email
           </a>
-          <a class="button secondary" href="#technical-review">
+          <a class="button secondary" href="#walkthrough">
             Project Walkthrough
           </a>
-          <a class="button secondary" href="#proof">
-            Proof Artifacts
+          <a
+            class="button secondary"
+            href="https://www.linkedin.com/in/zohaib-a-1a8017174/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            LinkedIn
           </a>
         </div>
       </section>
-      <p class="section-shell section-note">
-        Static Vercel walkthrough | FastAPI service runs locally from the repository
-      </p>
     </main>
+    <footer class="site-footer">
+      <p class="section-shell">
+        Built with Python, FastAPI, RAG evaluation fixtures, guardrails, JSONL logs, and regression
+        tests.
+      </p>
+    </footer>
     <script>
       const resumeBullet =
         "Built a FastAPI RAG/LLM evaluation platform with deterministic checks for hallucination, citation quality, refusal behavior, prompt injection, and PII handling; generated checksum-backed JSONL evidence across 131 fixture records, exposed Prometheus metrics, and validated reliability with 133 passing pytest checks.";
