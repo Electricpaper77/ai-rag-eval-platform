@@ -40,6 +40,14 @@ async function inspectViewport(browser, viewport) {
       proofCta: ".hero-actions a[href='#proof']",
       pitch: ".hero-pitch",
     };
+    const ids = Array.from(document.querySelectorAll("[id]")).map((element) => element.id);
+    const duplicateIds = Array.from(new Set(ids.filter((id, index) => ids.indexOf(id) !== index)));
+    const localAnchors = Array.from(document.querySelectorAll("a[href^='#']"))
+      .map((anchor) => anchor.getAttribute("href").slice(1))
+      .filter(Boolean);
+    const missingLocalAnchors = Array.from(
+      new Set(localAnchors.filter((id) => !document.getElementById(id))),
+    );
 
     return {
       title: document.title,
@@ -51,6 +59,14 @@ async function inspectViewport(browser, viewport) {
         (image) => image.complete && image.naturalWidth > 0,
       ).length,
       workflowCards: document.querySelectorAll("#architecture .pipeline > li").length,
+      liveConsoleExists: Boolean(document.getElementById("live-eval-console")),
+      liveConsoleButtons: document.querySelectorAll(".live-console-tab").length,
+      liveConsoleJsonlPreviewExists: Boolean(document.getElementById("live-console-jsonl")),
+      githubEvidenceRoute: document
+        .querySelector(".live-console-footer a")
+        ?.getAttribute("href"),
+      duplicateIds,
+      missingLocalAnchors,
       ctaRoutes: Object.fromEntries(
         ctaLabels.map((label) => {
           const links = Array.from(document.querySelectorAll("a")).filter(
@@ -74,6 +90,17 @@ async function inspectViewport(browser, viewport) {
   const proofAnchorWorks = new URL(page.url()).hash === "#proof";
   await page.locator("a[href='#walkthrough']").last().click();
   const walkthroughAnchorWorks = new URL(page.url()).hash === "#walkthrough";
+  const liveConsoleRuns = [];
+  for (const scenario of ["rag", "injection", "pii"]) {
+    const tab = page.locator(`[data-console-scenario='${scenario}']`);
+    await tab.click();
+    liveConsoleRuns.push({
+      scenario,
+      selected: (await tab.getAttribute("aria-selected")) === "true",
+      jsonl: await page.locator("#live-console-jsonl").textContent(),
+      status: await page.locator("#live-console-status").textContent(),
+    });
+  }
   await page.close();
 
   return {
@@ -81,6 +108,7 @@ async function inspectViewport(browser, viewport) {
     ...state,
     proofAnchorWorks,
     walkthroughAnchorWorks,
+    liveConsoleRuns,
     consoleErrors,
   };
 }
@@ -93,6 +121,22 @@ function assertResult(result) {
     failures.push("proof artifact assets");
   }
   if (result.workflowCards !== 4) failures.push("workflow card count");
+  if (!result.liveConsoleExists) failures.push("live console section");
+  if (result.liveConsoleButtons !== 3) failures.push("live console scenario buttons");
+  if (!result.liveConsoleJsonlPreviewExists) failures.push("live console JSONL preview");
+  if (result.githubEvidenceRoute !== "https://github.com/Electricpaper77/ai-rag-eval-platform") {
+    failures.push("GitHub evidence CTA");
+  }
+  if (result.duplicateIds.length) failures.push("duplicate IDs");
+  if (result.missingLocalAnchors.length) failures.push("missing local anchors");
+  if (
+    result.liveConsoleRuns.length !== 3 ||
+    result.liveConsoleRuns.some(
+      (run) => !run.selected || !run.jsonl?.includes('"case_id"') || run.status?.trim() !== "PASS",
+    )
+  ) {
+    failures.push("live console scenario switching");
+  }
   if (!Object.values(result.aboveFold).every(Boolean)) failures.push("above-fold content");
   if (!result.proofAnchorWorks || !result.walkthroughAnchorWorks) failures.push("anchor routing");
   if (result.consoleErrors.length) failures.push("console errors");
