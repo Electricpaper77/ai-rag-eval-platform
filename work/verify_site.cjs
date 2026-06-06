@@ -59,12 +59,19 @@ async function inspectViewport(browser, viewport) {
         (image) => image.complete && image.naturalWidth > 0,
       ).length,
       workflowCards: document.querySelectorAll("#architecture .pipeline > li").length,
-      liveConsoleExists: Boolean(document.getElementById("live-eval-console")),
-      liveConsoleButtons: document.querySelectorAll(".live-console-tab").length,
-      liveConsoleJsonlPreviewExists: Boolean(document.getElementById("live-console-jsonl")),
-      githubEvidenceRoute: document
-        .querySelector(".live-console-footer a")
-        ?.getAttribute("href"),
+      liveConsoleExists:
+        document.querySelector("#live-eval-simulator h2")?.textContent.trim() ===
+        "Live Eval Console",
+      liveConsoleHeadingCount: Array.from(document.querySelectorAll("h2")).filter(
+        (heading) => heading.textContent.trim() === "Live Eval Console",
+      ).length,
+      evalTraceExists:
+        document.querySelector("#eval-trace-title")?.textContent.trim() ===
+        "Eval Trace Timeline",
+      liveConsoleButtons: Array.from(
+        document.querySelectorAll("#live-eval-simulator .simulator-tab"),
+      ).map((button) => button.textContent.trim()),
+      liveConsoleJsonlPreviewExists: Boolean(document.getElementById("simulator-json")),
       duplicateIds,
       missingLocalAnchors,
       ctaRoutes: Object.fromEntries(
@@ -91,14 +98,17 @@ async function inspectViewport(browser, viewport) {
   await page.locator("a[href='#walkthrough']").last().click();
   const walkthroughAnchorWorks = new URL(page.url()).hash === "#walkthrough";
   const liveConsoleRuns = [];
-  for (const scenario of ["rag", "injection", "pii"]) {
-    const tab = page.locator(`[data-console-scenario='${scenario}']`);
+  for (const scenario of ["rag", "citation", "injection"]) {
+    const tab = page.locator(`[data-scenario='${scenario}']`);
     await tab.click();
     liveConsoleRuns.push({
       scenario,
       selected: (await tab.getAttribute("aria-selected")) === "true",
-      jsonl: await page.locator("#live-console-jsonl").textContent(),
-      status: await page.locator("#live-console-status").textContent(),
+      jsonl: await page.locator("#simulator-json").textContent(),
+      status: await page.locator("#simulator-status").textContent(),
+      risk: await page.locator("#simulator-risk").textContent(),
+      traceSteps: await page.locator("#simulator-trace > li").count(),
+      traceBadges: await page.locator("#simulator-trace .trace-badge").count(),
     });
   }
   await page.close();
@@ -122,18 +132,41 @@ function assertResult(result) {
   }
   if (result.workflowCards !== 4) failures.push("workflow card count");
   if (!result.liveConsoleExists) failures.push("live console section");
-  if (result.liveConsoleButtons !== 3) failures.push("live console scenario buttons");
-  if (!result.liveConsoleJsonlPreviewExists) failures.push("live console JSONL preview");
-  if (result.githubEvidenceRoute !== "https://github.com/Electricpaper77/ai-rag-eval-platform") {
-    failures.push("GitHub evidence CTA");
+  if (result.liveConsoleHeadingCount !== 1) failures.push("single live console heading");
+  if (!result.evalTraceExists) failures.push("eval trace timeline");
+  if (
+    JSON.stringify(result.liveConsoleButtons) !==
+    JSON.stringify([
+      "RAG Citation Check",
+      "Citation Failure Case",
+      "Prompt Injection Defense",
+    ])
+  ) {
+    failures.push("live console scenario buttons");
   }
+  if (!result.liveConsoleJsonlPreviewExists) failures.push("live console JSONL preview");
   if (result.duplicateIds.length) failures.push("duplicate IDs");
   if (result.missingLocalAnchors.length) failures.push("missing local anchors");
   if (
     result.liveConsoleRuns.length !== 3 ||
     result.liveConsoleRuns.some(
-      (run) => !run.selected || !run.jsonl?.includes('"case_id"') || run.status?.trim() !== "PASS",
-    )
+      (run) =>
+        !run.selected ||
+        !run.jsonl?.includes('"case_id"') ||
+        run.traceSteps !== 5 ||
+        run.traceBadges !== 5,
+    ) ||
+    !result.liveConsoleRuns.find((run) => run.scenario === "rag")?.jsonl.includes("rag_citation_014") ||
+    !result.liveConsoleRuns
+      .find((run) => run.scenario === "citation")
+      ?.jsonl.includes("rag_citation_021") ||
+    !result.liveConsoleRuns
+      .find((run) => run.scenario === "injection")
+      ?.jsonl.includes("security_injection_007") ||
+    !result.liveConsoleRuns.some((run) => run.status?.trim() === "PASS") ||
+    !result.liveConsoleRuns.some((run) => run.status?.trim() === "REVIEW") ||
+    !result.liveConsoleRuns.some((run) => run.risk?.trim() === "LOW RISK") ||
+    !result.liveConsoleRuns.some((run) => run.risk?.trim() === "MEDIUM RISK")
   ) {
     failures.push("live console scenario switching");
   }
