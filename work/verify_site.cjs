@@ -116,6 +116,36 @@ async function inspectViewport(browser, viewport) {
               Node.DOCUMENT_POSITION_FOLLOWING,
         );
       })(),
+      proofIntegrityExists:
+        document.querySelector("#proof-integrity")?.getAttribute("aria-label") ===
+        "Proof Integrity Layer",
+      proofIntegrityTitle:
+        document.querySelector("#proof-integrity h2")?.textContent.trim() ===
+        "Reproducible proof, not a one-off demo",
+      integrityCards: document.querySelectorAll("#proof-integrity .integrity-card").length,
+      evidenceFlowExists:
+        document.querySelector("#evidence-flow-title")?.textContent.trim() === "Evidence Flow",
+      evidenceFlowSteps: document.querySelectorAll("#proof-integrity .evidence-flow li").length,
+      integrityRecordExists:
+        document.querySelector("#proof-integrity .integrity-console h3")?.textContent.trim() ===
+        "Example integrity record",
+      integrityRecordHasFixtureHash:
+        document.getElementById("integrity-record")?.textContent.includes('"fixture_hash"') ?? false,
+      passReviewExists: document.body.textContent.includes("PASS / REVIEW"),
+      proofIntegrityPlacement: (() => {
+        const applicationPackage = document.getElementById("application-package");
+        const proofIntegrity = document.getElementById("proof-integrity");
+        const contact = document.getElementById("contact");
+        return Boolean(
+          applicationPackage &&
+            proofIntegrity &&
+            contact &&
+            applicationPackage.compareDocumentPosition(proofIntegrity) &
+              Node.DOCUMENT_POSITION_FOLLOWING &&
+            proofIntegrity.compareDocumentPosition(contact) &
+              Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+      })(),
       duplicateIds,
       missingLocalAnchors,
       ctaRoutes: Object.fromEntries(
@@ -248,6 +278,16 @@ function assertResult(result) {
   ) {
     failures.push("application package copy behavior");
   }
+  if (!result.proofIntegrityExists) failures.push("proof integrity section");
+  if (!result.proofIntegrityTitle) failures.push("proof integrity title");
+  if (result.integrityCards !== 4) failures.push("proof integrity cards");
+  if (!result.evidenceFlowExists || result.evidenceFlowSteps !== 7) {
+    failures.push("evidence flow");
+  }
+  if (!result.integrityRecordExists) failures.push("example integrity record");
+  if (!result.integrityRecordHasFixtureHash) failures.push("fixture hash record");
+  if (!result.passReviewExists) failures.push("PASS / REVIEW status language");
+  if (!result.proofIntegrityPlacement) failures.push("proof integrity placement");
   if (result.duplicateIds.length) failures.push("duplicate IDs");
   if (result.missingLocalAnchors.length) failures.push("missing local anchors");
   if (

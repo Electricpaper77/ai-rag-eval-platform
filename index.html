@@ -1284,6 +1284,112 @@
         </aside>
       </section>
 
+      <section
+        id="proof-integrity"
+        class="section-shell proof-integrity"
+        aria-label="Proof Integrity Layer"
+      >
+        <div class="proof-integrity-heading">
+          <div>
+            <p class="eyebrow">EVIDENCE INTEGRITY</p>
+            <h2>Reproducible proof, not a one-off demo</h2>
+          </div>
+          <p class="section-note">
+            This layer explains how the project keeps evaluation evidence traceable across
+            fixtures, JSONL logs, checksums, pytest runs, and proof artifacts.
+          </p>
+        </div>
+
+        <div class="integrity-card-grid">
+          <article class="integrity-card">
+            <span class="integrity-card-index">01</span>
+            <h3>Deterministic eval fixtures</h3>
+            <p>
+              Each evaluation case is structured so the same input, expected behavior, scoring
+              gate, and result can be rerun instead of judged manually.
+            </p>
+            <strong>131 fixture records</strong>
+          </article>
+
+          <article class="integrity-card">
+            <span class="integrity-card-index">02</span>
+            <h3>Machine-readable JSONL evidence</h3>
+            <p>
+              Eval outputs are exported as structured logs with case IDs, gates, scores, statuses,
+              citations, and failure reasons.
+            </p>
+            <strong>Checksum-backed logs</strong>
+          </article>
+
+          <article class="integrity-card">
+            <span class="integrity-card-index">03</span>
+            <h3>Pytest regression validation</h3>
+            <p>
+              Reliability checks are validated through automated tests so prompt, retrieval,
+              guardrail, and scoring changes can be caught before release.
+            </p>
+            <strong>133 passing checks</strong>
+          </article>
+
+          <article class="integrity-card">
+            <span class="integrity-card-index">04</span>
+            <h3>PASS / REVIEW release status</h3>
+            <p>
+              Failures are not hidden. Citation gaps, medium hallucination risk, unsafe requests,
+              and missing evidence are surfaced as REVIEW states.
+            </p>
+            <strong>Release-gate logic</strong>
+          </article>
+        </div>
+
+        <div class="evidence-flow" aria-labelledby="evidence-flow-title">
+          <div class="evidence-flow-heading">
+            <p class="eyebrow">Traceable pipeline</p>
+            <h3 id="evidence-flow-title">Evidence Flow</h3>
+          </div>
+          <ol>
+            <li><span>01</span><strong>Input fixture</strong></li>
+            <li><span>02</span><strong>Eval gate</strong></li>
+            <li><span>03</span><strong>Metric score</strong></li>
+            <li><span>04</span><strong>JSONL record</strong></li>
+            <li><span>05</span><strong>Checksum</strong></li>
+            <li><span>06</span><strong>Pytest proof</strong></li>
+            <li><span>07</span><strong>Hiring artifact</strong></li>
+          </ol>
+        </div>
+
+        <div class="integrity-detail-grid">
+          <div class="integrity-console">
+            <div class="integrity-console-heading">
+              <div>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+              </div>
+              <h3>Example integrity record</h3>
+              <span>STATIC FIXTURE</span>
+            </div>
+            <pre><code id="integrity-record">{
+  "case_id": "rag_citation_014",
+  "fixture_hash": "sha256:8f4c9e...",
+  "gate": "citation_precision",
+  "score": 0.91,
+  "status": "pass",
+  "evidence_file": "jsonl_audit_logs.png",
+  "verified_by": "pytest"
+}</code></pre>
+          </div>
+
+          <aside class="integrity-callout">
+            <p class="eyebrow">Why this matters</p>
+            <p>
+              <strong>AI reliability work needs repeatable evidence.</strong> This section shows
+              how eval outputs can be inspected, rerun, and used as release criteria.
+            </p>
+          </aside>
+        </div>
+      </section>
+
       <section id="contact" class="cta section-shell recruiter-contact" aria-label="Recruiter and hiring manager contact">
         <div>
           <p class="eyebrow">Fast Contact</p>
