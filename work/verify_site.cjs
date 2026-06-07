@@ -87,6 +87,35 @@ async function inspectViewport(browser, viewport) {
       copyProjectPitchButtonExists:
         document.querySelector("#copy-project-pitch")?.textContent.trim() ===
         "Copy Project Pitch",
+      applicationPackageExists:
+        document.querySelector("#application-package")?.getAttribute("aria-label") ===
+        "Application Package Mode",
+      applicationPackageCards: document.querySelectorAll(
+        "#application-package .application-package-card",
+      ).length,
+      applicationPackageTitles: Array.from(
+        document.querySelectorAll("#application-package .application-package-card h3"),
+      ).map((heading) => heading.textContent.trim()),
+      applicationCopyButtons: Array.from(
+        document.querySelectorAll("#application-package .application-copy-button"),
+      ).map((button) => button.textContent.trim()),
+      applicationVerificationItems: document.querySelectorAll(
+        "#application-package .application-verification li",
+      ).length,
+      applicationPackagePlacement: (() => {
+        const executiveProof = document.getElementById("executive-proof");
+        const applicationPackage = document.getElementById("application-package");
+        const contact = document.getElementById("contact");
+        return Boolean(
+          executiveProof &&
+            applicationPackage &&
+            contact &&
+            executiveProof.compareDocumentPosition(applicationPackage) &
+              Node.DOCUMENT_POSITION_FOLLOWING &&
+            applicationPackage.compareDocumentPosition(contact) &
+              Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+      })(),
       duplicateIds,
       missingLocalAnchors,
       ctaRoutes: Object.fromEntries(
@@ -133,6 +162,21 @@ async function inspectViewport(browser, viewport) {
   const projectPitchCopyStatus = (
     await page.locator("#project-pitch-status").textContent()
   )?.trim();
+  const applicationCopyRuns = [];
+  const applicationButtons = page.locator(".application-copy-button");
+  for (let index = 0; index < (await applicationButtons.count()); index += 1) {
+    const button = applicationButtons.nth(index);
+    const statusId = await button.getAttribute("data-status-target");
+    await button.click();
+    await page.waitForFunction(
+      (id) => document.getElementById(id)?.textContent.trim() === "Copied",
+      statusId,
+    );
+    applicationCopyRuns.push({
+      label: (await button.textContent())?.trim(),
+      status: (await page.locator(`#${statusId}`).textContent())?.trim(),
+    });
+  }
   await page.close();
 
   return {
@@ -142,6 +186,7 @@ async function inspectViewport(browser, viewport) {
     walkthroughAnchorWorks,
     liveConsoleRuns,
     projectPitchCopyStatus,
+    applicationCopyRuns,
     consoleErrors,
   };
 }
@@ -174,6 +219,35 @@ function assertResult(result) {
   if (!result.executivePitchExists) failures.push("executive interview pitch");
   if (!result.copyProjectPitchButtonExists) failures.push("copy project pitch button");
   if (result.projectPitchCopyStatus !== "Copied") failures.push("project pitch copy behavior");
+  if (!result.applicationPackageExists) failures.push("application package section");
+  if (result.applicationPackageCards !== 4) failures.push("application package cards");
+  if (
+    JSON.stringify(result.applicationPackageTitles) !==
+    JSON.stringify(["Resume Bullet", "Recruiter Summary", "Interview Pitch", "Role Match"])
+  ) {
+    failures.push("application package card titles");
+  }
+  if (
+    JSON.stringify(result.applicationCopyButtons) !==
+    JSON.stringify([
+      "Copy Resume Bullet",
+      "Copy Recruiter Summary",
+      "Copy Interview Pitch",
+      "Copy Role Match",
+    ])
+  ) {
+    failures.push("application package copy buttons");
+  }
+  if (result.applicationVerificationItems !== 6) {
+    failures.push("application verification checklist");
+  }
+  if (!result.applicationPackagePlacement) failures.push("application package placement");
+  if (
+    result.applicationCopyRuns.length !== 4 ||
+    result.applicationCopyRuns.some((run) => run.status !== "Copied")
+  ) {
+    failures.push("application package copy behavior");
+  }
   if (result.duplicateIds.length) failures.push("duplicate IDs");
   if (result.missingLocalAnchors.length) failures.push("missing local anchors");
   if (

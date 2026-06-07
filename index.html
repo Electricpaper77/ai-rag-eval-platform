@@ -1160,6 +1160,130 @@
         </blockquote>
       </section>
 
+      <section
+        id="application-package"
+        class="section-shell application-package"
+        aria-label="Application Package Mode"
+      >
+        <div class="application-package-heading">
+          <div>
+            <p class="eyebrow">APPLICATION PACKAGE</p>
+            <h2>Copy-ready proof for recruiters and hiring managers</h2>
+          </div>
+          <p class="section-note">
+            Use this section to quickly understand the project, match it to AI Solutions Engineer /
+            LLM Evaluation roles, and verify the evidence.
+          </p>
+        </div>
+
+        <div class="application-package-grid">
+          <article class="application-package-card">
+            <span>Resume positioning</span>
+            <h3>Resume Bullet</h3>
+            <p id="application-resume-bullet">
+              Built a FastAPI RAG/LLM evaluation platform with deterministic checks for
+              hallucination, citation quality, refusal behavior, prompt injection, and PII
+              handling; generated checksum-backed JSONL evidence across 131 fixture records and
+              validated reliability with 133 passing pytest checks.
+            </p>
+            <div class="application-copy-action">
+              <button
+                class="button secondary application-copy-button"
+                type="button"
+                data-copy-target="application-resume-bullet"
+                data-status-target="application-resume-status"
+                aria-label="Copy resume bullet"
+              >
+                Copy Resume Bullet
+              </button>
+              <span id="application-resume-status" role="status" aria-live="polite"></span>
+            </div>
+          </article>
+
+          <article class="application-package-card">
+            <span>30-second overview</span>
+            <h3>Recruiter Summary</h3>
+            <p id="application-recruiter-summary">
+              AI Agent Reliability Platform validates GenAI workflows before production using RAG
+              evaluation fixtures, JSONL audit logs, guardrails, regression tests, and proof
+              metrics for citation precision, groundedness, latency, and safety.
+            </p>
+            <div class="application-copy-action">
+              <button
+                class="button secondary application-copy-button"
+                type="button"
+                data-copy-target="application-recruiter-summary"
+                data-status-target="application-recruiter-status"
+                aria-label="Copy recruiter summary"
+              >
+                Copy Recruiter Summary
+              </button>
+              <span id="application-recruiter-status" role="status" aria-live="polite"></span>
+            </div>
+          </article>
+
+          <article class="application-package-card">
+            <span>Interview positioning</span>
+            <h3>Interview Pitch</h3>
+            <p id="application-interview-pitch">
+              I built this project to show how I would evaluate GenAI systems before release.
+              Instead of a one-off chatbot demo, it uses deterministic fixtures, JSONL logs, pytest
+              checks, and guardrail scenarios to measure whether RAG outputs are grounded, cited,
+              safe, and production-ready.
+            </p>
+            <div class="application-copy-action">
+              <button
+                class="button secondary application-copy-button"
+                type="button"
+                data-copy-target="application-interview-pitch"
+                data-status-target="application-interview-status"
+                aria-label="Copy interview pitch"
+              >
+                Copy Interview Pitch
+              </button>
+              <span id="application-interview-status" role="status" aria-live="polite"></span>
+            </div>
+          </article>
+
+          <article class="application-package-card">
+            <span>Target roles</span>
+            <h3>Role Match</h3>
+            <p id="application-role-match">
+              Best fit: AI Solutions Engineer, Forward Deployed AI Engineer, LLM Evaluation
+              Engineer, Applied GenAI Engineer, AI Platform Engineer, and RAG Reliability Engineer
+              roles.
+            </p>
+            <div class="application-copy-action">
+              <button
+                class="button secondary application-copy-button"
+                type="button"
+                data-copy-target="application-role-match"
+                data-status-target="application-role-status"
+                aria-label="Copy role match"
+              >
+                Copy Role Match
+              </button>
+              <span id="application-role-status" role="status" aria-live="polite"></span>
+            </div>
+          </article>
+        </div>
+
+        <aside class="application-verification" aria-labelledby="application-verification-title">
+          <div>
+            <p class="eyebrow">Evidence checklist</p>
+            <h3 id="application-verification-title">Verification checklist</h3>
+          </div>
+          <ul>
+            <li>Public GitHub repository</li>
+            <li>Live Vercel proof site</li>
+            <li>JSONL audit evidence</li>
+            <li>Pytest regression proof</li>
+            <li>Guardrail scenarios</li>
+            <li>Metrics dashboard</li>
+          </ul>
+        </aside>
+      </section>
+
       <section id="contact" class="cta section-shell recruiter-contact" aria-label="Recruiter and hiring manager contact">
         <div>
           <p class="eyebrow">Fast Contact</p>
@@ -1280,6 +1404,49 @@
       }
 
       projectPitchButton?.addEventListener("click", copyProjectPitch);
+
+      const applicationCopyButtons = document.querySelectorAll(".application-copy-button");
+
+      async function copyApplicationAsset(event) {
+        const button = event.currentTarget;
+        const copyTarget = document.getElementById(button.dataset.copyTarget);
+        const status = document.getElementById(button.dataset.statusTarget);
+        const copyText = copyTarget?.textContent.replace(/\s+/g, " ").trim();
+        if (!copyText || !status) return;
+
+        let copied = false;
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+          await Promise.race([
+            navigator.clipboard.writeText(copyText),
+            new Promise((_, reject) => {
+              window.setTimeout(() => reject(new Error("Clipboard API timed out")), 500);
+            }),
+          ]);
+          copied = true;
+        } catch {}
+
+        if (!copied) {
+          const textArea = document.createElement("textarea");
+          textArea.value = copyText;
+          textArea.setAttribute("readonly", "");
+          textArea.style.position = "fixed";
+          textArea.style.opacity = "0";
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand("copy");
+          textArea.remove();
+        }
+
+        status.textContent = "Copied";
+        window.setTimeout(() => {
+          status.textContent = "";
+        }, 2000);
+      }
+
+      applicationCopyButtons.forEach((button) =>
+        button.addEventListener("click", copyApplicationAsset),
+      );
 
       const liveConsoleScenarios = {
         rag: {
