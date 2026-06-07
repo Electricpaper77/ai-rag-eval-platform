@@ -68,12 +68,13 @@ const agentTraceStepTitles = [
   "JSONL audit export",
 ];
 const employerProofPathText =
-  "Employer proof path: Resume \u2192 GitHub \u2192 Live Eval \u2192 Agent Flow \u2192 Trace Replay \u2192 Contact";
+  "Employer proof path: Resume \u2192 GitHub \u2192 Live Eval \u2192 Agent Flow \u2192 Command Center \u2192 Trace Replay \u2192 Contact";
 const employerProofPathLabels = [
   "Resume",
   "GitHub",
   "Live Eval",
   "Agent Flow",
+  "Command Center",
   "Trace Replay",
   "Contact",
 ];
@@ -118,6 +119,68 @@ const agentFlowProductionBullets = [
 const agentFlowResumeBullet =
   "Built an agentic AI reliability workflow that evaluates RAG outputs from prompt intake through retrieval, guardrail scanning, LLM scoring, JSONL audit logging, and trace replay, producing inspectable proof artifacts for hallucination risk, citation precision, PII handling, and regression safety.";
 const agentFlowCtaLabels = ["View GitHub", "Download Resume", "Jump to Trace Replay"];
+const commandCenterMetrics = [
+  ["Eval Pass Rate", "94%", "47 / 50 deterministic evals passed", "+12% after regression fixes"],
+  ["Hallucination Risk", "3%", "Down from 18% baseline", "15-point reduction"],
+  [
+    "Citation Precision",
+    "91%",
+    "Verified cited answer support",
+    "+21% after retrieval tuning",
+  ],
+  [
+    "Guardrail Blocks",
+    "8",
+    "Prompt injection and unsafe requests blocked",
+    "100% logged to JSONL",
+  ],
+  ["p95 Latency", "270ms", "Eval response latency", "Production-readiness target met"],
+  [
+    "Cost / Request",
+    "$0.014",
+    "Estimated agent eval cost",
+    "Tracked for deployment planning",
+  ],
+];
+const commandCenterRows = [
+  [
+    "agent_eval_017",
+    "Missing citation",
+    "Medium",
+    "Added citation coverage check",
+    "Fixed",
+  ],
+  [
+    "agent_eval_023",
+    "Prompt injection attempt",
+    "High",
+    "Blocked instruction override",
+    "Passed",
+  ],
+  [
+    "agent_eval_031",
+    "PII exposure risk",
+    "High",
+    "Added redaction guardrail",
+    "Fixed",
+  ],
+  [
+    "agent_eval_044",
+    "Hallucinated source",
+    "High",
+    "Tightened retrieval threshold",
+    "Retest passed",
+  ],
+];
+const commandCenterReadinessBullets = [
+  "Regression suite validates repeatable agent behavior before release.",
+  "JSONL logs preserve every eval run for audit and reviewer debugging.",
+  "Guardrails detect prompt injection, PII exposure, unsafe requests, and citation gaps.",
+  "Metrics connect technical reliability to business deployment risk.",
+];
+const commandCenterResumeBullet =
+  "Built a production-style AI agent reliability dashboard tracking eval pass rate, hallucination risk, citation precision, guardrail blocks, p95 latency, cost/request, failed-run debugging, JSONL audit logs, and trace replay artifacts for RAG and LLM workflows.";
+const commandCenterCtaLabels = ["View GitHub", "Download Resume", "Jump to Trace Replay"];
 
 function findStaleTrackedStrings() {
   const textExtensions = new Set([
@@ -476,7 +539,79 @@ async function inspectViewport(browser, viewport) {
       })),
       agentFlowPlacement:
         document.getElementById("live-eval-console")?.nextElementSibling?.id === "agent-flow" &&
-        document.getElementById("agent-flow")?.nextElementSibling?.id === "agent-trace-replay",
+        document.getElementById("agent-flow")?.nextElementSibling?.id === "command-center",
+      commandCenterExists:
+        document.querySelector("#command-center .command-center-heading .eyebrow")?.textContent
+          .trim() === "AI AGENT COMMAND CENTER" &&
+        document.getElementById("command-center-title")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() === "Production-style reliability dashboard for AI agent runs",
+      commandCenterSubtitle:
+        document.querySelector("#command-center .command-center-heading .section-note")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      commandCenterMetrics: Array.from(
+        document.querySelectorAll("#command-center .command-metric-card"),
+      ).map((card) => [
+        card.querySelector("span")?.textContent.trim() ?? "",
+        card.querySelector("strong")?.textContent.trim() ?? "",
+        card.querySelector("p")?.textContent.replace(/\s+/g, " ").trim() ?? "",
+        card.querySelector("small")?.textContent.replace(/\s+/g, " ").trim() ?? "",
+      ]),
+      commandCenterQueueTitle:
+        document.getElementById("command-debug-title")?.textContent.trim() ?? "",
+      commandCenterHeaders: Array.from(
+        document.querySelectorAll("#command-center .command-debug-queue th"),
+      ).map((cell) => cell.textContent.trim()),
+      commandCenterRows: Array.from(
+        document.querySelectorAll("#command-center .command-debug-queue tbody tr"),
+      ).map((row) =>
+        Array.from(row.querySelectorAll("td")).map((cell) =>
+          cell.textContent.replace(/\s+/g, " ").trim(),
+        ),
+      ),
+      commandCenterMobileQueueReadable:
+        window.innerWidth > 680 ||
+        (document.querySelector("#command-center .command-table-wrap table")?.getBoundingClientRect()
+          .width <=
+          document.querySelector("#command-center .command-table-wrap")?.getBoundingClientRect()
+            .width &&
+          Array.from(
+          document.querySelectorAll("#command-center .command-debug-queue tbody tr"),
+        ).every((row) => getComputedStyle(row).display === "block") &&
+          Array.from(
+            document.querySelectorAll("#command-center .command-debug-queue td"),
+          ).every(
+            (cell) =>
+              getComputedStyle(cell).display === "grid" && Boolean(cell.dataset.label?.trim()),
+          )),
+      commandCenterReadinessTitle:
+        document.getElementById("command-readiness-title")?.textContent.trim() ?? "",
+      commandCenterReadinessBullets: Array.from(
+        document.querySelectorAll("#command-center .command-readiness-copy li"),
+      ).map((item) => item.textContent.replace(/\s+/g, " ").trim()),
+      commandCenterJsonTitle:
+        document.querySelector("#command-center .command-console-heading h3")?.textContent.trim() ??
+        "",
+      commandCenterJson: document.getElementById("command-center-json")?.textContent ?? "",
+      commandCenterResumeTitle:
+        document.getElementById("command-resume-title")?.textContent.trim() ?? "",
+      commandCenterResumeBullet:
+        document.getElementById("command-center-resume-bullet")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      commandCenterCtaButtons: Array.from(
+        document.querySelectorAll("#command-center .command-center-actions .button"),
+      ).map((element) => ({
+        label: element.textContent.trim(),
+        href: element.getAttribute("href"),
+        target: element.getAttribute("target"),
+        rel: element.getAttribute("rel"),
+      })),
+      commandCenterPlacement:
+        document.getElementById("agent-flow")?.nextElementSibling?.id === "command-center" &&
+        document.getElementById("command-center")?.nextElementSibling?.id ===
+          "agent-trace-replay",
       agentTraceReplayExists:
         document.querySelector("#agent-trace-replay .eyebrow")?.textContent.trim() ===
           "AGENT TRACE REPLAY" &&
@@ -505,11 +640,13 @@ async function inspectViewport(browser, viewport) {
       agentTracePlacement: (() => {
         const liveConsole = document.getElementById("live-eval-console");
         const agentFlow = document.getElementById("agent-flow");
+        const commandCenter = document.getElementById("command-center");
         const agentTrace = document.getElementById("agent-trace-replay");
         const proofIntegrity = document.getElementById("proof-integrity");
         return Boolean(
           liveConsole?.nextElementSibling === agentFlow &&
-            agentFlow?.nextElementSibling === agentTrace &&
+            agentFlow?.nextElementSibling === commandCenter &&
+            commandCenter?.nextElementSibling === agentTrace &&
             agentTrace &&
             proofIntegrity &&
             agentTrace.compareDocumentPosition(proofIntegrity) &
@@ -635,6 +772,16 @@ async function inspectViewport(browser, viewport) {
     const rect = heading.getBoundingClientRect();
     return rect.top >= 0 && rect.top < window.innerHeight;
   });
+  await page
+    .locator(".employer-proof-path a[href='#command-center']")
+    .evaluate((anchor) => anchor.click());
+  const commandCenterAnchorWorks = new URL(page.url()).hash === "#command-center";
+  const commandCenterAnchorLandsOnSection = await page
+    .locator("#command-center h2")
+    .evaluate((heading) => {
+      const rect = heading.getBoundingClientRect();
+      return rect.top >= 0 && rect.top < window.innerHeight;
+    });
   await page.locator("a[href='#walkthrough']").last().click();
   const walkthroughAnchorWorks = new URL(page.url()).hash === "#walkthrough";
   const liveConsoleRuns = [];
@@ -737,6 +884,13 @@ async function inspectViewport(browser, viewport) {
   const agentFlowCopyStatus = (
     await page.locator("#agent-flow-copy-status").textContent()
   )?.trim();
+  await page.locator(".command-center-copy-button").click();
+  await page.waitForFunction(
+    () => document.getElementById("command-center-copy-status")?.textContent.trim() === "Copied",
+  );
+  const commandCenterCopyStatus = (
+    await page.locator("#command-center-copy-status").textContent()
+  )?.trim();
   await page.locator(".hiring-summary-copy-button").click();
   await page.waitForFunction(
     () => document.getElementById("hiring-summary-copy-status")?.textContent.trim() === "Copied",
@@ -754,6 +908,8 @@ async function inspectViewport(browser, viewport) {
     demoAnchorLandsOnConsole,
     agentFlowAnchorWorks,
     agentFlowAnchorLandsOnSection,
+    commandCenterAnchorWorks,
+    commandCenterAnchorLandsOnSection,
     walkthroughAnchorWorks,
     liveConsoleRuns,
     agentFlowRuns,
@@ -764,6 +920,7 @@ async function inspectViewport(browser, viewport) {
     recruiterCopyStatus,
     recruiterBulletCopyStatus,
     agentFlowCopyStatus,
+    commandCenterCopyStatus,
     hiringSummaryCopyStatus,
     consoleErrors,
   };
@@ -1060,7 +1217,79 @@ async function inspectDeploymentViewport(browser, viewport) {
       })),
       agentFlowPlacement:
         document.getElementById("live-eval-console")?.nextElementSibling?.id === "agent-flow" &&
-        document.getElementById("agent-flow")?.nextElementSibling?.id === "agent-trace-replay",
+        document.getElementById("agent-flow")?.nextElementSibling?.id === "command-center",
+      commandCenterExists:
+        document.querySelector("#command-center .command-center-heading .eyebrow")?.textContent
+          .trim() === "AI AGENT COMMAND CENTER" &&
+        document.getElementById("command-center-title")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() === "Production-style reliability dashboard for AI agent runs",
+      commandCenterSubtitle:
+        document.querySelector("#command-center .command-center-heading .section-note")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      commandCenterMetrics: Array.from(
+        document.querySelectorAll("#command-center .command-metric-card"),
+      ).map((card) => [
+        card.querySelector("span")?.textContent.trim() ?? "",
+        card.querySelector("strong")?.textContent.trim() ?? "",
+        card.querySelector("p")?.textContent.replace(/\s+/g, " ").trim() ?? "",
+        card.querySelector("small")?.textContent.replace(/\s+/g, " ").trim() ?? "",
+      ]),
+      commandCenterQueueTitle:
+        document.getElementById("command-debug-title")?.textContent.trim() ?? "",
+      commandCenterHeaders: Array.from(
+        document.querySelectorAll("#command-center .command-debug-queue th"),
+      ).map((cell) => cell.textContent.trim()),
+      commandCenterRows: Array.from(
+        document.querySelectorAll("#command-center .command-debug-queue tbody tr"),
+      ).map((row) =>
+        Array.from(row.querySelectorAll("td")).map((cell) =>
+          cell.textContent.replace(/\s+/g, " ").trim(),
+        ),
+      ),
+      commandCenterMobileQueueReadable:
+        window.innerWidth > 680 ||
+        (document.querySelector("#command-center .command-table-wrap table")?.getBoundingClientRect()
+          .width <=
+          document.querySelector("#command-center .command-table-wrap")?.getBoundingClientRect()
+            .width &&
+          Array.from(
+          document.querySelectorAll("#command-center .command-debug-queue tbody tr"),
+        ).every((row) => getComputedStyle(row).display === "block") &&
+          Array.from(
+            document.querySelectorAll("#command-center .command-debug-queue td"),
+          ).every(
+            (cell) =>
+              getComputedStyle(cell).display === "grid" && Boolean(cell.dataset.label?.trim()),
+          )),
+      commandCenterReadinessTitle:
+        document.getElementById("command-readiness-title")?.textContent.trim() ?? "",
+      commandCenterReadinessBullets: Array.from(
+        document.querySelectorAll("#command-center .command-readiness-copy li"),
+      ).map((item) => item.textContent.replace(/\s+/g, " ").trim()),
+      commandCenterJsonTitle:
+        document.querySelector("#command-center .command-console-heading h3")?.textContent.trim() ??
+        "",
+      commandCenterJson: document.getElementById("command-center-json")?.textContent ?? "",
+      commandCenterResumeTitle:
+        document.getElementById("command-resume-title")?.textContent.trim() ?? "",
+      commandCenterResumeBullet:
+        document.getElementById("command-center-resume-bullet")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      commandCenterCtaButtons: Array.from(
+        document.querySelectorAll("#command-center .command-center-actions .button"),
+      ).map((element) => ({
+        label: element.textContent.trim(),
+        href: element.getAttribute("href"),
+        target: element.getAttribute("target"),
+        rel: element.getAttribute("rel"),
+      })),
+      commandCenterPlacement:
+        document.getElementById("agent-flow")?.nextElementSibling?.id === "command-center" &&
+        document.getElementById("command-center")?.nextElementSibling?.id ===
+          "agent-trace-replay",
       agentTraceReplayExists:
         document.querySelector("#agent-trace-replay .eyebrow")?.textContent.trim() ===
           "AGENT TRACE REPLAY" &&
@@ -1087,7 +1316,8 @@ async function inspectDeploymentViewport(browser, viewport) {
         rel: element.getAttribute("rel"),
       })),
       agentTracePlacement:
-        document.getElementById("agent-flow")?.nextElementSibling?.id === "agent-trace-replay",
+        document.getElementById("command-center")?.nextElementSibling?.id ===
+        "agent-trace-replay",
       employerValueTitle:
         document.getElementById("employer-value-title")?.textContent.trim() ?? "",
       employerValueBullets: Array.from(
@@ -1130,6 +1360,16 @@ async function inspectDeploymentViewport(browser, viewport) {
     const rect = heading.getBoundingClientRect();
     return rect.top >= 0 && rect.top < window.innerHeight;
   });
+  await page
+    .locator(".employer-proof-path a[href='#command-center']")
+    .evaluate((anchor) => anchor.click());
+  const commandCenterAnchorWorks = new URL(page.url()).hash === "#command-center";
+  const commandCenterAnchorLandsOnSection = await page
+    .locator("#command-center h2")
+    .evaluate((heading) => {
+      const rect = heading.getBoundingClientRect();
+      return rect.top >= 0 && rect.top < window.innerHeight;
+    });
   const scenarioRuns = [];
   for (const scenario of ["good", "citation", "unsafe"]) {
     const tab = page.locator(`[data-scenario='${scenario}']`);
@@ -1204,6 +1444,13 @@ async function inspectDeploymentViewport(browser, viewport) {
   const agentFlowCopyStatus = (
     await page.locator("#agent-flow-copy-status").textContent()
   )?.trim();
+  await page.locator(".command-center-copy-button").click();
+  await page.waitForFunction(
+    () => document.getElementById("command-center-copy-status")?.textContent.trim() === "Copied",
+  );
+  const commandCenterCopyStatus = (
+    await page.locator("#command-center-copy-status").textContent()
+  )?.trim();
   await page.locator(".hiring-summary-copy-button").click();
   await page.waitForFunction(
     () => document.getElementById("hiring-summary-copy-status")?.textContent.trim() === "Copied",
@@ -1220,6 +1467,8 @@ async function inspectDeploymentViewport(browser, viewport) {
     demoAnchorLandsOnConsole,
     agentFlowAnchorWorks,
     agentFlowAnchorLandsOnSection,
+    commandCenterAnchorWorks,
+    commandCenterAnchorLandsOnSection,
     scenarioRuns,
     agentFlowRuns,
     agentFlowKeyboardWorks,
@@ -1227,6 +1476,7 @@ async function inspectDeploymentViewport(browser, viewport) {
     recruiterCopyStatus,
     recruiterBulletCopyStatus,
     agentFlowCopyStatus,
+    commandCenterCopyStatus,
     hiringSummaryCopyStatus,
     consoleErrors,
   };
@@ -1339,6 +1589,7 @@ function assertResult(result) {
   }
   if (!result.liveConsoleJsonlPreviewExists) failures.push("live console JSONL preview");
   assertAgentFlow(result, failures);
+  assertCommandCenter(result, failures);
   assertAgentTraceReplay(result, failures);
   if (!result.executiveProofExists) failures.push("executive proof section");
   if (result.executiveProofCards !== 5) failures.push("executive proof cards");
@@ -1449,6 +1700,7 @@ function assertDeploymentResult(result) {
   if (!result.liveConsoleSubtitle) failures.push("live console subtitle");
   if (!result.liveConsoleDisclosure) failures.push("live console disclosure");
   assertAgentFlow(result, failures);
+  assertCommandCenter(result, failures);
   assertAgentTraceReplay(result, failures);
   if (!result.staleDemoStringsAbsent) failures.push("stale demo strings");
   if (!result.demoNavTargetsConsole || !result.demoAnchorWorks || !result.demoAnchorLandsOnConsole) {
@@ -1606,6 +1858,80 @@ function assertAgentFlow(result, failures) {
   }
 }
 
+function assertCommandCenter(result, failures) {
+  if (
+    !result.commandCenterExists ||
+    result.commandCenterSubtitle !==
+      "Monitor eval health, guardrail outcomes, latency, cost, hallucination risk, citation quality, and failed-run debugging from one reviewer-facing console." ||
+    !result.commandCenterPlacement
+  ) {
+    failures.push("Command Center structure");
+  }
+
+  if (
+    JSON.stringify(result.commandCenterMetrics) !== JSON.stringify(commandCenterMetrics)
+  ) {
+    failures.push("Command Center metric cards");
+  }
+
+  if (
+    result.commandCenterQueueTitle !== "Failed Run Debug Queue" ||
+    JSON.stringify(result.commandCenterHeaders) !==
+      JSON.stringify(["Run ID", "Failure Type", "Risk", "Fix", "Status"]) ||
+    JSON.stringify(result.commandCenterRows) !== JSON.stringify(commandCenterRows) ||
+    !result.commandCenterMobileQueueReadable
+  ) {
+    failures.push("Command Center debug queue");
+  }
+
+  if (
+    result.commandCenterReadinessTitle !== "Production readiness summary" ||
+    JSON.stringify(result.commandCenterReadinessBullets) !==
+      JSON.stringify(commandCenterReadinessBullets)
+  ) {
+    failures.push("Command Center readiness summary");
+  }
+
+  if (
+    result.commandCenterJsonTitle !== "Latest reliability event" ||
+    !result.commandCenterJson.includes('"run_id": "agent_eval_044"') ||
+    !result.commandCenterJson.includes('"status": "retest_passed"') ||
+    !result.commandCenterJson.includes('"artifact": "jsonl_trace_replay"')
+  ) {
+    failures.push("Command Center reliability event");
+  }
+
+  if (
+    result.commandCenterResumeTitle !== "Resume bullet this dashboard proves" ||
+    result.commandCenterResumeBullet !== commandCenterResumeBullet ||
+    result.commandCenterCopyStatus !== "Copied"
+  ) {
+    failures.push("Command Center resume bullet");
+  }
+
+  if (
+    JSON.stringify(result.commandCenterCtaButtons.map((button) => button.label)) !==
+    JSON.stringify(commandCenterCtaLabels)
+  ) {
+    failures.push("Command Center CTAs");
+  }
+  const [github, resume, trace] = result.commandCenterCtaButtons;
+  if (
+    github?.href !== "https://github.com/Electricpaper77/ai-rag-eval-platform" ||
+    github.target !== "_blank" ||
+    resume?.href !== resumeRelativePath ||
+    resume.target !== "_blank" ||
+    !resume.rel?.split(/\s+/).includes("noopener") ||
+    trace?.href !== "#agent-trace-replay"
+  ) {
+    failures.push("Command Center CTA routes");
+  }
+
+  if (!result.commandCenterAnchorWorks || !result.commandCenterAnchorLandsOnSection) {
+    failures.push("Command Center anchor");
+  }
+}
+
 function assertEmployerProofUpgrade(result, failures) {
   if (
     result.employerProofPathCount !== 1 ||
@@ -1617,8 +1943,15 @@ function assertEmployerProofUpgrade(result, failures) {
     failures.push("employer proof path");
   }
 
-  const [pathResume, pathGithub, pathLiveEval, pathAgentFlow, pathTraceReplay, pathContact] =
-    result.employerProofPathLinks;
+  const [
+    pathResume,
+    pathGithub,
+    pathLiveEval,
+    pathAgentFlow,
+    pathCommandCenter,
+    pathTraceReplay,
+    pathContact,
+  ] = result.employerProofPathLinks;
   if (
     pathResume?.href !== resumeRelativePath ||
     pathResume.target !== "_blank" ||
@@ -1627,6 +1960,7 @@ function assertEmployerProofUpgrade(result, failures) {
     pathGithub.target !== "_blank" ||
     pathLiveEval?.href !== "#live-eval-console" ||
     pathAgentFlow?.href !== "#agent-flow" ||
+    pathCommandCenter?.href !== "#command-center" ||
     pathTraceReplay?.href !== "#agent-trace-replay" ||
     pathContact?.href !== "#contact"
   ) {

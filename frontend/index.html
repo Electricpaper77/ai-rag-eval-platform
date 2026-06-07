@@ -176,6 +176,8 @@
           <span aria-hidden="true">→</span>
           <a href="#agent-flow">Agent Flow</a>
           <span aria-hidden="true">→</span>
+          <a href="#command-center">Command Center</a>
+          <span aria-hidden="true">→</span>
           <a href="#agent-trace-replay">Trace Replay</a>
           <span aria-hidden="true">→</span>
           <a href="#contact">Contact</a>
@@ -1285,6 +1287,191 @@
       </section>
 
       <section
+        id="command-center"
+        class="section-shell command-center"
+        aria-labelledby="command-center-title"
+      >
+        <div class="command-center-heading">
+          <p class="eyebrow">AI AGENT COMMAND CENTER</p>
+          <h2 id="command-center-title">
+            Production-style reliability dashboard for AI agent runs
+          </h2>
+          <p class="section-note">
+            Monitor eval health, guardrail outcomes, latency, cost, hallucination risk, citation
+            quality, and failed-run debugging from one reviewer-facing console.
+          </p>
+        </div>
+
+        <div class="command-metric-grid" aria-label="AI agent reliability metrics">
+          <article class="command-metric-card">
+            <span>Eval Pass Rate</span>
+            <strong>94%</strong>
+            <p>47 / 50 deterministic evals passed</p>
+            <small>+12% after regression fixes</small>
+          </article>
+          <article class="command-metric-card">
+            <span>Hallucination Risk</span>
+            <strong>3%</strong>
+            <p>Down from 18% baseline</p>
+            <small>15-point reduction</small>
+          </article>
+          <article class="command-metric-card">
+            <span>Citation Precision</span>
+            <strong>91%</strong>
+            <p>Verified cited answer support</p>
+            <small>+21% after retrieval tuning</small>
+          </article>
+          <article class="command-metric-card">
+            <span>Guardrail Blocks</span>
+            <strong>8</strong>
+            <p>Prompt injection and unsafe requests blocked</p>
+            <small>100% logged to JSONL</small>
+          </article>
+          <article class="command-metric-card">
+            <span>p95 Latency</span>
+            <strong>270ms</strong>
+            <p>Eval response latency</p>
+            <small>Production-readiness target met</small>
+          </article>
+          <article class="command-metric-card">
+            <span>Cost / Request</span>
+            <strong>$0.014</strong>
+            <p>Estimated agent eval cost</p>
+            <small>Tracked for deployment planning</small>
+          </article>
+        </div>
+
+        <div class="command-center-layout">
+          <section class="command-debug-queue" aria-labelledby="command-debug-title">
+            <div class="command-panel-heading">
+              <div>
+                <p class="eyebrow">REVIEW QUEUE</p>
+                <h3 id="command-debug-title">Failed Run Debug Queue</h3>
+              </div>
+              <span>4 resolved events</span>
+            </div>
+            <div class="command-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Run ID</th>
+                    <th scope="col">Failure Type</th>
+                    <th scope="col">Risk</th>
+                    <th scope="col">Fix</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td data-label="Run ID"><code>agent_eval_017</code></td>
+                    <td data-label="Failure Type">Missing citation</td>
+                    <td data-label="Risk"><span class="command-risk command-risk-medium">Medium</span></td>
+                    <td data-label="Fix">Added citation coverage check</td>
+                    <td data-label="Status"><span class="command-status">Fixed</span></td>
+                  </tr>
+                  <tr>
+                    <td data-label="Run ID"><code>agent_eval_023</code></td>
+                    <td data-label="Failure Type">Prompt injection attempt</td>
+                    <td data-label="Risk"><span class="command-risk command-risk-high">High</span></td>
+                    <td data-label="Fix">Blocked instruction override</td>
+                    <td data-label="Status"><span class="command-status">Passed</span></td>
+                  </tr>
+                  <tr>
+                    <td data-label="Run ID"><code>agent_eval_031</code></td>
+                    <td data-label="Failure Type">PII exposure risk</td>
+                    <td data-label="Risk"><span class="command-risk command-risk-high">High</span></td>
+                    <td data-label="Fix">Added redaction guardrail</td>
+                    <td data-label="Status"><span class="command-status">Fixed</span></td>
+                  </tr>
+                  <tr>
+                    <td data-label="Run ID"><code>agent_eval_044</code></td>
+                    <td data-label="Failure Type">Hallucinated source</td>
+                    <td data-label="Risk"><span class="command-risk command-risk-high">High</span></td>
+                    <td data-label="Fix">Tightened retrieval threshold</td>
+                    <td data-label="Status"><span class="command-status">Retest passed</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <aside class="command-readiness" aria-labelledby="command-readiness-title">
+            <div class="command-readiness-copy">
+              <p class="eyebrow">RELEASE SIGNAL</p>
+              <h3 id="command-readiness-title">Production readiness summary</h3>
+              <ul>
+                <li>Regression suite validates repeatable agent behavior before release.</li>
+                <li>JSONL logs preserve every eval run for audit and reviewer debugging.</li>
+                <li>
+                  Guardrails detect prompt injection, PII exposure, unsafe requests, and citation
+                  gaps.
+                </li>
+                <li>Metrics connect technical reliability to business deployment risk.</li>
+              </ul>
+            </div>
+
+            <div class="command-console">
+              <div class="command-console-heading">
+                <h3>Latest reliability event</h3>
+                <span>STATIC JSONL</span>
+              </div>
+              <pre><code id="command-center-json">{
+  "run_id": "agent_eval_044",
+  "status": "retest_passed",
+  "eval_pass_rate": 0.94,
+  "hallucination_risk": 0.03,
+  "citation_precision": 0.91,
+  "p95_latency_ms": 270,
+  "cost_per_request_usd": 0.014,
+  "guardrail_result": "pass",
+  "artifact": "jsonl_trace_replay"
+}</code></pre>
+            </div>
+          </aside>
+        </div>
+
+        <div class="command-center-footer">
+          <aside class="command-resume" aria-labelledby="command-resume-title">
+            <div>
+              <p class="eyebrow">APPLICATION ASSET</p>
+              <h3 id="command-resume-title">Resume bullet this dashboard proves</h3>
+              <p id="command-center-resume-bullet">
+                Built a production-style AI agent reliability dashboard tracking eval pass rate,
+                hallucination risk, citation precision, guardrail blocks, p95 latency, cost/request,
+                failed-run debugging, JSONL audit logs, and trace replay artifacts for RAG and LLM
+                workflows.
+              </p>
+            </div>
+            <div class="command-copy-action">
+              <button
+                class="button secondary command-center-copy-button"
+                type="button"
+                data-copy-target="command-center-resume-bullet"
+                data-status-target="command-center-copy-status"
+              >Copy Bullet</button>
+              <span id="command-center-copy-status" role="status" aria-live="polite"></span>
+            </div>
+          </aside>
+
+          <div class="button-row command-center-actions" aria-label="Command center proof actions">
+            <a
+              class="button primary"
+              href="https://github.com/Electricpaper77/ai-rag-eval-platform"
+              target="_blank"
+              rel="noreferrer"
+            >View GitHub</a>
+            <a
+              class="button secondary"
+              href="assets/Zohaib_Ahmed_AI_Solutions_Engineer_GenAI_Resume.pdf"
+              target="_blank"
+              rel="noopener"
+            >Download Resume</a>
+            <a class="button secondary" href="#agent-trace-replay">Jump to Trace Replay</a>
+          </div>
+        </div>
+      </section>
+
+      <section
         id="agent-trace-replay"
         class="section-shell agent-trace-replay"
         aria-labelledby="agent-trace-replay-title"
@@ -1726,7 +1913,7 @@
       copyButtons.forEach((button) => button.addEventListener("click", copyResumeBullet));
 
       const resumeHubCopyButtons = document.querySelectorAll(
-        ".resume-copy-button, .recruiter-copy-button, .hiring-summary-copy-button, .recruiter-bullet-copy-button, .agent-flow-copy-button",
+        ".resume-copy-button, .recruiter-copy-button, .hiring-summary-copy-button, .recruiter-bullet-copy-button, .agent-flow-copy-button, .command-center-copy-button",
       );
 
       async function copyResumeHubAsset(event) {
