@@ -193,6 +193,83 @@
         </aside>
       </section>
 
+      <nav class="employer-proof-path" aria-label="Employer proof path">
+        <div class="employer-proof-path-inner">
+          <strong>Employer proof path:</strong>
+          <a
+            href="assets/Zohaib_Ahmed_AI_Solutions_Engineer_GenAI_Resume.pdf"
+            target="_blank"
+            rel="noopener"
+          >Resume</a>
+          <span aria-hidden="true">→</span>
+          <a
+            href="https://github.com/Electricpaper77/ai-rag-eval-platform"
+            target="_blank"
+            rel="noreferrer"
+          >GitHub</a>
+          <span aria-hidden="true">→</span>
+          <a href="#live-eval-console">Live Eval</a>
+          <span aria-hidden="true">→</span>
+          <a href="#agent-trace-replay">Trace Replay</a>
+          <span aria-hidden="true">→</span>
+          <a href="#contact">Contact</a>
+        </div>
+      </nav>
+
+      <section
+        id="recruiter-quick-review"
+        class="section-shell recruiter-quick-review"
+        aria-labelledby="recruiter-quick-review-title"
+      >
+        <article class="recruiter-review-card">
+          <p class="eyebrow">EMPLOYER SCAN</p>
+          <h2 id="recruiter-quick-review-title">30-second recruiter review</h2>
+          <dl>
+            <div>
+              <dt>Role fit</dt>
+              <dd>AI Solutions Engineer / LLM Evaluation / Applied GenAI</dd>
+            </div>
+            <div>
+              <dt>Proof</dt>
+              <dd>GitHub repo, resume PDF, JSONL logs, eval dashboard, trace replay</dd>
+            </div>
+            <div>
+              <dt>Stack</dt>
+              <dd>Python, FastAPI, RAG, vector search, LLM evals, guardrails, Docker, CI/CD</dd>
+            </div>
+            <div>
+              <dt>Signal</dt>
+              <dd>
+                Production-readiness, measurable reliability metrics, customer-facing explanation
+              </dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="recruiter-bullet-card">
+          <p class="eyebrow">APPLICATION ASSET</p>
+          <h2>Copy-ready resume bullet</h2>
+          <p id="recruiter-ready-resume-bullet">
+            Built a FastAPI-based AI Agent Reliability Platform for evaluating RAG and LLM outputs
+            across hallucination risk, citation quality, refusal behavior, prompt injection, and
+            PII handling using deterministic eval fixtures, JSONL audit logs, regression checks,
+            and trace replay proof artifacts.
+          </p>
+          <div class="recruiter-bullet-action">
+            <button
+              class="button secondary recruiter-bullet-copy-button"
+              type="button"
+              data-copy-target="recruiter-ready-resume-bullet"
+              data-status-target="recruiter-bullet-copy-status"
+              aria-label="Copy recruiter-ready resume bullet"
+            >
+              Copy Bullet
+            </button>
+            <span id="recruiter-bullet-copy-status" role="status" aria-live="polite"></span>
+          </div>
+        </article>
+      </section>
+
       <section
         id="recruiter-action-panel"
         class="section-shell recruiter-action-panel"
@@ -561,6 +638,7 @@
             Review GitHub Evidence
           </a>
         </div>
+
       </section>
       -->
 
@@ -658,6 +736,7 @@
             <a class="button secondary" href="mailto:azohaib.0150@gmail.com">Contact Me</a>
           </div>
         </div>
+
       </section>
 
       <section id="proof-path" class="section-shell proof-path">
@@ -788,6 +867,31 @@
             <p>Prompt injection detection with a blocked release decision.</p>
           </a>
         </div>
+
+        <aside class="employer-value-card" aria-labelledby="employer-value-title">
+          <div>
+            <p class="eyebrow">EMPLOYER VALUE</p>
+            <h3 id="employer-value-title">Why this matters to AI teams</h3>
+          </div>
+          <ul>
+            <li>
+              Tests LLM outputs with deterministic eval fixtures, JSONL audit logs, and regression
+              checks.
+            </li>
+            <li>
+              Measures hallucination risk, citation quality, refusal behavior, prompt injection
+              handling, and PII protection.
+            </li>
+            <li>
+              Demonstrates customer-facing AI reliability work: explainable outputs, trace replay,
+              proof artifacts, and production-readiness checks.
+            </li>
+            <li>
+              Maps directly to AI Solutions Engineer, Forward Deployed Engineer, LLM Evaluation,
+              and Applied GenAI roles.
+            </li>
+          </ul>
+        </aside>
       </section>
 
       <section id="resume-bullet" class="section-shell resume-section">
@@ -1235,6 +1339,28 @@
                 retrieval, tool boundaries, guardrails, observability, and release-readiness.
               </p>
             </aside>
+          </div>
+        </div>
+
+        <div class="agent-replay-cta">
+          <div>
+            <p class="eyebrow">NEXT REVIEW STEP</p>
+            <h3>Review the full proof trail</h3>
+          </div>
+          <div class="button-row agent-replay-actions" aria-label="Agent trace proof actions">
+            <a
+              class="button primary"
+              href="assets/Zohaib_Ahmed_AI_Solutions_Engineer_GenAI_Resume.pdf"
+              target="_blank"
+              rel="noopener"
+            >Download Resume</a>
+            <a
+              class="button secondary"
+              href="https://github.com/Electricpaper77/ai-rag-eval-platform"
+              target="_blank"
+              rel="noreferrer"
+            >View GitHub</a>
+            <a class="button secondary" href="#contact">Contact</a>
           </div>
         </div>
       </section>
@@ -1883,7 +2009,7 @@
       copyButtons.forEach((button) => button.addEventListener("click", copyResumeBullet));
 
       const resumeHubCopyButtons = document.querySelectorAll(
-        ".resume-copy-button, .recruiter-copy-button, .hiring-summary-copy-button",
+        ".resume-copy-button, .recruiter-copy-button, .hiring-summary-copy-button, .recruiter-bullet-copy-button",
       );
 
       async function copyResumeHubAsset(event) {

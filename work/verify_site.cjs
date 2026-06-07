@@ -67,6 +67,27 @@ const agentTraceStepTitles = [
   "Evaluation gates",
   "JSONL audit export",
 ];
+const employerProofPathText =
+  "Employer proof path: Resume \u2192 GitHub \u2192 Live Eval \u2192 Trace Replay \u2192 Contact";
+const employerProofPathLabels = ["Resume", "GitHub", "Live Eval", "Trace Replay", "Contact"];
+const recruiterReviewRows = [
+  ["Role fit", "AI Solutions Engineer / LLM Evaluation / Applied GenAI"],
+  ["Proof", "GitHub repo, resume PDF, JSONL logs, eval dashboard, trace replay"],
+  ["Stack", "Python, FastAPI, RAG, vector search, LLM evals, guardrails, Docker, CI/CD"],
+  [
+    "Signal",
+    "Production-readiness, measurable reliability metrics, customer-facing explanation",
+  ],
+];
+const recruiterReadyResumeBullet =
+  "Built a FastAPI-based AI Agent Reliability Platform for evaluating RAG and LLM outputs across hallucination risk, citation quality, refusal behavior, prompt injection, and PII handling using deterministic eval fixtures, JSONL audit logs, regression checks, and trace replay proof artifacts.";
+const employerValueBullets = [
+  "Tests LLM outputs with deterministic eval fixtures, JSONL audit logs, and regression checks.",
+  "Measures hallucination risk, citation quality, refusal behavior, prompt injection handling, and PII protection.",
+  "Demonstrates customer-facing AI reliability work: explainable outputs, trace replay, proof artifacts, and production-readiness checks.",
+  "Maps directly to AI Solutions Engineer, Forward Deployed Engineer, LLM Evaluation, and Applied GenAI roles.",
+];
+const agentTraceCtaLabels = ["Download Resume", "View GitHub", "Contact"];
 
 function findStaleTrackedStrings() {
   const textExtensions = new Set([
@@ -198,6 +219,38 @@ async function inspectViewport(browser, viewport) {
           rel: element.getAttribute("rel"),
         }),
       ),
+      employerProofPathCount: document.querySelectorAll(".employer-proof-path").length,
+      employerProofPathText:
+        document.querySelector(".employer-proof-path")?.textContent.replace(/\s+/g, " ").trim() ??
+        "",
+      employerProofPathSticky:
+        document.querySelector(".employer-proof-path") &&
+        getComputedStyle(document.querySelector(".employer-proof-path")).position === "sticky",
+      employerProofPathLinks: Array.from(
+        document.querySelectorAll(".employer-proof-path a"),
+      ).map((element) => ({
+        label: element.textContent.trim(),
+        href: element.getAttribute("href"),
+        target: element.getAttribute("target"),
+        rel: element.getAttribute("rel"),
+      })),
+      recruiterQuickReviewTitle:
+        document.getElementById("recruiter-quick-review-title")?.textContent.trim() ?? "",
+      recruiterReviewRows: Array.from(
+        document.querySelectorAll("#recruiter-quick-review .recruiter-review-card dl > div"),
+      ).map((row) => [
+        row.querySelector("dt")?.textContent.trim() ?? "",
+        row.querySelector("dd")?.textContent.replace(/\s+/g, " ").trim() ?? "",
+      ]),
+      recruiterReadyResumeBulletTitle:
+        document.querySelector("#recruiter-quick-review .recruiter-bullet-card h2")?.textContent
+          .trim() ?? "",
+      recruiterReadyResumeBullet:
+        document.getElementById("recruiter-ready-resume-bullet")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      recruiterReadyResumeBulletButton:
+        document.querySelector(".recruiter-bullet-copy-button")?.textContent.trim() ?? "",
       hiringSnapshot:
         document.querySelector(".hero-panel")?.getAttribute("aria-label") === "Hiring Snapshot" &&
         document.querySelector(".hero-panel .panel-kicker")?.textContent.trim() ===
@@ -244,9 +297,17 @@ async function inspectViewport(browser, viewport) {
         document.getElementById("hiring-summary-copy-text")?.textContent
           .replace(/\s+/g, " ")
           .trim() ?? "",
-      recruiterActionPlacement:
-        document.querySelector(".hero")?.nextElementSibling?.id === "recruiter-action-panel" &&
-        document.getElementById("recruiter-action-panel")?.nextElementSibling?.id === "resume-hub",
+      recruiterActionPlacement: (() => {
+        const employerPath = document.querySelector(".hero")?.nextElementSibling;
+        const quickReview = employerPath?.nextElementSibling;
+        const recruiterAction = quickReview?.nextElementSibling;
+        return Boolean(
+          employerPath?.classList.contains("employer-proof-path") &&
+            quickReview?.id === "recruiter-quick-review" &&
+            recruiterAction?.id === "recruiter-action-panel" &&
+            recruiterAction.nextElementSibling?.id === "resume-hub",
+        );
+      })(),
       proofMetrics: document.querySelectorAll(".proof-bar-metrics > div").length,
       artifactCards: document.querySelectorAll(".artifact-grid .artifact-card").length,
       loadedArtifactImages: Array.from(document.querySelectorAll(".artifact-card img")).filter(
@@ -352,6 +413,16 @@ async function inspectViewport(browser, viewport) {
         document.querySelector("#agent-trace-replay .agent-replay-console h3")?.textContent.trim() ??
         "",
       agentTraceJson: document.getElementById("agent-trace-json")?.textContent ?? "",
+      agentTraceCtaTitle:
+        document.querySelector("#agent-trace-replay .agent-replay-cta h3")?.textContent.trim() ?? "",
+      agentTraceCtaButtons: Array.from(
+        document.querySelectorAll("#agent-trace-replay .agent-replay-actions .button"),
+      ).map((element) => ({
+        label: element.textContent.trim(),
+        href: element.getAttribute("href"),
+        target: element.getAttribute("target"),
+        rel: element.getAttribute("rel"),
+      })),
       agentTracePlacement: (() => {
         const liveConsole = document.getElementById("live-eval-console");
         const agentTrace = document.getElementById("agent-trace-replay");
@@ -364,6 +435,14 @@ async function inspectViewport(browser, viewport) {
               Node.DOCUMENT_POSITION_FOLLOWING,
         );
       })(),
+      employerValueTitle:
+        document.getElementById("employer-value-title")?.textContent.trim() ?? "",
+      employerValueBullets: Array.from(
+        document.querySelectorAll("#proof .employer-value-card li"),
+      ).map((item) => item.textContent.replace(/\s+/g, " ").trim()),
+      employerValuePlacement: Boolean(
+        document.querySelector("#proof > .employer-value-card"),
+      ),
       executiveProofExists:
         document.querySelector("#executive-proof h2")?.textContent.trim() ===
         "Executive Proof Mode",
@@ -527,6 +606,13 @@ async function inspectViewport(browser, viewport) {
   const recruiterCopyStatus = (
     await page.locator("#recruiter-copy-status").textContent()
   )?.trim();
+  await page.locator(".recruiter-bullet-copy-button").click();
+  await page.waitForFunction(
+    () => document.getElementById("recruiter-bullet-copy-status")?.textContent.trim() === "Copied",
+  );
+  const recruiterBulletCopyStatus = (
+    await page.locator("#recruiter-bullet-copy-status").textContent()
+  )?.trim();
   await page.locator(".hiring-summary-copy-button").click();
   await page.waitForFunction(
     () => document.getElementById("hiring-summary-copy-status")?.textContent.trim() === "Copied",
@@ -548,6 +634,7 @@ async function inspectViewport(browser, viewport) {
     applicationCopyRuns,
     resumeCopyRuns,
     recruiterCopyStatus,
+    recruiterBulletCopyStatus,
     hiringSummaryCopyStatus,
     consoleErrors,
   };
@@ -634,6 +721,38 @@ async function inspectDeploymentViewport(browser, viewport) {
           rel: element.getAttribute("rel"),
         }),
       ),
+      employerProofPathCount: document.querySelectorAll(".employer-proof-path").length,
+      employerProofPathText:
+        document.querySelector(".employer-proof-path")?.textContent.replace(/\s+/g, " ").trim() ??
+        "",
+      employerProofPathSticky:
+        document.querySelector(".employer-proof-path") &&
+        getComputedStyle(document.querySelector(".employer-proof-path")).position === "sticky",
+      employerProofPathLinks: Array.from(
+        document.querySelectorAll(".employer-proof-path a"),
+      ).map((element) => ({
+        label: element.textContent.trim(),
+        href: element.getAttribute("href"),
+        target: element.getAttribute("target"),
+        rel: element.getAttribute("rel"),
+      })),
+      recruiterQuickReviewTitle:
+        document.getElementById("recruiter-quick-review-title")?.textContent.trim() ?? "",
+      recruiterReviewRows: Array.from(
+        document.querySelectorAll("#recruiter-quick-review .recruiter-review-card dl > div"),
+      ).map((row) => [
+        row.querySelector("dt")?.textContent.trim() ?? "",
+        row.querySelector("dd")?.textContent.replace(/\s+/g, " ").trim() ?? "",
+      ]),
+      recruiterReadyResumeBulletTitle:
+        document.querySelector("#recruiter-quick-review .recruiter-bullet-card h2")?.textContent
+          .trim() ?? "",
+      recruiterReadyResumeBullet:
+        document.getElementById("recruiter-ready-resume-bullet")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      recruiterReadyResumeBulletButton:
+        document.querySelector(".recruiter-bullet-copy-button")?.textContent.trim() ?? "",
       hiringSnapshot:
         document.querySelector(".hero-panel")?.getAttribute("aria-label") === "Hiring Snapshot" &&
         document.querySelector(".hero-panel .panel-kicker")?.textContent.trim() ===
@@ -680,9 +799,17 @@ async function inspectDeploymentViewport(browser, viewport) {
         document.getElementById("hiring-summary-copy-text")?.textContent
           .replace(/\s+/g, " ")
           .trim() ?? "",
-      recruiterActionPlacement:
-        document.querySelector(".hero")?.nextElementSibling?.id === "recruiter-action-panel" &&
-        document.getElementById("recruiter-action-panel")?.nextElementSibling?.id === "resume-hub",
+      recruiterActionPlacement: (() => {
+        const employerPath = document.querySelector(".hero")?.nextElementSibling;
+        const quickReview = employerPath?.nextElementSibling;
+        const recruiterAction = quickReview?.nextElementSibling;
+        return Boolean(
+          employerPath?.classList.contains("employer-proof-path") &&
+            quickReview?.id === "recruiter-quick-review" &&
+            recruiterAction?.id === "recruiter-action-panel" &&
+            recruiterAction.nextElementSibling?.id === "resume-hub",
+        );
+      })(),
       platformNameExists:
         document.title === "AI Agent Reliability Platform" &&
         document.querySelector("h1")?.textContent.trim() === "AI Agent Reliability Platform",
@@ -771,9 +898,27 @@ async function inspectDeploymentViewport(browser, viewport) {
         document.querySelector("#agent-trace-replay .agent-replay-console h3")?.textContent.trim() ??
         "",
       agentTraceJson: document.getElementById("agent-trace-json")?.textContent ?? "",
+      agentTraceCtaTitle:
+        document.querySelector("#agent-trace-replay .agent-replay-cta h3")?.textContent.trim() ?? "",
+      agentTraceCtaButtons: Array.from(
+        document.querySelectorAll("#agent-trace-replay .agent-replay-actions .button"),
+      ).map((element) => ({
+        label: element.textContent.trim(),
+        href: element.getAttribute("href"),
+        target: element.getAttribute("target"),
+        rel: element.getAttribute("rel"),
+      })),
       agentTracePlacement:
         document.getElementById("live-eval-console")?.nextElementSibling?.id ===
         "agent-trace-replay",
+      employerValueTitle:
+        document.getElementById("employer-value-title")?.textContent.trim() ?? "",
+      employerValueBullets: Array.from(
+        document.querySelectorAll("#proof .employer-value-card li"),
+      ).map((item) => item.textContent.replace(/\s+/g, " ").trim()),
+      employerValuePlacement: Boolean(
+        document.querySelector("#proof > .employer-value-card"),
+      ),
       staleDemoStringsAbsent: ![
         ["Live Eval", "Simulator"].join(" "),
         ["Good", "Answer"].join(" "),
@@ -832,6 +977,13 @@ async function inspectDeploymentViewport(browser, viewport) {
   const recruiterCopyStatus = (
     await page.locator("#recruiter-copy-status").textContent()
   )?.trim();
+  await page.locator(".recruiter-bullet-copy-button").click();
+  await page.waitForFunction(
+    () => document.getElementById("recruiter-bullet-copy-status")?.textContent.trim() === "Copied",
+  );
+  const recruiterBulletCopyStatus = (
+    await page.locator("#recruiter-bullet-copy-status").textContent()
+  )?.trim();
   await page.locator(".hiring-summary-copy-button").click();
   await page.waitForFunction(
     () => document.getElementById("hiring-summary-copy-status")?.textContent.trim() === "Copied",
@@ -849,6 +1001,7 @@ async function inspectDeploymentViewport(browser, viewport) {
     scenarioRuns,
     resumeCopyRuns,
     recruiterCopyStatus,
+    recruiterBulletCopyStatus,
     hiringSummaryCopyStatus,
     consoleErrors,
   };
@@ -860,6 +1013,7 @@ function assertResult(result) {
   if (result.faviconHref !== "./assets/favicon.svg") failures.push("favicon link");
   assertTopConversionFlow(result, failures);
   assertRecruiterConversion(result, failures);
+  assertEmployerProofUpgrade(result, failures);
   assertRecruiterActionPanel(result, failures);
   if (result.proofMetrics !== 5) failures.push("proof metric count");
   if (result.artifactCards !== 6 || result.loadedArtifactImages !== 6) {
@@ -1052,6 +1206,7 @@ function assertDeploymentResult(result) {
   if (result.faviconHref !== "./assets/favicon.svg") failures.push("favicon link");
   assertTopConversionFlow(result, failures);
   assertRecruiterConversion(result, failures);
+  assertEmployerProofUpgrade(result, failures);
   assertRecruiterActionPanel(result, failures);
   if (!result.platformNameExists) failures.push("platform naming");
   if (!result.liveConsoleExists) failures.push("live console section");
@@ -1115,6 +1270,75 @@ function assertAgentTraceReplay(result, failures) {
     failures.push("Agent trace JSONL fields");
   }
   if (!result.agentTracePlacement) failures.push("Agent Trace Replay placement");
+}
+
+function assertEmployerProofUpgrade(result, failures) {
+  if (
+    result.employerProofPathCount !== 1 ||
+    result.employerProofPathText !== employerProofPathText ||
+    !result.employerProofPathSticky ||
+    JSON.stringify(result.employerProofPathLinks.map((link) => link.label)) !==
+      JSON.stringify(employerProofPathLabels)
+  ) {
+    failures.push("employer proof path");
+  }
+
+  const [pathResume, pathGithub, pathLiveEval, pathTraceReplay, pathContact] =
+    result.employerProofPathLinks;
+  if (
+    pathResume?.href !== resumeRelativePath ||
+    pathResume.target !== "_blank" ||
+    !pathResume.rel?.split(/\s+/).includes("noopener") ||
+    pathGithub?.href !== "https://github.com/Electricpaper77/ai-rag-eval-platform" ||
+    pathGithub.target !== "_blank" ||
+    pathLiveEval?.href !== "#live-eval-console" ||
+    pathTraceReplay?.href !== "#agent-trace-replay" ||
+    pathContact?.href !== "#contact"
+  ) {
+    failures.push("employer proof path routes");
+  }
+
+  if (
+    result.recruiterQuickReviewTitle !== "30-second recruiter review" ||
+    JSON.stringify(result.recruiterReviewRows) !== JSON.stringify(recruiterReviewRows)
+  ) {
+    failures.push("30-second recruiter review");
+  }
+  if (
+    result.recruiterReadyResumeBulletTitle !== "Copy-ready resume bullet" ||
+    result.recruiterReadyResumeBullet !== recruiterReadyResumeBullet ||
+    result.recruiterReadyResumeBulletButton !== "Copy Bullet" ||
+    result.recruiterBulletCopyStatus !== "Copied"
+  ) {
+    failures.push("copy-ready resume bullet");
+  }
+
+  if (
+    result.employerValueTitle !== "Why this matters to AI teams" ||
+    JSON.stringify(result.employerValueBullets) !== JSON.stringify(employerValueBullets) ||
+    !result.employerValuePlacement
+  ) {
+    failures.push("employer value card");
+  }
+
+  if (
+    result.agentTraceCtaTitle !== "Review the full proof trail" ||
+    JSON.stringify(result.agentTraceCtaButtons.map((button) => button.label)) !==
+      JSON.stringify(agentTraceCtaLabels)
+  ) {
+    failures.push("Agent Trace Replay CTA");
+  }
+  const [traceResume, traceGithub, traceContact] = result.agentTraceCtaButtons;
+  if (
+    traceResume?.href !== resumeRelativePath ||
+    traceResume.target !== "_blank" ||
+    !traceResume.rel?.split(/\s+/).includes("noopener") ||
+    traceGithub?.href !== "https://github.com/Electricpaper77/ai-rag-eval-platform" ||
+    traceGithub.target !== "_blank" ||
+    traceContact?.href !== "#contact"
+  ) {
+    failures.push("Agent Trace Replay CTA routes");
+  }
 }
 
 function assertRecruiterConversion(result, failures) {

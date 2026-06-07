@@ -502,6 +502,146 @@ h2 {
   text-underline-offset: 3px;
 }
 
+.employer-proof-path {
+  position: sticky;
+  top: 186px;
+  z-index: 42;
+  width: 100%;
+  border-block: 1px solid rgba(189, 202, 221, 0.82);
+  background: rgba(247, 248, 244, 0.96);
+  box-shadow: 0 10px 24px rgba(16, 35, 63, 0.07);
+  backdrop-filter: blur(16px);
+}
+
+.employer-proof-path-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: min(var(--content-max), calc(100% - 40px));
+  min-height: 44px;
+  margin: 0 auto;
+  overflow-x: auto;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.2;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+
+.employer-proof-path-inner::-webkit-scrollbar {
+  display: none;
+}
+
+.employer-proof-path strong {
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.employer-proof-path a {
+  color: var(--teal);
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.employer-proof-path a:hover,
+.employer-proof-path a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.recruiter-quick-review {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(330px, 0.82fr);
+  gap: 14px;
+  padding: 34px 0 0;
+}
+
+.recruiter-review-card,
+.recruiter-bullet-card {
+  min-width: 0;
+  padding: clamp(22px, 3vw, 30px);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 12px 30px rgba(16, 35, 63, 0.065);
+}
+
+.recruiter-review-card h2,
+.recruiter-bullet-card h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.35rem, 2.2vw, 1.8rem);
+  line-height: 1.2;
+}
+
+.recruiter-review-card dl {
+  display: grid;
+  gap: 0;
+  margin: 20px 0 0;
+}
+
+.recruiter-review-card dl > div {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 14px;
+  padding: 11px 0;
+  border-top: 1px solid var(--line);
+}
+
+.recruiter-review-card dt,
+.recruiter-review-card dd {
+  margin: 0;
+}
+
+.recruiter-review-card dt {
+  color: var(--teal);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.recruiter-review-card dd {
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 720;
+  line-height: 1.5;
+}
+
+.recruiter-bullet-card {
+  display: flex;
+  flex-direction: column;
+  border-color: rgba(15, 139, 141, 0.25);
+  background:
+    linear-gradient(145deg, rgba(220, 235, 255, 0.62), rgba(221, 246, 232, 0.54)),
+    var(--surface);
+}
+
+.recruiter-bullet-card > p:not(.eyebrow) {
+  margin: 16px 0 22px;
+  color: var(--ink);
+  font-size: 0.94rem;
+  line-height: 1.65;
+}
+
+.recruiter-bullet-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.recruiter-bullet-copy-button {
+  min-width: 130px;
+}
+
+.recruiter-bullet-action [role="status"] {
+  min-width: 48px;
+  color: var(--teal);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
 .hero-panel {
   overflow: hidden;
   border: 1px solid var(--line);
@@ -2625,6 +2765,30 @@ code {
   line-height: 1.6;
 }
 
+.agent-replay-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 16px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 10px 26px rgba(16, 35, 63, 0.055);
+}
+
+.agent-replay-cta h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.2rem;
+}
+
+.agent-replay-actions {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+}
+
 .executive-proof {
   padding: var(--section-space) 0 0;
 }
@@ -3283,6 +3447,55 @@ dt:first-of-type {
   line-height: 1.5;
 }
 
+.employer-value-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1.58fr);
+  gap: 28px;
+  margin-top: 18px;
+  padding: clamp(22px, 3vw, 30px);
+  border: 1px solid rgba(15, 139, 141, 0.2);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(220, 235, 255, 0.76), rgba(221, 246, 232, 0.7)),
+    var(--surface);
+  box-shadow: 0 12px 28px rgba(31, 49, 70, 0.06);
+}
+
+.employer-value-card h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.24rem, 2vw, 1.5rem);
+  line-height: 1.25;
+}
+
+.employer-value-card ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.employer-value-card li {
+  position: relative;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.employer-value-card li::before {
+  position: absolute;
+  top: 0.62em;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--teal);
+  content: "";
+}
+
 .artifact-card > span {
   color: var(--teal);
   font-size: 0.75rem;
@@ -3814,6 +4027,15 @@ blockquote {
 }
 
 @media (max-width: 920px) {
+  .employer-proof-path {
+    top: 176px;
+  }
+
+  .recruiter-quick-review,
+  .employer-value-card {
+    grid-template-columns: 1fr;
+  }
+
   .agent-replay-layout {
     grid-template-columns: 1fr;
   }
@@ -4049,6 +4271,40 @@ blockquote {
   .recruiter-copy-status {
     min-width: 38px;
     font-size: 0.66rem;
+  }
+
+  .employer-proof-path {
+    top: 154px;
+  }
+
+  .employer-proof-path-inner {
+    justify-content: flex-start;
+    width: min(100% - 28px, var(--content-max));
+    min-height: 40px;
+    font-size: 0.7rem;
+  }
+
+  .recruiter-quick-review {
+    padding-top: 24px;
+  }
+
+  .recruiter-review-card,
+  .recruiter-bullet-card {
+    padding: 20px;
+  }
+
+  .recruiter-review-card dl > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .recruiter-bullet-action {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recruiter-bullet-copy-button {
+    width: 100%;
   }
 
   [id] {
@@ -4599,6 +4855,21 @@ blockquote {
 
   .agent-replay-console-heading > span {
     display: none;
+  }
+
+  .agent-replay-cta {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .agent-replay-actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .employer-value-card ul {
+    grid-template-columns: 1fr;
   }
 
   .demo-workflow {
