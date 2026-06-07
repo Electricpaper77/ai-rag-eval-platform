@@ -474,12 +474,51 @@ h2 {
   box-shadow: 0 8px 18px rgba(35, 87, 198, 0.12);
 }
 
+.hero-review-path {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 8px;
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.hero-review-path > span:first-child {
+  color: var(--ink);
+  font-weight: 850;
+}
+
+.hero-review-path a {
+  color: var(--teal);
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.hero-review-path a:hover,
+.hero-review-path a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .hero-panel {
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+
+.hero-proof-summary {
+  margin: 0;
+  padding: 18px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(145deg, rgba(221, 246, 232, 0.82), rgba(220, 235, 255, 0.72));
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 750;
+  line-height: 1.55;
 }
 
 .recruiter-action-panel {
@@ -3976,6 +4015,21 @@ blockquote {
     min-width: 0;
     padding-inline: 9px;
     font-size: 0.79rem;
+  }
+
+  .hero-review-path {
+    gap: 4px 6px;
+    margin-top: 13px;
+    font-size: 0.7rem;
+  }
+
+  .hero-review-path > span:first-child {
+    width: 100%;
+  }
+
+  .hero-proof-summary {
+    padding: 15px;
+    font-size: 0.8rem;
   }
 
   .recruiter-action-panel {

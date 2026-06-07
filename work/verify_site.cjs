@@ -16,10 +16,14 @@ const strongestResumeBullet =
   "Built a FastAPI-based agent reliability and LLM evaluation platform with JSONL audit artifacts, Prometheus metrics, replay validation, governance workflows, and automated regression testing; achieved 87% eval pass rate, 43 req/sec throughput, p95 270ms latency, 99%+ workflow success, and reduced hallucination rate from 18% to 6%.";
 const recruiterConversionLabels = [
   "Download Resume",
-  "View GitHub",
   "Copy Resume Bullet",
   "Contact",
 ];
+const headerActionLabels = ["Download Resume", "View GitHub"];
+const heroActionLabels = ["View GitHub", "Download Resume", "See Proof Artifacts"];
+const reviewPathLabels = ["Resume", "Proof Artifacts", "Live Eval Console", "Contact"];
+const proofSummary =
+  "Built to demonstrate production-readiness for GenAI systems: deterministic eval fixtures, JSONL audit logs, guardrails, regression checks, and measurable RAG reliability metrics.";
 const recruiterActionSubtitle =
   "For AI Solutions Engineer, LLM Evaluation, Forward Deployed AI, and Applied GenAI roles.";
 const recruiterActionTitles = [
@@ -45,6 +49,7 @@ const staleDemoStrings = [
   "Unsafe " + "Request",
   "Select a sample " + "AI output",
   "Fixed sample scenarios " + "demonstrate",
+  "AI RAG " + "Eval Site",
 ];
 const viewports = [
   { name: "mobile-375", width: 375, height: 812 },
@@ -102,7 +107,7 @@ async function inspectViewport(browser, viewport) {
   const state = await page.evaluate(() => {
     const ctaLabels = [
       "View GitHub",
-      "View Proof Artifacts",
+      "See Proof Artifacts",
       "Contact Me",
       "LinkedIn",
       "Email",
@@ -155,6 +160,49 @@ async function inspectViewport(browser, viewport) {
         document.getElementById("resume-strongest-bullet")?.textContent
           .replace(/\s+/g, " ")
           .trim() ?? "",
+      headerActions: Array.from(document.querySelectorAll(".header-actions .button")).map(
+        (element) => ({
+          label: element.textContent.trim(),
+          href: element.getAttribute("href"),
+          target: element.getAttribute("target"),
+          rel: element.getAttribute("rel"),
+        }),
+      ),
+      heroActions: Array.from(document.querySelectorAll(".hero-actions .button")).map(
+        (element) => ({
+          label: element.textContent.trim(),
+          href: element.getAttribute("href"),
+          target: element.getAttribute("target"),
+          rel: element.getAttribute("rel"),
+        }),
+      ),
+      reviewPathText:
+        document.querySelector(".hero-review-path")?.textContent.replace(/\s+/g, " ").trim() ?? "",
+      reviewPathLinks: Array.from(document.querySelectorAll(".hero-review-path a")).map(
+        (element) => ({
+          label: element.textContent.trim(),
+          href: element.getAttribute("href"),
+          target: element.getAttribute("target"),
+          rel: element.getAttribute("rel"),
+        }),
+      ),
+      hiringSnapshot:
+        document.querySelector(".hero-panel")?.getAttribute("aria-label") === "Hiring Snapshot" &&
+        document.querySelector(".hero-panel .panel-kicker")?.textContent.trim() ===
+          "Hiring Snapshot",
+      validationSnapshotAbsent: !document.body.textContent
+        .toLowerCase()
+        .includes("validation snapshot"),
+      proofSummary:
+        document.querySelector(".hero-proof-summary")?.textContent.replace(/\s+/g, " ").trim() ??
+        "",
+      topFoldQuestionsAnswered: {
+        what: Boolean(document.querySelector("h1")),
+        role: Boolean(document.querySelector(".hero-panel .validation-list")),
+        resume: Boolean(document.querySelector(".hero-actions a[href$='_Resume.pdf']")),
+        proof: Boolean(document.querySelector(".hero-actions a[href='#proof']")),
+        contact: Boolean(document.querySelector(".hero-review-path a[href='#contact']")),
+      },
       recruiterActionCount: document.querySelectorAll("#recruiter-action-panel").length,
       recruiterActionEyebrow:
         document.querySelector("#recruiter-action-panel .eyebrow")?.textContent.trim() ?? "",
@@ -520,6 +568,49 @@ async function inspectDeploymentViewport(browser, viewport) {
         document.getElementById("resume-strongest-bullet")?.textContent
           .replace(/\s+/g, " ")
           .trim() ?? "",
+      headerActions: Array.from(document.querySelectorAll(".header-actions .button")).map(
+        (element) => ({
+          label: element.textContent.trim(),
+          href: element.getAttribute("href"),
+          target: element.getAttribute("target"),
+          rel: element.getAttribute("rel"),
+        }),
+      ),
+      heroActions: Array.from(document.querySelectorAll(".hero-actions .button")).map(
+        (element) => ({
+          label: element.textContent.trim(),
+          href: element.getAttribute("href"),
+          target: element.getAttribute("target"),
+          rel: element.getAttribute("rel"),
+        }),
+      ),
+      reviewPathText:
+        document.querySelector(".hero-review-path")?.textContent.replace(/\s+/g, " ").trim() ?? "",
+      reviewPathLinks: Array.from(document.querySelectorAll(".hero-review-path a")).map(
+        (element) => ({
+          label: element.textContent.trim(),
+          href: element.getAttribute("href"),
+          target: element.getAttribute("target"),
+          rel: element.getAttribute("rel"),
+        }),
+      ),
+      hiringSnapshot:
+        document.querySelector(".hero-panel")?.getAttribute("aria-label") === "Hiring Snapshot" &&
+        document.querySelector(".hero-panel .panel-kicker")?.textContent.trim() ===
+          "Hiring Snapshot",
+      validationSnapshotAbsent: !document.body.textContent
+        .toLowerCase()
+        .includes("validation snapshot"),
+      proofSummary:
+        document.querySelector(".hero-proof-summary")?.textContent.replace(/\s+/g, " ").trim() ??
+        "",
+      topFoldQuestionsAnswered: {
+        what: Boolean(document.querySelector("h1")),
+        role: Boolean(document.querySelector(".hero-panel .validation-list")),
+        resume: Boolean(document.querySelector(".hero-actions a[href$='_Resume.pdf']")),
+        proof: Boolean(document.querySelector(".hero-actions a[href='#proof']")),
+        contact: Boolean(document.querySelector(".hero-review-path a[href='#contact']")),
+      },
       recruiterActionCount: document.querySelectorAll("#recruiter-action-panel").length,
       recruiterActionEyebrow:
         document.querySelector("#recruiter-action-panel .eyebrow")?.textContent.trim() ?? "",
@@ -632,6 +723,7 @@ async function inspectDeploymentViewport(browser, viewport) {
         ["Unsafe", "Request"].join(" "),
         ["Select a sample", "AI output"].join(" "),
         ["Fixed sample scenarios", "demonstrate"].join(" "),
+        ["AI RAG", "Eval Site"].join(" "),
       ].some((label) => document.body.textContent.includes(label)),
       demoNavTargetsConsole:
         document.querySelector(".nav-links a[href='#live-eval-console']")?.textContent.trim() ===
@@ -707,6 +799,7 @@ async function inspectDeploymentViewport(browser, viewport) {
 function assertResult(result) {
   const failures = [];
   if (result.scrollWidth !== result.clientWidth) failures.push("horizontal overflow");
+  assertTopConversionFlow(result, failures);
   assertRecruiterConversion(result, failures);
   assertRecruiterActionPanel(result, failures);
   if (result.proofMetrics !== 5) failures.push("proof metric count");
@@ -896,6 +989,7 @@ function assertResult(result) {
 function assertDeploymentResult(result) {
   const failures = [];
   if (result.scrollWidth !== result.clientWidth) failures.push("horizontal overflow");
+  assertTopConversionFlow(result, failures);
   assertRecruiterConversion(result, failures);
   assertRecruiterActionPanel(result, failures);
   if (!result.platformNameExists) failures.push("platform naming");
@@ -952,19 +1046,13 @@ function assertRecruiterConversion(result, failures) {
     failures.push("recruiter conversion buttons");
   }
 
-  const [resume, github, copy, contact] = result.recruiterConversionButtons;
+  const [resume, copy, contact] = result.recruiterConversionButtons;
   if (
     resume?.href !== resumeRelativePath ||
     resume.target !== "_blank" ||
     !resume.rel?.split(/\s+/).includes("noopener")
   ) {
     failures.push("recruiter resume route");
-  }
-  if (
-    github?.href !== "https://github.com/Electricpaper77/ai-rag-eval-platform" ||
-    github.target !== "_blank"
-  ) {
-    failures.push("recruiter GitHub route");
   }
   if (copy?.tagName !== "BUTTON" || copy.href !== null) {
     failures.push("recruiter copy button");
@@ -978,6 +1066,71 @@ function assertRecruiterConversion(result, failures) {
   }
   if (result.recruiterCopyStatus !== "Copied") {
     failures.push("recruiter copy behavior");
+  }
+}
+
+function assertTopConversionFlow(result, failures) {
+  if (
+    JSON.stringify(result.headerActions.map((action) => action.label)) !==
+    JSON.stringify(headerActionLabels)
+  ) {
+    failures.push("header action hierarchy");
+  }
+  const [headerResume, headerGithub] = result.headerActions;
+  if (
+    headerResume?.href !== resumeRelativePath ||
+    headerResume.target !== "_blank" ||
+    !headerResume.rel?.split(/\s+/).includes("noopener")
+  ) {
+    failures.push("header resume route");
+  }
+  if (
+    headerGithub?.href !== "https://github.com/Electricpaper77/ai-rag-eval-platform" ||
+    headerGithub.target !== "_blank"
+  ) {
+    failures.push("header GitHub route");
+  }
+
+  if (
+    JSON.stringify(result.heroActions.map((action) => action.label)) !==
+    JSON.stringify(heroActionLabels)
+  ) {
+    failures.push("hero action hierarchy");
+  }
+  const [heroGithub, heroResume, heroProof] = result.heroActions;
+  if (
+    heroGithub?.href !== "https://github.com/Electricpaper77/ai-rag-eval-platform" ||
+    heroResume?.href !== resumeRelativePath ||
+    heroProof?.href !== "#proof"
+  ) {
+    failures.push("hero action routes");
+  }
+
+  if (
+    result.reviewPathText !==
+      "Recommended review path: Resume → Proof Artifacts → Live Eval Console → Contact" ||
+    JSON.stringify(result.reviewPathLinks.map((link) => link.label)) !==
+      JSON.stringify(reviewPathLabels)
+  ) {
+    failures.push("review path");
+  }
+  const [reviewResume, reviewProof, reviewDemo, reviewContact] = result.reviewPathLinks;
+  if (
+    reviewResume?.href !== resumeRelativePath ||
+    reviewResume.target !== "_blank" ||
+    !reviewResume.rel?.split(/\s+/).includes("noopener") ||
+    reviewProof?.href !== "#proof" ||
+    reviewDemo?.href !== "#live-eval-console" ||
+    reviewContact?.href !== "#contact"
+  ) {
+    failures.push("review path routes");
+  }
+  if (!result.hiringSnapshot || !result.validationSnapshotAbsent) {
+    failures.push("hiring snapshot naming");
+  }
+  if (result.proofSummary !== proofSummary) failures.push("hero proof summary");
+  if (!Object.values(result.topFoldQuestionsAnswered).every(Boolean)) {
+    failures.push("top fold hiring questions");
   }
 }
 
