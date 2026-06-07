@@ -60,8 +60,19 @@ async function inspectViewport(browser, viewport) {
       ).length,
       workflowCards: document.querySelectorAll("#architecture .pipeline > li").length,
       liveConsoleExists:
-        document.querySelector("#live-eval-simulator h2")?.textContent.trim() ===
+        document.querySelector("#live-eval-console h2")?.textContent.trim() ===
         "Live Eval Console",
+      liveEvalSimulatorAbsent: !document.body.textContent.includes("Live Eval Simulator"),
+      liveConsoleSubtitle:
+        document.querySelector("#live-eval-console .section-note")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ===
+        "Select a reliability scenario and inspect the gates used before releasing a GenAI workflow to production.",
+      liveConsoleDisclosure:
+        document.querySelector("#live-eval-console .simulator-disclosure")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ===
+        "Static demo data mirrors deterministic repository fixtures and JSONL proof artifacts; this browser demo is not connected to a backend.",
       liveConsoleHeadingCount: Array.from(document.querySelectorAll("h2")).filter(
         (heading) => heading.textContent.trim() === "Live Eval Console",
       ).length,
@@ -69,8 +80,12 @@ async function inspectViewport(browser, viewport) {
         document.querySelector("#eval-trace-title")?.textContent.trim() ===
         "Eval Trace Timeline",
       liveConsoleButtons: Array.from(
-        document.querySelectorAll("#live-eval-simulator .simulator-tab"),
+        document.querySelectorAll("#live-eval-console .simulator-tab"),
       ).map((button) => button.textContent.trim()),
+      platformNameExists: document.body.textContent.includes("AI Agent Reliability Platform"),
+      demoNavTargetsConsole:
+        document.querySelector(".nav-links a[href='#live-eval-console']")?.textContent.trim() ===
+        "Demo",
       liveConsoleJsonlPreviewExists: Boolean(document.getElementById("simulator-json")),
       executiveProofExists:
         document.querySelector("#executive-proof h2")?.textContent.trim() ===
@@ -89,7 +104,7 @@ async function inspectViewport(browser, viewport) {
         "Copy Project Pitch",
       applicationPackageExists:
         document.querySelector("#application-package")?.getAttribute("aria-label") ===
-        "Application Package Mode",
+        "Application Package",
       applicationPackageCards: document.querySelectorAll(
         "#application-package .application-package-card",
       ).length,
@@ -169,6 +184,12 @@ async function inspectViewport(browser, viewport) {
 
   await page.locator(".hero-actions a[href='#proof']").click();
   const proofAnchorWorks = new URL(page.url()).hash === "#proof";
+  await page.locator(".nav-links a[href='#live-eval-console']").evaluate((anchor) => anchor.click());
+  const demoAnchorWorks = new URL(page.url()).hash === "#live-eval-console";
+  const demoAnchorLandsOnConsole = await page.locator("#live-eval-console h2").evaluate((heading) => {
+    const rect = heading.getBoundingClientRect();
+    return rect.top >= 0 && rect.top < window.innerHeight;
+  });
   await page.locator("a[href='#walkthrough']").last().click();
   const walkthroughAnchorWorks = new URL(page.url()).hash === "#walkthrough";
   const liveConsoleRuns = [];
@@ -213,6 +234,8 @@ async function inspectViewport(browser, viewport) {
     viewport: viewport.name,
     ...state,
     proofAnchorWorks,
+    demoAnchorWorks,
+    demoAnchorLandsOnConsole,
     walkthroughAnchorWorks,
     liveConsoleRuns,
     projectPitchCopyStatus,
@@ -230,7 +253,12 @@ function assertResult(result) {
   }
   if (result.workflowCards !== 4) failures.push("workflow card count");
   if (!result.liveConsoleExists) failures.push("live console section");
+  if (!result.liveEvalSimulatorAbsent) failures.push("retired live eval simulator naming");
+  if (!result.liveConsoleSubtitle) failures.push("live console subtitle");
+  if (!result.liveConsoleDisclosure) failures.push("live console disclosure");
   if (result.liveConsoleHeadingCount !== 1) failures.push("single live console heading");
+  if (!result.platformNameExists) failures.push("platform naming");
+  if (!result.demoNavTargetsConsole) failures.push("demo navigation target");
   if (!result.evalTraceExists) failures.push("eval trace timeline");
   if (
     JSON.stringify(result.liveConsoleButtons) !==
@@ -314,7 +342,10 @@ function assertResult(result) {
     failures.push("live console scenario switching");
   }
   if (!Object.values(result.aboveFold).every(Boolean)) failures.push("above-fold content");
-  if (!result.proofAnchorWorks || !result.walkthroughAnchorWorks) failures.push("anchor routing");
+  if (!result.proofAnchorWorks || !result.demoAnchorWorks || !result.walkthroughAnchorWorks) {
+    failures.push("anchor routing");
+  }
+  if (!result.demoAnchorLandsOnConsole) failures.push("demo anchor position");
   if (result.consoleErrors.length) failures.push("console errors");
 
   for (const [label, routes] of Object.entries(result.ctaRoutes)) {

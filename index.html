@@ -18,7 +18,7 @@
       </a>
       <nav class="nav-links" aria-label="Recruiter navigation">
         <a href="#metrics">Metrics</a>
-        <a href="#demo">Demo</a>
+        <a href="#live-eval-console">Demo</a>
         <a href="#proof">Proof</a>
         <a href="#case-study">Case Study</a>
         <a href="#contact">Contact</a>
@@ -119,8 +119,8 @@
         </aside>
       </section>
 
-      <!-- Retired duplicate console markup; the upgraded simulator below is the only rendered console.
-      <section id="live-eval-console" class="section-shell live-eval-console">
+      <!-- Retired duplicate console markup; the active console below is the only rendered console.
+      <section id="retired-live-eval-console" class="section-shell live-eval-console">
         <div class="live-console-heading">
           <div>
             <p class="eyebrow">Interactive Reliability Demo</p>
@@ -659,16 +659,17 @@
         </div>
       </section>
 
-      <section id="live-eval-simulator" class="section-shell live-eval-simulator">
+      <section id="live-eval-console" class="section-shell live-eval-simulator">
         <div class="simulator-heading">
           <p class="eyebrow">SIMULATED PRODUCT DEMO</p>
           <h2>Live Eval Console</h2>
           <p class="section-note">
-            Select a reliability scenario and inspect the gates I would use before releasing a
-            GenAI workflow to production.
+            Select a reliability scenario and inspect the gates used before releasing a GenAI
+            workflow to production.
           </p>
           <p class="simulator-disclosure">
-            Static demo mirrors deterministic repository fixtures.
+            Static demo data mirrors deterministic repository fixtures and JSONL proof artifacts;
+            this browser demo is not connected to a backend.
           </p>
         </div>
 
@@ -1163,7 +1164,7 @@
       <section
         id="application-package"
         class="section-shell application-package"
-        aria-label="Application Package Mode"
+        aria-label="Application Package"
       >
         <div class="application-package-heading">
           <div>
