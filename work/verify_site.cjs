@@ -1,14 +1,58 @@
+const fs = require("fs");
 const path = require("path");
+const { execFileSync } = require("child_process");
 const { pathToFileURL } = require("url");
 const { chromium } = require("playwright");
 
 const projectRoot = path.resolve(__dirname, "..");
 const siteUrl = pathToFileURL(path.join(projectRoot, "index.html")).href;
+const deploymentUrl = pathToFileURL(path.join(projectRoot, "frontend", "index.html")).href;
+const staleDemoStrings = [
+  "Live Eval " + "Simulator",
+  "Good " + "Answer",
+  "Missing " + "Citation",
+  "Unsafe " + "Request",
+  "Select a sample " + "AI output",
+  "Fixed sample scenarios " + "demonstrate",
+];
 const viewports = [
   { name: "mobile-375", width: 375, height: 812 },
   { name: "tablet-768", width: 768, height: 1024 },
   { name: "desktop-1440", width: 1440, height: 1000 },
 ];
+
+function findStaleTrackedStrings() {
+  const textExtensions = new Set([
+    ".cjs",
+    ".css",
+    ".html",
+    ".js",
+    ".json",
+    ".md",
+    ".py",
+    ".txt",
+    ".yaml",
+    ".yml",
+  ]);
+  const trackedFiles = execFileSync("git", ["ls-files"], {
+    cwd: projectRoot,
+    encoding: "utf8",
+  })
+    .split(/\r?\n/)
+    .filter(Boolean);
+  const matches = [];
+
+  for (const relativePath of trackedFiles) {
+    if (!textExtensions.has(path.extname(relativePath).toLowerCase())) continue;
+    const absolutePath = path.join(projectRoot, relativePath);
+    const content = fs.readFileSync(absolutePath, "utf8");
+    for (const staleString of staleDemoStrings) {
+      if (content.includes(staleString)) matches.push({ file: relativePath, staleString });
+    }
+  }
+
+  return matches;
+}
 
 async function inspectViewport(browser, viewport) {
   const page = await browser.newPage({
@@ -62,7 +106,9 @@ async function inspectViewport(browser, viewport) {
       liveConsoleExists:
         document.querySelector("#live-eval-console h2")?.textContent.trim() ===
         "Live Eval Console",
-      liveEvalSimulatorAbsent: !document.body.textContent.includes("Live Eval Simulator"),
+      liveEvalSimulatorAbsent: !document.body.textContent.includes(
+        ["Live Eval", "Simulator"].join(" "),
+      ),
       liveConsoleSubtitle:
         document.querySelector("#live-eval-console .section-note")?.textContent
           .replace(/\s+/g, " ")
@@ -244,6 +290,99 @@ async function inspectViewport(browser, viewport) {
   };
 }
 
+async function inspectDeploymentViewport(browser, viewport) {
+  const page = await browser.newPage({
+    viewport: { width: viewport.width, height: viewport.height },
+    deviceScaleFactor: 1,
+  });
+  const consoleErrors = [];
+
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  page.on("pageerror", (error) => consoleErrors.push(error.message));
+
+  await page.goto(deploymentUrl, { waitUntil: "load" });
+  const state = await page.evaluate(() => {
+    const ids = Array.from(document.querySelectorAll("[id]")).map((element) => element.id);
+    const duplicateIds = Array.from(new Set(ids.filter((id, index) => ids.indexOf(id) !== index)));
+    const localAnchors = Array.from(document.querySelectorAll("a[href^='#']"))
+      .map((anchor) => anchor.getAttribute("href").slice(1))
+      .filter(Boolean);
+    const missingLocalAnchors = Array.from(
+      new Set(localAnchors.filter((id) => !document.getElementById(id))),
+    );
+
+    return {
+      title: document.title,
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+      platformNameExists:
+        document.title === "AI Agent Reliability Platform" &&
+        document.querySelector("h1")?.textContent.trim() === "AI Agent Reliability Platform",
+      liveConsoleExists:
+        document.querySelector("#live-eval-console h2")?.textContent.trim() ===
+        "Live Eval Console",
+      liveConsoleButtons: Array.from(
+        document.querySelectorAll("#live-eval-console .simulator-tab"),
+      ).map((button) => button.textContent.trim()),
+      liveConsoleSubtitle:
+        document.querySelector("#live-eval-console .section-note")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ===
+        "Select a reliability scenario and inspect the gates used before releasing a GenAI workflow to production.",
+      liveConsoleDisclosure:
+        document.querySelector("#live-eval-console .simulator-disclosure")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ===
+        "Static demo data mirrors deterministic repository fixtures and JSONL proof artifacts; this browser demo is not connected to a backend.",
+      staleDemoStringsAbsent: ![
+        ["Live Eval", "Simulator"].join(" "),
+        ["Good", "Answer"].join(" "),
+        ["Missing", "Citation"].join(" "),
+        ["Unsafe", "Request"].join(" "),
+        ["Select a sample", "AI output"].join(" "),
+        ["Fixed sample scenarios", "demonstrate"].join(" "),
+      ].some((label) => document.body.textContent.includes(label)),
+      demoNavTargetsConsole:
+        document.querySelector(".nav-links a[href='#live-eval-console']")?.textContent.trim() ===
+        "Demo",
+      deploymentStylesLoaded: Array.from(document.styleSheets).some((sheet) =>
+        sheet.href?.endsWith("/frontend/styles.css"),
+      ),
+      duplicateIds,
+      missingLocalAnchors,
+    };
+  });
+
+  await page.locator(".nav-links a[href='#live-eval-console']").evaluate((anchor) => anchor.click());
+  const demoAnchorWorks = new URL(page.url()).hash === "#live-eval-console";
+  const demoAnchorLandsOnConsole = await page.locator("#live-eval-console h2").evaluate((heading) => {
+    const rect = heading.getBoundingClientRect();
+    return rect.top >= 0 && rect.top < window.innerHeight;
+  });
+  const scenarioRuns = [];
+  for (const scenario of ["good", "citation", "unsafe"]) {
+    const tab = page.locator(`[data-scenario='${scenario}']`);
+    await tab.click();
+    scenarioRuns.push({
+      scenario,
+      selected: (await tab.getAttribute("aria-selected")) === "true",
+      label: (await page.locator("#simulator-scenario-label").textContent())?.trim(),
+    });
+  }
+  await page.close();
+
+  return {
+    viewport: `deployment-${viewport.name}`,
+    ...state,
+    demoAnchorWorks,
+    demoAnchorLandsOnConsole,
+    scenarioRuns,
+    consoleErrors,
+  };
+}
+
 function assertResult(result) {
   const failures = [];
   if (result.scrollWidth !== result.clientWidth) failures.push("horizontal overflow");
@@ -357,7 +496,55 @@ function assertResult(result) {
   }
 }
 
+function assertDeploymentResult(result) {
+  const failures = [];
+  if (result.scrollWidth !== result.clientWidth) failures.push("horizontal overflow");
+  if (!result.platformNameExists) failures.push("platform naming");
+  if (!result.liveConsoleExists) failures.push("live console section");
+  if (
+    JSON.stringify(result.liveConsoleButtons) !==
+    JSON.stringify([
+      "RAG Citation Check",
+      "Citation Failure Case",
+      "Prompt Injection Defense",
+    ])
+  ) {
+    failures.push("live console scenario buttons");
+  }
+  if (!result.liveConsoleSubtitle) failures.push("live console subtitle");
+  if (!result.liveConsoleDisclosure) failures.push("live console disclosure");
+  if (!result.staleDemoStringsAbsent) failures.push("stale demo strings");
+  if (!result.demoNavTargetsConsole || !result.demoAnchorWorks || !result.demoAnchorLandsOnConsole) {
+    failures.push("demo navigation");
+  }
+  if (!result.deploymentStylesLoaded) failures.push("deployment stylesheet");
+  if (result.duplicateIds.length) failures.push("duplicate IDs");
+  if (result.missingLocalAnchors.length) failures.push("missing local anchors");
+  if (
+    result.scenarioRuns.length !== 3 ||
+    result.scenarioRuns.some((run) => !run.selected) ||
+    JSON.stringify(result.scenarioRuns.map((run) => run.label)) !==
+      JSON.stringify([
+        "RAG Citation Check",
+        "Citation Failure Case",
+        "Prompt Injection Defense",
+      ])
+  ) {
+    failures.push("scenario switching");
+  }
+  if (result.consoleErrors.length) failures.push("console errors");
+
+  if (failures.length) {
+    throw new Error(`${result.viewport} failed: ${failures.join(", ")}`);
+  }
+}
+
 (async () => {
+  const staleTrackedStrings = findStaleTrackedStrings();
+  if (staleTrackedStrings.length) {
+    throw new Error(`stale tracked demo strings: ${JSON.stringify(staleTrackedStrings)}`);
+  }
+
   const launchOptions = { headless: true };
   if (process.env.BROWSER_PATH) launchOptions.executablePath = process.env.BROWSER_PATH;
   if (process.env.PLAYWRIGHT_CHANNEL) launchOptions.channel = process.env.PLAYWRIGHT_CHANNEL;
@@ -369,6 +556,10 @@ function assertResult(result) {
     const result = await inspectViewport(browser, viewport);
     assertResult(result);
     results.push(result);
+
+    const deploymentResult = await inspectDeploymentViewport(browser, viewport);
+    assertDeploymentResult(deploymentResult);
+    results.push(deploymentResult);
   }
 
   await browser.close();
