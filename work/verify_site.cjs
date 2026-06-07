@@ -68,8 +68,15 @@ const agentTraceStepTitles = [
   "JSONL audit export",
 ];
 const employerProofPathText =
-  "Employer proof path: Resume \u2192 GitHub \u2192 Live Eval \u2192 Trace Replay \u2192 Contact";
-const employerProofPathLabels = ["Resume", "GitHub", "Live Eval", "Trace Replay", "Contact"];
+  "Employer proof path: Resume \u2192 GitHub \u2192 Live Eval \u2192 Agent Flow \u2192 Trace Replay \u2192 Contact";
+const employerProofPathLabels = [
+  "Resume",
+  "GitHub",
+  "Live Eval",
+  "Agent Flow",
+  "Trace Replay",
+  "Contact",
+];
 const recruiterReviewRows = [
   ["Role fit", "AI Solutions Engineer / LLM Evaluation / Applied GenAI"],
   ["Proof", "GitHub repo, resume PDF, JSONL logs, eval dashboard, trace replay"],
@@ -88,6 +95,29 @@ const employerValueBullets = [
   "Maps directly to AI Solutions Engineer, Forward Deployed Engineer, LLM Evaluation, and Applied GenAI roles.",
 ];
 const agentTraceCtaLabels = ["Download Resume", "View GitHub", "Contact"];
+const agentFlowStepLabels = [
+  "User prompt",
+  "RAG retrieval",
+  "Guardrail scan",
+  "Evaluation harness",
+  "JSONL + trace replay",
+];
+const agentFlowStepStatuses = [
+  "Input received",
+  "Context prepared",
+  "Safe to answer",
+  "Eval passed",
+  "Proof ready",
+];
+const agentFlowProductionBullets = [
+  "Makes AI behavior inspectable instead of subjective.",
+  "Converts prompt testing into repeatable eval evidence.",
+  "Helps teams debug failed RAG answers, unsafe outputs, and citation gaps.",
+  "Creates proof artifacts hiring managers can verify in GitHub, screenshots, and live demos.",
+];
+const agentFlowResumeBullet =
+  "Built an agentic AI reliability workflow that evaluates RAG outputs from prompt intake through retrieval, guardrail scanning, LLM scoring, JSONL audit logging, and trace replay, producing inspectable proof artifacts for hallucination risk, citation precision, PII handling, and regression safety.";
+const agentFlowCtaLabels = ["View GitHub", "Download Resume", "Jump to Trace Replay"];
 
 function findStaleTrackedStrings() {
   const textExtensions = new Set([
@@ -398,6 +428,55 @@ async function inspectViewport(browser, viewport) {
         document.querySelector(".nav-links a[href='#live-eval-console']")?.textContent.trim() ===
         "Demo",
       liveConsoleJsonlPreviewExists: Boolean(document.getElementById("simulator-json")),
+      agentFlowExists:
+        document.querySelector("#agent-flow .eyebrow")?.textContent.trim() ===
+          "AGENTIC RELIABILITY FLOW" &&
+        document.getElementById("agent-flow-title")?.textContent.trim() ===
+          "From prompt to proof: how the agent run is evaluated",
+      agentFlowSubtitle:
+        document.querySelector("#agent-flow .agent-flow-heading .section-note")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      agentFlowStepLabels: Array.from(
+        document.querySelectorAll("#agent-flow .agent-flow-step-copy strong"),
+      ).map((element) => element.textContent.trim()),
+      agentFlowStepStatuses: Array.from(
+        document.querySelectorAll("#agent-flow .agent-flow-status"),
+      ).map((element) => element.textContent.trim()),
+      agentFlowButtonsAccessible: Array.from(
+        document.querySelectorAll("#agent-flow .agent-flow-step"),
+      ).every(
+        (button) =>
+          button.tagName === "BUTTON" &&
+          button.getAttribute("type") === "button" &&
+          button.getAttribute("aria-controls") === "agent-flow-detail" &&
+          button.hasAttribute("aria-pressed"),
+      ),
+      agentFlowDefaultStep:
+        document.querySelector("#agent-flow .agent-flow-step.is-active")?.dataset.agentFlowStep ??
+        "",
+      agentFlowProductionTitle:
+        document.getElementById("agent-flow-production-title")?.textContent.trim() ?? "",
+      agentFlowProductionBullets: Array.from(
+        document.querySelectorAll("#agent-flow .agent-flow-production li"),
+      ).map((element) => element.textContent.replace(/\s+/g, " ").trim()),
+      agentFlowResumeTitle:
+        document.getElementById("agent-flow-resume-title")?.textContent.trim() ?? "",
+      agentFlowResumeBullet:
+        document.getElementById("agent-flow-resume-bullet")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      agentFlowCtaButtons: Array.from(
+        document.querySelectorAll("#agent-flow .agent-flow-actions .button"),
+      ).map((element) => ({
+        label: element.textContent.trim(),
+        href: element.getAttribute("href"),
+        target: element.getAttribute("target"),
+        rel: element.getAttribute("rel"),
+      })),
+      agentFlowPlacement:
+        document.getElementById("live-eval-console")?.nextElementSibling?.id === "agent-flow" &&
+        document.getElementById("agent-flow")?.nextElementSibling?.id === "agent-trace-replay",
       agentTraceReplayExists:
         document.querySelector("#agent-trace-replay .eyebrow")?.textContent.trim() ===
           "AGENT TRACE REPLAY" &&
@@ -425,10 +504,12 @@ async function inspectViewport(browser, viewport) {
       })),
       agentTracePlacement: (() => {
         const liveConsole = document.getElementById("live-eval-console");
+        const agentFlow = document.getElementById("agent-flow");
         const agentTrace = document.getElementById("agent-trace-replay");
         const proofIntegrity = document.getElementById("proof-integrity");
         return Boolean(
-          liveConsole?.nextElementSibling === agentTrace &&
+          liveConsole?.nextElementSibling === agentFlow &&
+            agentFlow?.nextElementSibling === agentTrace &&
             agentTrace &&
             proofIntegrity &&
             agentTrace.compareDocumentPosition(proofIntegrity) &
@@ -546,6 +627,14 @@ async function inspectViewport(browser, viewport) {
     const rect = heading.getBoundingClientRect();
     return rect.top >= 0 && rect.top < window.innerHeight;
   });
+  await page
+    .locator(".employer-proof-path a[href='#agent-flow']")
+    .evaluate((anchor) => anchor.click());
+  const agentFlowAnchorWorks = new URL(page.url()).hash === "#agent-flow";
+  const agentFlowAnchorLandsOnSection = await page.locator("#agent-flow h2").evaluate((heading) => {
+    const rect = heading.getBoundingClientRect();
+    return rect.top >= 0 && rect.top < window.innerHeight;
+  });
   await page.locator("a[href='#walkthrough']").last().click();
   const walkthroughAnchorWorks = new URL(page.url()).hash === "#walkthrough";
   const liveConsoleRuns = [];
@@ -562,6 +651,34 @@ async function inspectViewport(browser, viewport) {
       traceBadges: await page.locator("#simulator-trace .trace-badge").count(),
     });
   }
+  const agentFlowRuns = [];
+  for (const stage of ["prompt", "retrieval", "guardrail", "evaluation", "proof"]) {
+    const button = page.locator(`[data-agent-flow-step='${stage}']`);
+    await button.click();
+    agentFlowRuns.push({
+      stage,
+      pressed: (await button.getAttribute("aria-pressed")) === "true",
+      title: (await page.locator("#agent-flow-detail-title").textContent())?.trim(),
+      status: (await page.locator("#agent-flow-detail-status").textContent())?.trim(),
+      metrics: await page
+        .locator("#agent-flow-detail-metrics > div")
+        .evaluateAll((rows) =>
+          rows.map((row) => [
+            row.querySelector("dt")?.textContent.trim(),
+            row.querySelector("dd")?.textContent.trim(),
+          ]),
+        ),
+      json: await page.locator("#agent-flow-json").textContent(),
+      hiring: (await page.locator("#agent-flow-hiring-relevance").textContent())
+        ?.replace(/\s+/g, " ")
+        .trim(),
+    });
+  }
+  await page.locator("[data-agent-flow-step='prompt']").focus();
+  await page.locator("[data-agent-flow-step='prompt']").press("End");
+  const agentFlowKeyboardWorks =
+    (await page.locator("[data-agent-flow-step='proof']").getAttribute("aria-pressed")) === "true" &&
+    (await page.evaluate(() => document.activeElement?.dataset.agentFlowStep)) === "proof";
   await page.locator("#copy-project-pitch").click();
   await page.waitForFunction(
     () => document.getElementById("project-pitch-status")?.textContent.trim() === "Copied",
@@ -613,6 +730,13 @@ async function inspectViewport(browser, viewport) {
   const recruiterBulletCopyStatus = (
     await page.locator("#recruiter-bullet-copy-status").textContent()
   )?.trim();
+  await page.locator(".agent-flow-copy-button").click();
+  await page.waitForFunction(
+    () => document.getElementById("agent-flow-copy-status")?.textContent.trim() === "Copied",
+  );
+  const agentFlowCopyStatus = (
+    await page.locator("#agent-flow-copy-status").textContent()
+  )?.trim();
   await page.locator(".hiring-summary-copy-button").click();
   await page.waitForFunction(
     () => document.getElementById("hiring-summary-copy-status")?.textContent.trim() === "Copied",
@@ -628,13 +752,18 @@ async function inspectViewport(browser, viewport) {
     proofAnchorWorks,
     demoAnchorWorks,
     demoAnchorLandsOnConsole,
+    agentFlowAnchorWorks,
+    agentFlowAnchorLandsOnSection,
     walkthroughAnchorWorks,
     liveConsoleRuns,
+    agentFlowRuns,
+    agentFlowKeyboardWorks,
     projectPitchCopyStatus,
     applicationCopyRuns,
     resumeCopyRuns,
     recruiterCopyStatus,
     recruiterBulletCopyStatus,
+    agentFlowCopyStatus,
     hiringSummaryCopyStatus,
     consoleErrors,
   };
@@ -883,6 +1012,55 @@ async function inspectDeploymentViewport(browser, viewport) {
           .replace(/\s+/g, " ")
           .trim() ===
         "Static demo data mirrors deterministic repository fixtures and JSONL proof artifacts; this browser demo is not connected to a backend.",
+      agentFlowExists:
+        document.querySelector("#agent-flow .eyebrow")?.textContent.trim() ===
+          "AGENTIC RELIABILITY FLOW" &&
+        document.getElementById("agent-flow-title")?.textContent.trim() ===
+          "From prompt to proof: how the agent run is evaluated",
+      agentFlowSubtitle:
+        document.querySelector("#agent-flow .agent-flow-heading .section-note")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      agentFlowStepLabels: Array.from(
+        document.querySelectorAll("#agent-flow .agent-flow-step-copy strong"),
+      ).map((element) => element.textContent.trim()),
+      agentFlowStepStatuses: Array.from(
+        document.querySelectorAll("#agent-flow .agent-flow-status"),
+      ).map((element) => element.textContent.trim()),
+      agentFlowButtonsAccessible: Array.from(
+        document.querySelectorAll("#agent-flow .agent-flow-step"),
+      ).every(
+        (button) =>
+          button.tagName === "BUTTON" &&
+          button.getAttribute("type") === "button" &&
+          button.getAttribute("aria-controls") === "agent-flow-detail" &&
+          button.hasAttribute("aria-pressed"),
+      ),
+      agentFlowDefaultStep:
+        document.querySelector("#agent-flow .agent-flow-step.is-active")?.dataset.agentFlowStep ??
+        "",
+      agentFlowProductionTitle:
+        document.getElementById("agent-flow-production-title")?.textContent.trim() ?? "",
+      agentFlowProductionBullets: Array.from(
+        document.querySelectorAll("#agent-flow .agent-flow-production li"),
+      ).map((element) => element.textContent.replace(/\s+/g, " ").trim()),
+      agentFlowResumeTitle:
+        document.getElementById("agent-flow-resume-title")?.textContent.trim() ?? "",
+      agentFlowResumeBullet:
+        document.getElementById("agent-flow-resume-bullet")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      agentFlowCtaButtons: Array.from(
+        document.querySelectorAll("#agent-flow .agent-flow-actions .button"),
+      ).map((element) => ({
+        label: element.textContent.trim(),
+        href: element.getAttribute("href"),
+        target: element.getAttribute("target"),
+        rel: element.getAttribute("rel"),
+      })),
+      agentFlowPlacement:
+        document.getElementById("live-eval-console")?.nextElementSibling?.id === "agent-flow" &&
+        document.getElementById("agent-flow")?.nextElementSibling?.id === "agent-trace-replay",
       agentTraceReplayExists:
         document.querySelector("#agent-trace-replay .eyebrow")?.textContent.trim() ===
           "AGENT TRACE REPLAY" &&
@@ -909,8 +1087,7 @@ async function inspectDeploymentViewport(browser, viewport) {
         rel: element.getAttribute("rel"),
       })),
       agentTracePlacement:
-        document.getElementById("live-eval-console")?.nextElementSibling?.id ===
-        "agent-trace-replay",
+        document.getElementById("agent-flow")?.nextElementSibling?.id === "agent-trace-replay",
       employerValueTitle:
         document.getElementById("employer-value-title")?.textContent.trim() ?? "",
       employerValueBullets: Array.from(
@@ -945,6 +1122,14 @@ async function inspectDeploymentViewport(browser, viewport) {
     const rect = heading.getBoundingClientRect();
     return rect.top >= 0 && rect.top < window.innerHeight;
   });
+  await page
+    .locator(".employer-proof-path a[href='#agent-flow']")
+    .evaluate((anchor) => anchor.click());
+  const agentFlowAnchorWorks = new URL(page.url()).hash === "#agent-flow";
+  const agentFlowAnchorLandsOnSection = await page.locator("#agent-flow h2").evaluate((heading) => {
+    const rect = heading.getBoundingClientRect();
+    return rect.top >= 0 && rect.top < window.innerHeight;
+  });
   const scenarioRuns = [];
   for (const scenario of ["good", "citation", "unsafe"]) {
     const tab = page.locator(`[data-scenario='${scenario}']`);
@@ -955,6 +1140,34 @@ async function inspectDeploymentViewport(browser, viewport) {
       label: (await page.locator("#simulator-scenario-label").textContent())?.trim(),
     });
   }
+  const agentFlowRuns = [];
+  for (const stage of ["prompt", "retrieval", "guardrail", "evaluation", "proof"]) {
+    const button = page.locator(`[data-agent-flow-step='${stage}']`);
+    await button.click();
+    agentFlowRuns.push({
+      stage,
+      pressed: (await button.getAttribute("aria-pressed")) === "true",
+      title: (await page.locator("#agent-flow-detail-title").textContent())?.trim(),
+      status: (await page.locator("#agent-flow-detail-status").textContent())?.trim(),
+      metrics: await page
+        .locator("#agent-flow-detail-metrics > div")
+        .evaluateAll((rows) =>
+          rows.map((row) => [
+            row.querySelector("dt")?.textContent.trim(),
+            row.querySelector("dd")?.textContent.trim(),
+          ]),
+        ),
+      json: await page.locator("#agent-flow-json").textContent(),
+      hiring: (await page.locator("#agent-flow-hiring-relevance").textContent())
+        ?.replace(/\s+/g, " ")
+        .trim(),
+    });
+  }
+  await page.locator("[data-agent-flow-step='prompt']").focus();
+  await page.locator("[data-agent-flow-step='prompt']").press("End");
+  const agentFlowKeyboardWorks =
+    (await page.locator("[data-agent-flow-step='proof']").getAttribute("aria-pressed")) === "true" &&
+    (await page.evaluate(() => document.activeElement?.dataset.agentFlowStep)) === "proof";
   const resumeCopyRuns = [];
   const resumeButtons = page.locator(".resume-copy-button");
   for (let index = 0; index < (await resumeButtons.count()); index += 1) {
@@ -984,6 +1197,13 @@ async function inspectDeploymentViewport(browser, viewport) {
   const recruiterBulletCopyStatus = (
     await page.locator("#recruiter-bullet-copy-status").textContent()
   )?.trim();
+  await page.locator(".agent-flow-copy-button").click();
+  await page.waitForFunction(
+    () => document.getElementById("agent-flow-copy-status")?.textContent.trim() === "Copied",
+  );
+  const agentFlowCopyStatus = (
+    await page.locator("#agent-flow-copy-status").textContent()
+  )?.trim();
   await page.locator(".hiring-summary-copy-button").click();
   await page.waitForFunction(
     () => document.getElementById("hiring-summary-copy-status")?.textContent.trim() === "Copied",
@@ -998,10 +1218,15 @@ async function inspectDeploymentViewport(browser, viewport) {
     ...state,
     demoAnchorWorks,
     demoAnchorLandsOnConsole,
+    agentFlowAnchorWorks,
+    agentFlowAnchorLandsOnSection,
     scenarioRuns,
+    agentFlowRuns,
+    agentFlowKeyboardWorks,
     resumeCopyRuns,
     recruiterCopyStatus,
     recruiterBulletCopyStatus,
+    agentFlowCopyStatus,
     hiringSummaryCopyStatus,
     consoleErrors,
   };
@@ -1113,6 +1338,7 @@ function assertResult(result) {
     failures.push("live console scenario buttons");
   }
   if (!result.liveConsoleJsonlPreviewExists) failures.push("live console JSONL preview");
+  assertAgentFlow(result, failures);
   assertAgentTraceReplay(result, failures);
   if (!result.executiveProofExists) failures.push("executive proof section");
   if (result.executiveProofCards !== 5) failures.push("executive proof cards");
@@ -1222,6 +1448,7 @@ function assertDeploymentResult(result) {
   }
   if (!result.liveConsoleSubtitle) failures.push("live console subtitle");
   if (!result.liveConsoleDisclosure) failures.push("live console disclosure");
+  assertAgentFlow(result, failures);
   assertAgentTraceReplay(result, failures);
   if (!result.staleDemoStringsAbsent) failures.push("stale demo strings");
   if (!result.demoNavTargetsConsole || !result.demoAnchorWorks || !result.demoAnchorLandsOnConsole) {
@@ -1272,6 +1499,113 @@ function assertAgentTraceReplay(result, failures) {
   if (!result.agentTracePlacement) failures.push("Agent Trace Replay placement");
 }
 
+function assertAgentFlow(result, failures) {
+  if (
+    !result.agentFlowExists ||
+    result.agentFlowSubtitle !==
+      "Follow one AI agent request through retrieval, guardrails, scoring, JSONL logging, and trace replay." ||
+    JSON.stringify(result.agentFlowStepLabels) !== JSON.stringify(agentFlowStepLabels) ||
+    JSON.stringify(result.agentFlowStepStatuses) !== JSON.stringify(agentFlowStepStatuses) ||
+    !result.agentFlowButtonsAccessible ||
+    result.agentFlowDefaultStep !== "prompt" ||
+    !result.agentFlowPlacement
+  ) {
+    failures.push("Agentic Reliability Flow structure");
+  }
+
+  if (
+    result.agentFlowProductionTitle !== "Why this matters in production" ||
+    JSON.stringify(result.agentFlowProductionBullets) !==
+      JSON.stringify(agentFlowProductionBullets)
+  ) {
+    failures.push("Agentic Reliability Flow production callout");
+  }
+
+  if (
+    result.agentFlowResumeTitle !== "Resume bullet this proves" ||
+    result.agentFlowResumeBullet !== agentFlowResumeBullet ||
+    result.agentFlowCopyStatus !== "Copied"
+  ) {
+    failures.push("Agentic Reliability Flow resume bullet");
+  }
+
+  if (
+    JSON.stringify(result.agentFlowCtaButtons.map((button) => button.label)) !==
+    JSON.stringify(agentFlowCtaLabels)
+  ) {
+    failures.push("Agentic Reliability Flow CTAs");
+  }
+  const [github, resume, trace] = result.agentFlowCtaButtons;
+  if (
+    github?.href !== "https://github.com/Electricpaper77/ai-rag-eval-platform" ||
+    github.target !== "_blank" ||
+    resume?.href !== resumeRelativePath ||
+    resume.target !== "_blank" ||
+    !resume.rel?.split(/\s+/).includes("noopener") ||
+    trace?.href !== "#agent-trace-replay"
+  ) {
+    failures.push("Agentic Reliability Flow CTA routes");
+  }
+
+  const expectedMetrics = [
+    [
+      ["Input status", "received"],
+      ["Citation requirement", "enabled"],
+    ],
+    [
+      ["Retrieved chunks", "6"],
+      ["Citation coverage", "92%"],
+      ["Context latency", "420ms"],
+    ],
+    [
+      ["Prompt injection", "blocked"],
+      ["PII risk", "low"],
+      ["Refusal policy", "pass"],
+    ],
+    [
+      ["Eval pass rate", "94%"],
+      ["Hallucination risk", "3%"],
+      ["Citation precision", "91%"],
+      ["Cost/request", "$0.014"],
+    ],
+    [
+      ["JSONL record", "generated"],
+      ["Trace replay", "available"],
+      ["Regression suite", "passed"],
+    ],
+  ];
+  const expectedStages = [
+    "user_prompt",
+    "rag_retrieval",
+    "guardrail_scan",
+    "llm_response_eval",
+    "proof_artifact",
+  ];
+  if (
+    result.agentFlowRuns.length !== 5 ||
+    result.agentFlowRuns.some(
+      (run, index) =>
+        !run.pressed ||
+        run.title !== agentFlowStepLabels[index] ||
+        run.status !== agentFlowStepStatuses[index] ||
+        JSON.stringify(run.metrics) !== JSON.stringify(expectedMetrics[index]) ||
+        !run.json?.includes('"run_id": "agent_eval_042"') ||
+        !run.json?.includes(`"stage": "${expectedStages[index]}"`) ||
+        !run.hiring?.startsWith("Hiring relevance:"),
+    )
+  ) {
+    failures.push("Agentic Reliability Flow interactions");
+  }
+
+  if (!result.agentFlowKeyboardWorks) {
+    failures.push("Agentic Reliability Flow keyboard navigation");
+  }
+
+  if (!result.agentFlowAnchorWorks || !result.agentFlowAnchorLandsOnSection) {
+    failures.push("Agentic Reliability Flow anchor");
+  }
+}
+
 function assertEmployerProofUpgrade(result, failures) {
   if (
     result.employerProofPathCount !== 1 ||
@@ -1283,7 +1617,7 @@ function assertEmployerProofUpgrade(result, failures) {
     failures.push("employer proof path");
   }
 
-  const [pathResume, pathGithub, pathLiveEval, pathTraceReplay, pathContact] =
+  const [pathResume, pathGithub, pathLiveEval, pathAgentFlow, pathTraceReplay, pathContact] =
     result.employerProofPathLinks;
   if (
     pathResume?.href !== resumeRelativePath ||
@@ -1292,6 +1626,7 @@ function assertEmployerProofUpgrade(result, failures) {
     pathGithub?.href !== "https://github.com/Electricpaper77/ai-rag-eval-platform" ||
     pathGithub.target !== "_blank" ||
     pathLiveEval?.href !== "#live-eval-console" ||
+    pathAgentFlow?.href !== "#agent-flow" ||
     pathTraceReplay?.href !== "#agent-trace-replay" ||
     pathContact?.href !== "#contact"
   ) {

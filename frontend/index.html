@@ -174,6 +174,8 @@
           <span aria-hidden="true">→</span>
           <a href="#live-eval-console">Live Eval</a>
           <span aria-hidden="true">→</span>
+          <a href="#agent-flow">Agent Flow</a>
+          <span aria-hidden="true">→</span>
           <a href="#agent-trace-replay">Trace Replay</a>
           <span aria-hidden="true">→</span>
           <a href="#contact">Contact</a>
@@ -1080,6 +1082,209 @@
       </section>
 
       <section
+        id="agent-flow"
+        class="section-shell agent-flow"
+        aria-labelledby="agent-flow-title"
+      >
+        <div class="agent-flow-heading">
+          <p class="eyebrow">AGENTIC RELIABILITY FLOW</p>
+          <h2 id="agent-flow-title">From prompt to proof: how the agent run is evaluated</h2>
+          <p class="section-note">
+            Follow one AI agent request through retrieval, guardrails, scoring, JSONL logging, and
+            trace replay.
+          </p>
+        </div>
+
+        <div class="agent-flow-shell">
+          <ol class="agent-flow-steps" aria-label="Agent reliability workflow steps">
+            <li>
+              <button
+                class="agent-flow-step is-active"
+                type="button"
+                data-agent-flow-step="prompt"
+                aria-pressed="true"
+                aria-controls="agent-flow-detail"
+              >
+                <span class="agent-flow-number">01</span>
+                <span class="agent-flow-step-copy">
+                  <strong>User prompt</strong>
+                  <small>Request intake and citation requirement</small>
+                </span>
+                <span class="agent-flow-status">Input received</span>
+              </button>
+            </li>
+            <li>
+              <button
+                class="agent-flow-step"
+                type="button"
+                data-agent-flow-step="retrieval"
+                aria-pressed="false"
+                aria-controls="agent-flow-detail"
+              >
+                <span class="agent-flow-number">02</span>
+                <span class="agent-flow-step-copy">
+                  <strong>RAG retrieval</strong>
+                  <small>Source coverage and cited context</small>
+                </span>
+                <span class="agent-flow-status">Context prepared</span>
+              </button>
+            </li>
+            <li>
+              <button
+                class="agent-flow-step"
+                type="button"
+                data-agent-flow-step="guardrail"
+                aria-pressed="false"
+                aria-controls="agent-flow-detail"
+              >
+                <span class="agent-flow-number">03</span>
+                <span class="agent-flow-step-copy">
+                  <strong>Guardrail scan</strong>
+                  <small>Injection, PII, and policy checks</small>
+                </span>
+                <span class="agent-flow-status">Safe to answer</span>
+              </button>
+            </li>
+            <li>
+              <button
+                class="agent-flow-step"
+                type="button"
+                data-agent-flow-step="evaluation"
+                aria-pressed="false"
+                aria-controls="agent-flow-detail"
+              >
+                <span class="agent-flow-number">04</span>
+                <span class="agent-flow-step-copy">
+                  <strong>Evaluation harness</strong>
+                  <small>Quality, risk, cost, and drift scoring</small>
+                </span>
+                <span class="agent-flow-status">Eval passed</span>
+              </button>
+            </li>
+            <li>
+              <button
+                class="agent-flow-step"
+                type="button"
+                data-agent-flow-step="proof"
+                aria-pressed="false"
+                aria-controls="agent-flow-detail"
+              >
+                <span class="agent-flow-number">05</span>
+                <span class="agent-flow-step-copy">
+                  <strong>JSONL + trace replay</strong>
+                  <small>Auditable evidence and reviewer debugging</small>
+                </span>
+                <span class="agent-flow-status">Proof ready</span>
+              </button>
+            </li>
+          </ol>
+
+          <article
+            id="agent-flow-detail"
+            class="agent-flow-detail"
+            aria-live="polite"
+            aria-labelledby="agent-flow-detail-title"
+          >
+            <div class="agent-flow-detail-heading">
+              <div>
+                <p class="eyebrow">SELECTED STAGE</p>
+                <h3 id="agent-flow-detail-title">User prompt</h3>
+              </div>
+              <span id="agent-flow-detail-status" class="agent-flow-detail-status">
+                Input received
+              </span>
+            </div>
+
+            <div class="agent-flow-detail-block">
+              <span>What happened</span>
+              <p id="agent-flow-detail-body">
+                “What are the main risks in this vendor contract? Include citations.” The workflow
+                records the request and its citation requirement before execution.
+              </p>
+            </div>
+
+            <div class="agent-flow-detail-block">
+              <span>Metrics</span>
+              <dl id="agent-flow-detail-metrics" class="agent-flow-metrics">
+                <div><dt>Input status</dt><dd>received</dd></div>
+                <div><dt>Citation requirement</dt><dd>enabled</dd></div>
+              </dl>
+            </div>
+
+            <div class="agent-flow-console">
+              <div class="agent-flow-console-heading">
+                <span>JSON-style proof snippet</span>
+                <small>Static sample</small>
+              </div>
+              <pre><code id="agent-flow-json">{
+  "run_id": "agent_eval_042",
+  "stage": "user_prompt",
+  "status": "received",
+  "citation_required": true
+}</code></pre>
+            </div>
+
+            <p id="agent-flow-hiring-relevance" class="agent-flow-hiring-relevance">
+              <strong>Hiring relevance:</strong> Shows disciplined prompt intake and explicit
+              acceptance criteria before model execution.
+            </p>
+          </article>
+        </div>
+
+        <div class="agent-flow-proof-grid">
+          <aside class="agent-flow-production" aria-labelledby="agent-flow-production-title">
+            <p class="eyebrow">RECRUITER SIGNAL</p>
+            <h3 id="agent-flow-production-title">Why this matters in production</h3>
+            <ul>
+              <li>Makes AI behavior inspectable instead of subjective.</li>
+              <li>Converts prompt testing into repeatable eval evidence.</li>
+              <li>Helps teams debug failed RAG answers, unsafe outputs, and citation gaps.</li>
+              <li>
+                Creates proof artifacts hiring managers can verify in GitHub, screenshots, and
+                live demos.
+              </li>
+            </ul>
+          </aside>
+
+          <aside class="agent-flow-resume" aria-labelledby="agent-flow-resume-title">
+            <p class="eyebrow">APPLICATION ASSET</p>
+            <h3 id="agent-flow-resume-title">Resume bullet this proves</h3>
+            <p id="agent-flow-resume-bullet">
+              Built an agentic AI reliability workflow that evaluates RAG outputs from prompt
+              intake through retrieval, guardrail scanning, LLM scoring, JSONL audit logging, and
+              trace replay, producing inspectable proof artifacts for hallucination risk, citation
+              precision, PII handling, and regression safety.
+            </p>
+            <div class="agent-flow-copy-action">
+              <button
+                class="button secondary agent-flow-copy-button"
+                type="button"
+                data-copy-target="agent-flow-resume-bullet"
+                data-status-target="agent-flow-copy-status"
+              >Copy Bullet</button>
+              <span id="agent-flow-copy-status" role="status" aria-live="polite"></span>
+            </div>
+          </aside>
+        </div>
+
+        <div class="button-row agent-flow-actions" aria-label="Agent flow proof actions">
+          <a
+            class="button primary"
+            href="https://github.com/Electricpaper77/ai-rag-eval-platform"
+            target="_blank"
+            rel="noreferrer"
+          >View GitHub</a>
+          <a
+            class="button secondary"
+            href="assets/Zohaib_Ahmed_AI_Solutions_Engineer_GenAI_Resume.pdf"
+            target="_blank"
+            rel="noopener"
+          >Download Resume</a>
+          <a class="button secondary" href="#agent-trace-replay">Jump to Trace Replay</a>
+        </div>
+      </section>
+
+      <section
         id="agent-trace-replay"
         class="section-shell agent-trace-replay"
         aria-labelledby="agent-trace-replay-title"
@@ -1521,7 +1726,7 @@
       copyButtons.forEach((button) => button.addEventListener("click", copyResumeBullet));
 
       const resumeHubCopyButtons = document.querySelectorAll(
-        ".resume-copy-button, .recruiter-copy-button, .hiring-summary-copy-button, .recruiter-bullet-copy-button",
+        ".resume-copy-button, .recruiter-copy-button, .hiring-summary-copy-button, .recruiter-bullet-copy-button, .agent-flow-copy-button",
       );
 
       async function copyResumeHubAsset(event) {
@@ -1774,6 +1979,170 @@
           if (event.key === "End") nextIndex = simulatorTabs.length - 1;
           activateSimulatorScenario(simulatorTabs[nextIndex]);
           simulatorTabs[nextIndex].focus();
+        });
+      });
+
+      const agentFlowStages = {
+        prompt: {
+          name: "User prompt",
+          status: "Input received",
+          body:
+            "\u201cWhat are the main risks in this vendor contract? Include citations.\u201d The workflow records the request and its citation requirement before execution.",
+          metrics: [
+            ["Input status", "received"],
+            ["Citation requirement", "enabled"],
+          ],
+          proof: {
+            run_id: "agent_eval_042",
+            stage: "user_prompt",
+            status: "received",
+            citation_required: true,
+          },
+          relevance:
+            "Shows disciplined prompt intake and explicit acceptance criteria before model execution.",
+        },
+        retrieval: {
+          name: "RAG retrieval",
+          status: "Context prepared",
+          body:
+            "Retrieves relevant chunks, validates source coverage, and prepares cited context for the model.",
+          metrics: [
+            ["Retrieved chunks", "6"],
+            ["Citation coverage", "92%"],
+            ["Context latency", "420ms"],
+          ],
+          proof: {
+            run_id: "agent_eval_042",
+            stage: "rag_retrieval",
+            status: "pass",
+            retrieved_chunks: 6,
+            citation_coverage: 0.92,
+            latency_ms: 420,
+          },
+          relevance:
+            "Demonstrates grounded RAG design, source coverage checks, and measurable retrieval latency.",
+        },
+        guardrail: {
+          name: "Guardrail scan",
+          status: "Safe to answer",
+          body:
+            "Checks for prompt injection, PII exposure, unsafe requests, and missing citation requirements.",
+          metrics: [
+            ["Prompt injection", "blocked"],
+            ["PII risk", "low"],
+            ["Refusal policy", "pass"],
+          ],
+          proof: {
+            run_id: "agent_eval_042",
+            stage: "guardrail_scan",
+            status: "pass",
+            latency_ms: 420,
+            citation_precision: 0.91,
+            hallucination_risk: 0.03,
+            pii_risk: "low",
+          },
+          relevance:
+            "Shows production guardrail thinking across injection defense, privacy, and refusal policy.",
+        },
+        evaluation: {
+          name: "Evaluation harness",
+          status: "Eval passed",
+          body:
+            "Scores answer quality, citation precision, hallucination risk, refusal behavior, and regression drift.",
+          metrics: [
+            ["Eval pass rate", "94%"],
+            ["Hallucination risk", "3%"],
+            ["Citation precision", "91%"],
+            ["Cost/request", "$0.014"],
+          ],
+          proof: {
+            run_id: "agent_eval_042",
+            stage: "llm_response_eval",
+            status: "pass",
+            eval_pass_rate: 0.94,
+            hallucination_risk: 0.03,
+            citation_precision: 0.91,
+            cost_usd: 0.014,
+          },
+          relevance:
+            "Connects model quality to quantitative release gates, operating cost, and regression safety.",
+        },
+        proof: {
+          name: "JSONL + trace replay",
+          status: "Proof ready",
+          body:
+            "Stores the run as an auditable JSONL record and renders the trace for reviewer debugging.",
+          metrics: [
+            ["JSONL record", "generated"],
+            ["Trace replay", "available"],
+            ["Regression suite", "passed"],
+          ],
+          proof: {
+            run_id: "agent_eval_042",
+            stage: "proof_artifact",
+            status: "pass",
+            jsonl_record: "generated",
+            trace_replay: "available",
+            regression_suite: "passed",
+          },
+          relevance:
+            "Proves observability and auditability with evidence a hiring manager can inspect and replay.",
+        },
+      };
+
+      const agentFlowButtons = Array.from(document.querySelectorAll(".agent-flow-step"));
+      const agentFlowDetailTitle = document.getElementById("agent-flow-detail-title");
+      const agentFlowDetailStatus = document.getElementById("agent-flow-detail-status");
+      const agentFlowDetailBody = document.getElementById("agent-flow-detail-body");
+      const agentFlowDetailMetrics = document.getElementById("agent-flow-detail-metrics");
+      const agentFlowJson = document.getElementById("agent-flow-json");
+      const agentFlowHiringRelevance = document.getElementById("agent-flow-hiring-relevance");
+
+      function activateAgentFlowStep(button) {
+        const stage = agentFlowStages[button.dataset.agentFlowStep];
+        if (!stage || !agentFlowDetailTitle) return;
+
+        agentFlowButtons.forEach((item) => {
+          const isActive = item === button;
+          item.classList.toggle("is-active", isActive);
+          item.setAttribute("aria-pressed", String(isActive));
+        });
+
+        agentFlowDetailTitle.textContent = stage.name;
+        agentFlowDetailStatus.textContent = stage.status;
+        agentFlowDetailBody.textContent = stage.body;
+        agentFlowJson.textContent = JSON.stringify(stage.proof, null, 2);
+        agentFlowHiringRelevance.replaceChildren();
+        const relevanceLabel = document.createElement("strong");
+        relevanceLabel.textContent = "Hiring relevance: ";
+        agentFlowHiringRelevance.append(relevanceLabel, stage.relevance);
+        agentFlowDetailMetrics.replaceChildren(
+          ...stage.metrics.map(([label, value]) => {
+            const row = document.createElement("div");
+            const term = document.createElement("dt");
+            const description = document.createElement("dd");
+            term.textContent = label;
+            description.textContent = value;
+            row.append(term, description);
+            return row;
+          }),
+        );
+      }
+
+      agentFlowButtons.forEach((button, index) => {
+        button.addEventListener("click", () => activateAgentFlowStep(button));
+        button.addEventListener("keydown", (event) => {
+          if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+          event.preventDefault();
+          let nextIndex = index;
+          if (event.key === "ArrowDown") nextIndex = (index + 1) % agentFlowButtons.length;
+          if (event.key === "ArrowUp") {
+            nextIndex = (index - 1 + agentFlowButtons.length) % agentFlowButtons.length;
+          }
+          if (event.key === "Home") nextIndex = 0;
+          if (event.key === "End") nextIndex = agentFlowButtons.length - 1;
+          activateAgentFlowStep(agentFlowButtons[nextIndex]);
+          agentFlowButtons[nextIndex].focus();
         });
       });
     </script>
