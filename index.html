@@ -1127,6 +1127,118 @@
         </div>
       </section>
 
+      <section
+        id="agent-trace-replay"
+        class="section-shell agent-trace-replay"
+        aria-labelledby="agent-trace-replay-title"
+      >
+        <div class="agent-replay-heading">
+          <p class="eyebrow">AGENT TRACE REPLAY</p>
+          <h2 id="agent-trace-replay-title">Replay an AI agent workflow with reliability gates</h2>
+          <p class="section-note">
+            Inspect how an agent task moves through planning, retrieval, tool use, guardrails,
+            scoring, and JSONL audit evidence before release.
+          </p>
+        </div>
+
+        <div class="agent-replay-layout">
+          <ol class="agent-replay-steps" aria-label="Agent workflow trace">
+            <li class="agent-replay-step">
+              <span class="agent-replay-number">01</span>
+              <div>
+                <h3>User request</h3>
+                <p>Summarize the enterprise refund policy and cite source documents.</p>
+              </div>
+              <span class="agent-replay-badge agent-replay-received">RECEIVED</span>
+            </li>
+            <li class="agent-replay-step">
+              <span class="agent-replay-number">02</span>
+              <div>
+                <h3>Planner</h3>
+                <p>
+                  Break task into retrieval, citation validation, answer generation, and safety
+                  checks.
+                </p>
+              </div>
+              <span class="agent-replay-badge agent-replay-pass">PASS</span>
+            </li>
+            <li class="agent-replay-step">
+              <span class="agent-replay-number">03</span>
+              <div>
+                <h3>Retriever</h3>
+                <p>Retrieved policy chunks doc_04 and doc_09 from the fixture dataset.</p>
+              </div>
+              <span class="agent-replay-badge agent-replay-pass">PASS</span>
+            </li>
+            <li class="agent-replay-step">
+              <span class="agent-replay-number">04</span>
+              <div>
+                <h3>Guardrail</h3>
+                <p>Checked for prompt injection, unsafe action request, and PII leakage.</p>
+              </div>
+              <span class="agent-replay-badge agent-replay-pass">PASS</span>
+            </li>
+            <li class="agent-replay-step">
+              <span class="agent-replay-number">05</span>
+              <div>
+                <h3>Evaluation gates</h3>
+                <p>
+                  Scored citation precision, groundedness, hallucination risk, and p95 latency.
+                </p>
+              </div>
+              <span class="agent-replay-badge agent-replay-pass">PASS</span>
+            </li>
+            <li class="agent-replay-step">
+              <span class="agent-replay-number">06</span>
+              <div>
+                <h3>JSONL audit export</h3>
+                <p>
+                  Exported structured evidence with case ID, scores, citations, latency, and
+                  release status.
+                </p>
+              </div>
+              <span class="agent-replay-badge agent-replay-pass">PASS</span>
+            </li>
+          </ol>
+
+          <div class="agent-replay-evidence">
+            <div class="agent-replay-console">
+              <div class="agent-replay-console-heading">
+                <div aria-hidden="true"><span></span><span></span><span></span></div>
+                <h3>Agent trace JSONL</h3>
+                <span>STATIC FIXTURE</span>
+              </div>
+              <pre><code id="agent-trace-json">{
+  "trace_id": "agent_replay_024",
+  "workflow": "enterprise_refund_rag",
+  "planner_status": "pass",
+  "retrieved_docs": ["doc_04", "doc_09"],
+  "guardrails": {
+    "prompt_injection": "pass",
+    "pii_leakage": false,
+    "unsafe_action": false
+  },
+  "metrics": {
+    "citation_precision": 0.91,
+    "groundedness": 0.94,
+    "p95_latency_ms": 820
+  },
+  "release_status": "pass"
+}</code></pre>
+            </div>
+
+            <aside class="agent-replay-callout" aria-labelledby="agent-replay-proof-title">
+              <p class="eyebrow">What this proves</p>
+              <h3 id="agent-replay-proof-title">Workflow-level reliability evaluation</h3>
+              <p>
+                This shows I can evaluate an agent workflow beyond final answer quality: planning,
+                retrieval, tool boundaries, guardrails, observability, and release-readiness.
+              </p>
+            </aside>
+          </div>
+        </div>
+      </section>
+
       <section id="executive-proof" class="section-shell executive-proof">
         <div class="executive-proof-heading">
           <div>
@@ -1313,7 +1425,7 @@
         <ul class="production-list">
           <li>Connect real model/provider outputs</li>
           <li>Add larger adversarial eval dataset</li>
-          <li>Add agent trace evaluation</li>
+          <li>Expand agent trace evaluation coverage</li>
           <li>Add CI regression gate</li>
           <li>Add human review queue</li>
         </ul>

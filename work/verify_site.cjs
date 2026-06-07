@@ -59,6 +59,14 @@ const viewports = [
   { name: "tablet-768", width: 768, height: 1024 },
   { name: "desktop-1440", width: 1440, height: 1000 },
 ];
+const agentTraceStepTitles = [
+  "User request",
+  "Planner",
+  "Retriever",
+  "Guardrail",
+  "Evaluation gates",
+  "JSONL audit export",
+];
 
 function findStaleTrackedStrings() {
   const textExtensions = new Set([
@@ -329,6 +337,33 @@ async function inspectViewport(browser, viewport) {
         document.querySelector(".nav-links a[href='#live-eval-console']")?.textContent.trim() ===
         "Demo",
       liveConsoleJsonlPreviewExists: Boolean(document.getElementById("simulator-json")),
+      agentTraceReplayExists:
+        document.querySelector("#agent-trace-replay .eyebrow")?.textContent.trim() ===
+          "AGENT TRACE REPLAY" &&
+        document.querySelector("#agent-trace-replay-title")?.textContent.trim() ===
+          "Replay an AI agent workflow with reliability gates",
+      agentTraceStepTitles: Array.from(
+        document.querySelectorAll("#agent-trace-replay .agent-replay-step h3"),
+      ).map((heading) => heading.textContent.trim()),
+      agentTraceStatuses: Array.from(
+        document.querySelectorAll("#agent-trace-replay .agent-replay-badge"),
+      ).map((badge) => badge.textContent.trim()),
+      agentTraceJsonTitle:
+        document.querySelector("#agent-trace-replay .agent-replay-console h3")?.textContent.trim() ??
+        "",
+      agentTraceJson: document.getElementById("agent-trace-json")?.textContent ?? "",
+      agentTracePlacement: (() => {
+        const liveConsole = document.getElementById("live-eval-console");
+        const agentTrace = document.getElementById("agent-trace-replay");
+        const proofIntegrity = document.getElementById("proof-integrity");
+        return Boolean(
+          liveConsole?.nextElementSibling === agentTrace &&
+            agentTrace &&
+            proofIntegrity &&
+            agentTrace.compareDocumentPosition(proofIntegrity) &
+              Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+      })(),
       executiveProofExists:
         document.querySelector("#executive-proof h2")?.textContent.trim() ===
         "Executive Proof Mode",
@@ -721,6 +756,24 @@ async function inspectDeploymentViewport(browser, viewport) {
           .replace(/\s+/g, " ")
           .trim() ===
         "Static demo data mirrors deterministic repository fixtures and JSONL proof artifacts; this browser demo is not connected to a backend.",
+      agentTraceReplayExists:
+        document.querySelector("#agent-trace-replay .eyebrow")?.textContent.trim() ===
+          "AGENT TRACE REPLAY" &&
+        document.querySelector("#agent-trace-replay-title")?.textContent.trim() ===
+          "Replay an AI agent workflow with reliability gates",
+      agentTraceStepTitles: Array.from(
+        document.querySelectorAll("#agent-trace-replay .agent-replay-step h3"),
+      ).map((heading) => heading.textContent.trim()),
+      agentTraceStatuses: Array.from(
+        document.querySelectorAll("#agent-trace-replay .agent-replay-badge"),
+      ).map((badge) => badge.textContent.trim()),
+      agentTraceJsonTitle:
+        document.querySelector("#agent-trace-replay .agent-replay-console h3")?.textContent.trim() ??
+        "",
+      agentTraceJson: document.getElementById("agent-trace-json")?.textContent ?? "",
+      agentTracePlacement:
+        document.getElementById("live-eval-console")?.nextElementSibling?.id ===
+        "agent-trace-replay",
       staleDemoStringsAbsent: ![
         ["Live Eval", "Simulator"].join(" "),
         ["Good", "Answer"].join(" "),
@@ -906,6 +959,7 @@ function assertResult(result) {
     failures.push("live console scenario buttons");
   }
   if (!result.liveConsoleJsonlPreviewExists) failures.push("live console JSONL preview");
+  assertAgentTraceReplay(result, failures);
   if (!result.executiveProofExists) failures.push("executive proof section");
   if (result.executiveProofCards !== 5) failures.push("executive proof cards");
   if (!result.executiveMetricStripExists) failures.push("executive metric strip");
@@ -1013,6 +1067,7 @@ function assertDeploymentResult(result) {
   }
   if (!result.liveConsoleSubtitle) failures.push("live console subtitle");
   if (!result.liveConsoleDisclosure) failures.push("live console disclosure");
+  assertAgentTraceReplay(result, failures);
   if (!result.staleDemoStringsAbsent) failures.push("stale demo strings");
   if (!result.demoNavTargetsConsole || !result.demoAnchorWorks || !result.demoAnchorLandsOnConsole) {
     failures.push("demo navigation");
@@ -1037,6 +1092,29 @@ function assertDeploymentResult(result) {
   if (failures.length) {
     throw new Error(`${result.viewport} failed: ${failures.join(", ")}`);
   }
+}
+
+function assertAgentTraceReplay(result, failures) {
+  if (!result.agentTraceReplayExists) failures.push("Agent Trace Replay section");
+  if (JSON.stringify(result.agentTraceStepTitles) !== JSON.stringify(agentTraceStepTitles)) {
+    failures.push("Agent Trace Replay steps");
+  }
+  if (
+    JSON.stringify(result.agentTraceStatuses) !==
+    JSON.stringify(["RECEIVED", "PASS", "PASS", "PASS", "PASS", "PASS"])
+  ) {
+    failures.push("Agent Trace Replay statuses");
+  }
+  if (result.agentTraceJsonTitle !== "Agent trace JSONL") {
+    failures.push("Agent trace JSONL title");
+  }
+  if (
+    !result.agentTraceJson.includes('"trace_id"') ||
+    !result.agentTraceJson.includes('"release_status"')
+  ) {
+    failures.push("Agent trace JSONL fields");
+  }
+  if (!result.agentTracePlacement) failures.push("Agent Trace Replay placement");
 }
 
 function assertRecruiterConversion(result, failures) {
