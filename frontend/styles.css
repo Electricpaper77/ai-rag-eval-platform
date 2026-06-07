@@ -150,6 +150,19 @@ button.button {
   white-space: nowrap;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-actions .button {
+  min-height: 40px;
+  padding: 9px 12px;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -274,6 +287,163 @@ h2 {
   border-radius: 8px;
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+
+.resume-hub {
+  display: grid;
+  gap: 16px;
+  padding: 44px 0 0;
+}
+
+.resume-hub-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 8px;
+}
+
+.resume-hub-heading .section-note {
+  max-width: 560px;
+  line-height: 1.6;
+}
+
+.resume-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.resume-hub-card {
+  display: flex;
+  min-width: 0;
+  min-height: 300px;
+  flex-direction: column;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  background: var(--surface);
+  box-shadow: 0 12px 30px rgba(16, 35, 63, 0.06);
+}
+
+.resume-hub-card-primary {
+  border-color: rgba(15, 139, 141, 0.24);
+  background:
+    linear-gradient(145deg, rgba(220, 235, 255, 0.84), rgba(221, 246, 232, 0.74)),
+    var(--surface);
+}
+
+.resume-hub-card > span {
+  align-self: flex-start;
+  margin-bottom: 22px;
+  padding: 6px 9px;
+  border-radius: 9px;
+  background: var(--blue-soft);
+  color: var(--teal);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.resume-hub-card h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.2rem, 1.8vw, 1.5rem);
+  line-height: 1.3;
+}
+
+.resume-hub-card > p {
+  margin: 14px 0 22px;
+  color: var(--muted);
+  line-height: 1.68;
+}
+
+.resume-hub-card > .button,
+.resume-copy-action {
+  margin-top: auto;
+}
+
+.resume-hub-card > .button {
+  align-self: flex-start;
+}
+
+.resume-copy-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.resume-copy-button {
+  min-width: 190px;
+}
+
+.resume-copy-action [role="status"] {
+  min-width: 52px;
+  color: var(--teal);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.recruiter-verification {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.55fr) minmax(0, 1.45fr);
+  gap: 24px;
+  align-items: center;
+  padding: 24px;
+  border: 1px solid rgba(15, 139, 141, 0.28);
+  border-radius: var(--card-radius);
+  background:
+    linear-gradient(135deg, rgba(9, 31, 55, 0.98), rgba(16, 53, 84, 0.96)),
+    var(--ink);
+  box-shadow: 0 18px 42px rgba(16, 35, 63, 0.14);
+}
+
+.recruiter-verification .eyebrow {
+  color: #7de0d4;
+}
+
+.recruiter-verification h3 {
+  margin: 0;
+  color: #ffffff;
+}
+
+.recruiter-verification ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: resume-path;
+}
+
+.recruiter-verification li {
+  min-width: 0;
+  counter-increment: resume-path;
+}
+
+.recruiter-verification a {
+  display: flex;
+  gap: 8px;
+  color: #dcebf6;
+  font-size: 0.82rem;
+  font-weight: 760;
+  line-height: 1.45;
+  text-decoration: none;
+}
+
+.recruiter-verification a::before {
+  color: #7de0d4;
+  content: "0" counter(resume-path);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.recruiter-verification a:hover,
+.recruiter-verification a:focus-visible {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .panel-kicker {
@@ -1929,6 +2099,18 @@ blockquote {
 }
 
 @media (max-width: 920px) {
+  .resume-hub-heading {
+    display: block;
+  }
+
+  .resume-hub-heading .section-note {
+    margin-top: 12px;
+  }
+
+  .recruiter-verification {
+    grid-template-columns: 1fr;
+  }
+
   .site-header {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px 14px;
@@ -2026,6 +2208,17 @@ blockquote {
     padding-inline: 14px;
   }
 
+  .header-actions .header-github {
+    display: none;
+  }
+
+  .header-actions .header-resume {
+    width: auto;
+    min-height: 36px;
+    padding: 7px 10px;
+    font-size: 0.74rem;
+  }
+
   .brand {
     font-size: 0.88rem;
   }
@@ -2035,6 +2228,31 @@ blockquote {
     min-height: 36px;
     padding: 7px 10px;
     font-size: 0.78rem;
+  }
+
+  .resume-hub-grid,
+  .recruiter-verification ol {
+    grid-template-columns: 1fr;
+  }
+
+  .resume-hub-card {
+    min-height: 0;
+    padding: 20px;
+  }
+
+  .resume-hub-card > .button,
+  .resume-copy-action,
+  .resume-copy-button {
+    width: 100%;
+  }
+
+  .resume-copy-action {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recruiter-verification {
+    padding: 22px 20px;
   }
 
   .recruiter-proof-strip {

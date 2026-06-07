@@ -7,6 +7,9 @@ const { chromium } = require("playwright");
 const projectRoot = path.resolve(__dirname, "..");
 const siteUrl = pathToFileURL(path.join(projectRoot, "index.html")).href;
 const deploymentUrl = pathToFileURL(path.join(projectRoot, "frontend", "index.html")).href;
+const resumeRelativePath = "assets/Zohaib_Ahmed_AI_Solutions_Engineer_GenAI_Resume.pdf";
+const resumePath = path.join(projectRoot, resumeRelativePath);
+const deploymentResumePath = path.join(projectRoot, "frontend", resumeRelativePath);
 const staleDemoStrings = [
   "Live Eval " + "Simulator",
   "Good " + "Answer",
@@ -103,6 +106,60 @@ async function inspectViewport(browser, viewport) {
         (image) => image.complete && image.naturalWidth > 0,
       ).length,
       workflowCards: document.querySelectorAll("#architecture .pipeline > li").length,
+      resumeHubExists:
+        document.querySelector("#resume-hub")?.getAttribute("aria-label") === "Resume Hub",
+      resumeHubCount: document.querySelectorAll("#resume-hub").length,
+      resumeHubTitle:
+        document.querySelector("#resume-hub h2")?.textContent.trim() ===
+        "AI Solutions Engineer resume + proof assets",
+      resumeHubCards: document.querySelectorAll("#resume-hub .resume-hub-card").length,
+      resumeHubCardTitles: Array.from(
+        document.querySelectorAll("#resume-hub .resume-hub-card h3"),
+      ).map((heading) => heading.textContent.trim()),
+      resumeCopyButtons: Array.from(
+        document.querySelectorAll("#resume-hub .resume-copy-button"),
+      ).map((button) => button.textContent.trim()),
+      recruiterVerificationExists:
+        document.querySelector("#recruiter-verification-title")?.textContent.trim() ===
+        "Recruiter Verification Path",
+      recruiterVerificationSteps: document.querySelectorAll(
+        "#resume-hub .recruiter-verification li",
+      ).length,
+      resumeMetricsMatch:
+        document.getElementById("resume-proof-metrics")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ===
+        "87% eval pass rate, 145+ passing tests, 43 req/sec throughput, p50 57ms / p95 270ms latency, 1,000+ automated evaluations, 99%+ workflow success, hallucination reduction from 18% to 6%.",
+      resumeLinks: Array.from(
+        document.querySelectorAll(
+          `a[href='assets/Zohaib_Ahmed_AI_Solutions_Engineer_GenAI_Resume.pdf']`,
+        ),
+      ).map((link) => ({
+        label: link.textContent.trim(),
+        target: link.getAttribute("target"),
+        rel: link.getAttribute("rel"),
+      })),
+      downloadResumeLinkExists: Array.from(
+        document.querySelectorAll(
+          `a[href='assets/Zohaib_Ahmed_AI_Solutions_Engineer_GenAI_Resume.pdf']`,
+        ),
+      ).some((link) => link.textContent.trim() === "Download Resume"),
+      resumeCtasVisible: [".header-resume", ".hero-actions a[href$='_Resume.pdf']"].every(
+        (selector) => {
+          const element = document.querySelector(selector);
+          if (!element) return false;
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return (
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            rect.width > 0 &&
+            rect.height > 0
+          );
+        },
+      ),
+      resumeHubPlacement:
+        document.querySelector(".hero")?.nextElementSibling?.id === "resume-hub",
       liveConsoleExists:
         document.querySelector("#live-eval-console h2")?.textContent.trim() ===
         "Live Eval Console",
@@ -274,6 +331,21 @@ async function inspectViewport(browser, viewport) {
       status: (await page.locator(`#${statusId}`).textContent())?.trim(),
     });
   }
+  const resumeCopyRuns = [];
+  const resumeButtons = page.locator(".resume-copy-button");
+  for (let index = 0; index < (await resumeButtons.count()); index += 1) {
+    const button = resumeButtons.nth(index);
+    const statusId = await button.getAttribute("data-status-target");
+    await button.click();
+    await page.waitForFunction(
+      (id) => document.getElementById(id)?.textContent.trim() === "Copied",
+      statusId,
+    );
+    resumeCopyRuns.push({
+      label: (await button.textContent())?.trim(),
+      status: (await page.locator(`#${statusId}`).textContent())?.trim(),
+    });
+  }
   await page.close();
 
   return {
@@ -286,6 +358,7 @@ async function inspectViewport(browser, viewport) {
     liveConsoleRuns,
     projectPitchCopyStatus,
     applicationCopyRuns,
+    resumeCopyRuns,
     consoleErrors,
   };
 }
@@ -320,6 +393,60 @@ async function inspectDeploymentViewport(browser, viewport) {
       platformNameExists:
         document.title === "AI Agent Reliability Platform" &&
         document.querySelector("h1")?.textContent.trim() === "AI Agent Reliability Platform",
+      resumeHubExists:
+        document.querySelector("#resume-hub")?.getAttribute("aria-label") === "Resume Hub",
+      resumeHubCount: document.querySelectorAll("#resume-hub").length,
+      resumeHubTitle:
+        document.querySelector("#resume-hub h2")?.textContent.trim() ===
+        "AI Solutions Engineer resume + proof assets",
+      resumeHubCards: document.querySelectorAll("#resume-hub .resume-hub-card").length,
+      resumeHubCardTitles: Array.from(
+        document.querySelectorAll("#resume-hub .resume-hub-card h3"),
+      ).map((heading) => heading.textContent.trim()),
+      resumeCopyButtons: Array.from(
+        document.querySelectorAll("#resume-hub .resume-copy-button"),
+      ).map((button) => button.textContent.trim()),
+      recruiterVerificationExists:
+        document.querySelector("#recruiter-verification-title")?.textContent.trim() ===
+        "Recruiter Verification Path",
+      recruiterVerificationSteps: document.querySelectorAll(
+        "#resume-hub .recruiter-verification li",
+      ).length,
+      resumeMetricsMatch:
+        document.getElementById("resume-proof-metrics")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ===
+        "87% eval pass rate, 145+ passing tests, 43 req/sec throughput, p50 57ms / p95 270ms latency, 1,000+ automated evaluations, 99%+ workflow success, hallucination reduction from 18% to 6%.",
+      resumeLinks: Array.from(
+        document.querySelectorAll(
+          `a[href='assets/Zohaib_Ahmed_AI_Solutions_Engineer_GenAI_Resume.pdf']`,
+        ),
+      ).map((link) => ({
+        label: link.textContent.trim(),
+        target: link.getAttribute("target"),
+        rel: link.getAttribute("rel"),
+      })),
+      downloadResumeLinkExists: Array.from(
+        document.querySelectorAll(
+          `a[href='assets/Zohaib_Ahmed_AI_Solutions_Engineer_GenAI_Resume.pdf']`,
+        ),
+      ).some((link) => link.textContent.trim() === "Download Resume"),
+      resumeCtasVisible: [".header-resume", ".hero-actions a[href$='_Resume.pdf']"].every(
+        (selector) => {
+          const element = document.querySelector(selector);
+          if (!element) return false;
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return (
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            rect.width > 0 &&
+            rect.height > 0
+          );
+        },
+      ),
+      resumeHubPlacement:
+        document.querySelector(".hero")?.nextElementSibling?.id === "resume-hub",
       liveConsoleExists:
         document.querySelector("#live-eval-console h2")?.textContent.trim() ===
         "Live Eval Console",
@@ -371,6 +498,21 @@ async function inspectDeploymentViewport(browser, viewport) {
       label: (await page.locator("#simulator-scenario-label").textContent())?.trim(),
     });
   }
+  const resumeCopyRuns = [];
+  const resumeButtons = page.locator(".resume-copy-button");
+  for (let index = 0; index < (await resumeButtons.count()); index += 1) {
+    const button = resumeButtons.nth(index);
+    const statusId = await button.getAttribute("data-status-target");
+    await button.click();
+    await page.waitForFunction(
+      (id) => document.getElementById(id)?.textContent.trim() === "Copied",
+      statusId,
+    );
+    resumeCopyRuns.push({
+      label: (await button.textContent())?.trim(),
+      status: (await page.locator(`#${statusId}`).textContent())?.trim(),
+    });
+  }
   await page.close();
 
   return {
@@ -379,6 +521,7 @@ async function inspectDeploymentViewport(browser, viewport) {
     demoAnchorWorks,
     demoAnchorLandsOnConsole,
     scenarioRuns,
+    resumeCopyRuns,
     consoleErrors,
   };
 }
@@ -391,12 +534,86 @@ function assertResult(result) {
     failures.push("proof artifact assets");
   }
   if (result.workflowCards !== 4) failures.push("workflow card count");
+  if (!result.resumeHubExists || !result.resumeHubTitle || result.resumeHubCount !== 1) {
+    failures.push("resume hub");
+  }
+  if (result.resumeHubCards !== 4) failures.push("resume hub cards");
+  if (
+    JSON.stringify(result.resumeHubCardTitles) !==
+    JSON.stringify(["Download Resume", "Best-fit roles", "Proof metrics", "Strongest resume bullet"])
+  ) {
+    failures.push("resume hub card titles");
+  }
+  if (
+    JSON.stringify(result.resumeCopyButtons) !==
+    JSON.stringify(["Copy Role Targets", "Copy Metrics", "Copy Resume Bullet"])
+  ) {
+    failures.push("resume hub copy buttons");
+  }
+  if (!result.recruiterVerificationExists || result.recruiterVerificationSteps !== 6) {
+    failures.push("recruiter verification path");
+  }
+  if (!result.resumeMetricsMatch) failures.push("resume proof metrics");
+  if (
+    result.resumeLinks.length < 4 ||
+    result.resumeLinks.some(
+      (link) => link.target !== "_blank" || !link.rel?.split(/\s+/).includes("noopener"),
+    )
+  ) {
+    failures.push("resume PDF links");
+  }
+  if (!result.downloadResumeLinkExists) failures.push("download resume link");
+  if (!result.resumeHubPlacement) failures.push("resume hub placement");
+  if (!result.resumeCtasVisible) failures.push("resume CTA visibility");
+  if (
+    result.resumeCopyRuns.length !== 3 ||
+    result.resumeCopyRuns.some((run) => run.status !== "Copied")
+  ) {
+    failures.push("resume hub copy behavior");
+  }
   if (!result.liveConsoleExists) failures.push("live console section");
   if (!result.liveEvalSimulatorAbsent) failures.push("retired live eval simulator naming");
   if (!result.liveConsoleSubtitle) failures.push("live console subtitle");
   if (!result.liveConsoleDisclosure) failures.push("live console disclosure");
   if (result.liveConsoleHeadingCount !== 1) failures.push("single live console heading");
   if (!result.platformNameExists) failures.push("platform naming");
+  if (!result.resumeHubExists || !result.resumeHubTitle || result.resumeHubCount !== 1) {
+    failures.push("resume hub");
+  }
+  if (result.resumeHubCards !== 4) failures.push("resume hub cards");
+  if (
+    JSON.stringify(result.resumeHubCardTitles) !==
+    JSON.stringify(["Download Resume", "Best-fit roles", "Proof metrics", "Strongest resume bullet"])
+  ) {
+    failures.push("resume hub card titles");
+  }
+  if (
+    JSON.stringify(result.resumeCopyButtons) !==
+    JSON.stringify(["Copy Role Targets", "Copy Metrics", "Copy Resume Bullet"])
+  ) {
+    failures.push("resume hub copy buttons");
+  }
+  if (!result.recruiterVerificationExists || result.recruiterVerificationSteps !== 6) {
+    failures.push("recruiter verification path");
+  }
+  if (!result.resumeMetricsMatch) failures.push("resume proof metrics");
+  if (
+    result.resumeLinks.length < 4 ||
+    result.resumeLinks.some(
+      (link) => link.target !== "_blank" || !link.rel?.split(/\s+/).includes("noopener"),
+    )
+  ) {
+    failures.push("resume PDF links");
+  }
+  if (!result.downloadResumeLinkExists) failures.push("download resume link");
+  if (!result.resumeHubPlacement) failures.push("resume hub placement");
+  if (!result.resumeCtasVisible) failures.push("resume CTA visibility");
+  if (
+    result.resumeCopyRuns.length !== 3 ||
+    result.resumeCopyRuns.some((run) => run.status !== "Copied")
+  ) {
+    failures.push("resume hub copy behavior");
+  }
   if (!result.demoNavTargetsConsole) failures.push("demo navigation target");
   if (!result.evalTraceExists) failures.push("eval trace timeline");
   if (
@@ -543,6 +760,30 @@ function assertDeploymentResult(result) {
   const staleTrackedStrings = findStaleTrackedStrings();
   if (staleTrackedStrings.length) {
     throw new Error(`stale tracked demo strings: ${JSON.stringify(staleTrackedStrings)}`);
+  }
+  if (!fs.existsSync(resumePath) || !fs.existsSync(deploymentResumePath)) {
+    throw new Error("resume PDF missing from one or more deployment roots");
+  }
+  for (const trackedResumePath of [
+    resumeRelativePath,
+    path.posix.join("frontend", resumeRelativePath),
+  ]) {
+    try {
+      execFileSync("git", ["ls-files", "--error-unmatch", "--", trackedResumePath], {
+        cwd: projectRoot,
+        stdio: "ignore",
+      });
+    } catch {
+      throw new Error(`resume PDF is not tracked by git: ${trackedResumePath}`);
+    }
+  }
+  const resumeBytes = fs.readFileSync(resumePath);
+  const deploymentResumeBytes = fs.readFileSync(deploymentResumePath);
+  if (
+    !resumeBytes.subarray(0, 5).equals(Buffer.from("%PDF-")) ||
+    !resumeBytes.equals(deploymentResumeBytes)
+  ) {
+    throw new Error("resume PDF assets are invalid or differ between deployment roots");
   }
 
   const launchOptions = { headless: true };
