@@ -61,6 +61,102 @@ a {
   box-shadow: 0 8px 24px rgba(16, 35, 63, 0.05);
 }
 
+.recruiter-conversion {
+  position: sticky;
+  top: 65px;
+  z-index: 48;
+  border-bottom: 1px solid rgba(189, 202, 221, 0.86);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 10px 24px rgba(16, 35, 63, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.recruiter-conversion-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: min(var(--content-max), calc(100% - 40px));
+  min-height: 47px;
+  margin: 0 auto;
+  padding: 6px 0;
+}
+
+.recruiter-conversion-inner > p {
+  min-width: 0;
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.recruiter-conversion-inner > p span {
+  margin: 0 3px;
+  color: var(--teal);
+}
+
+.recruiter-conversion-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.conversion-button {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: #ffffff;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 850;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.conversion-button:hover {
+  border-color: var(--teal);
+  background: var(--teal-soft);
+  transform: translateY(-1px);
+}
+
+.conversion-button-primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #ffffff;
+}
+
+.conversion-button-primary:hover {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: #ffffff;
+}
+
+.conversion-button:focus-visible {
+  outline: 3px solid rgba(15, 139, 141, 0.28);
+  outline-offset: 2px;
+}
+
+.recruiter-copy-status {
+  min-width: 42px;
+  color: var(--teal);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
 .brand,
 .nav-links,
 .button-row {
@@ -180,11 +276,11 @@ button.button {
 }
 
 [id] {
-  scroll-margin-top: 88px;
+  scroll-margin-top: 136px;
 }
 
 #demo {
-  scroll-margin-top: 112px;
+  scroll-margin-top: 160px;
 }
 
 .hero {
@@ -2099,6 +2195,28 @@ blockquote {
 }
 
 @media (max-width: 920px) {
+  .recruiter-conversion {
+    top: 105px;
+  }
+
+  .recruiter-conversion-inner {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+    padding: 7px 0;
+  }
+
+  .recruiter-conversion-actions {
+    width: 100%;
+    padding-bottom: 1px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .recruiter-conversion-actions::-webkit-scrollbar {
+    display: none;
+  }
+
   .resume-hub-heading {
     display: block;
   }
@@ -2131,11 +2249,11 @@ blockquote {
   }
 
   [id] {
-    scroll-margin-top: 126px;
+    scroll-margin-top: 202px;
   }
 
   #live-eval-console {
-    scroll-margin-top: 142px;
+    scroll-margin-top: 218px;
   }
 
   .hero,
@@ -2198,6 +2316,37 @@ blockquote {
     flex-wrap: nowrap;
     gap: 2px;
     font-size: 0.78rem;
+  }
+
+  .recruiter-conversion {
+    top: 101px;
+  }
+
+  .recruiter-conversion-inner {
+    width: min(100% - 28px, var(--content-max));
+  }
+
+  .recruiter-conversion-inner > p {
+    font-size: 0.66rem;
+  }
+
+  .conversion-button {
+    min-height: 30px;
+    padding: 6px 9px;
+    font-size: 0.68rem;
+  }
+
+  .recruiter-copy-status {
+    min-width: 38px;
+    font-size: 0.66rem;
+  }
+
+  [id] {
+    scroll-margin-top: 198px;
+  }
+
+  #live-eval-console {
+    scroll-margin-top: 214px;
   }
 
   .nav-links a {

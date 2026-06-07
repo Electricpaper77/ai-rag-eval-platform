@@ -44,6 +44,51 @@
       <span class="sr-only" id="copy-status" role="status" aria-live="polite"></span>
     </header>
 
+    <aside class="recruiter-conversion" aria-label="Recruiter conversion actions">
+      <div class="recruiter-conversion-inner">
+        <p>
+          AI Solutions Engineer candidate
+          <span aria-hidden="true">|</span>
+          LLM Evaluation <span aria-hidden="true">•</span> RAG Reliability
+          <span aria-hidden="true">•</span> Agent Guardrails
+        </p>
+        <div class="recruiter-conversion-actions">
+          <a
+            class="conversion-button conversion-button-primary"
+            href="assets/Zohaib_Ahmed_AI_Solutions_Engineer_GenAI_Resume.pdf"
+            target="_blank"
+            rel="noopener"
+          >
+            Download Resume
+          </a>
+          <a
+            class="conversion-button"
+            href="https://github.com/Electricpaper77/ai-rag-eval-platform"
+            target="_blank"
+            rel="noreferrer"
+          >
+            View GitHub
+          </a>
+          <button
+            class="conversion-button recruiter-copy-button"
+            type="button"
+            data-copy-target="resume-strongest-bullet"
+            data-status-target="recruiter-copy-status"
+            aria-label="Copy strongest resume bullet"
+          >
+            Copy Resume Bullet
+          </button>
+          <a class="conversion-button" href="#contact">Contact</a>
+          <span
+            class="recruiter-copy-status"
+            id="recruiter-copy-status"
+            role="status"
+            aria-live="polite"
+          ></span>
+        </div>
+      </div>
+    </aside>
+
     <main id="top">
       <section class="hero section-shell">
         <div class="hero-copy">
@@ -1138,7 +1183,9 @@
 
       copyButtons.forEach((button) => button.addEventListener("click", copyResumeBullet));
 
-      const resumeHubCopyButtons = document.querySelectorAll(".resume-copy-button");
+      const resumeHubCopyButtons = document.querySelectorAll(
+        ".resume-copy-button, .recruiter-copy-button",
+      );
 
       async function copyResumeHubAsset(event) {
         const button = event.currentTarget;

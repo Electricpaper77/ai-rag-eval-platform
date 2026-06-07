@@ -10,6 +10,16 @@ const deploymentUrl = pathToFileURL(path.join(projectRoot, "frontend", "index.ht
 const resumeRelativePath = "assets/Zohaib_Ahmed_AI_Solutions_Engineer_GenAI_Resume.pdf";
 const resumePath = path.join(projectRoot, resumeRelativePath);
 const deploymentResumePath = path.join(projectRoot, "frontend", resumeRelativePath);
+const recruiterConversionText =
+  "AI Solutions Engineer candidate | LLM Evaluation • RAG Reliability • Agent Guardrails";
+const strongestResumeBullet =
+  "Built a FastAPI-based agent reliability and LLM evaluation platform with JSONL audit artifacts, Prometheus metrics, replay validation, governance workflows, and automated regression testing; achieved 87% eval pass rate, 43 req/sec throughput, p95 270ms latency, 99%+ workflow success, and reduced hallucination rate from 18% to 6%.";
+const recruiterConversionLabels = [
+  "Download Resume",
+  "View GitHub",
+  "Copy Resume Bullet",
+  "Contact",
+];
 const staleDemoStrings = [
   "Live Eval " + "Simulator",
   "Good " + "Answer",
@@ -95,11 +105,38 @@ async function inspectViewport(browser, viewport) {
     const missingLocalAnchors = Array.from(
       new Set(localAnchors.filter((id) => !document.getElementById(id))),
     );
+    const recruiterConversion = document.querySelector(".recruiter-conversion");
+    const recruiterConversionRect = recruiterConversion?.getBoundingClientRect();
+    const headerRect = document.querySelector(".site-header")?.getBoundingClientRect();
 
     return {
       title: document.title,
       scrollWidth: document.documentElement.scrollWidth,
       clientWidth: document.documentElement.clientWidth,
+      recruiterConversionCount: document.querySelectorAll(".recruiter-conversion").length,
+      recruiterConversionText: recruiterConversion
+        ?.querySelector("p")
+        ?.textContent.replace(/\s+/g, " ")
+        .trim(),
+      recruiterConversionButtons: Array.from(
+        recruiterConversion?.querySelectorAll(".conversion-button") ?? [],
+      ).map((element) => ({
+        label: element.textContent.trim(),
+        tagName: element.tagName,
+        href: element.getAttribute("href"),
+        target: element.getAttribute("target"),
+        rel: element.getAttribute("rel"),
+      })),
+      recruiterConversionSticky:
+        recruiterConversion && getComputedStyle(recruiterConversion).position === "sticky",
+      recruiterConversionBelowHeader:
+        recruiterConversionRect && headerRect
+          ? recruiterConversionRect.top >= headerRect.bottom - 1
+          : false,
+      strongestResumeBullet:
+        document.getElementById("resume-strongest-bullet")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
       proofMetrics: document.querySelectorAll(".proof-bar-metrics > div").length,
       artifactCards: document.querySelectorAll(".artifact-grid .artifact-card").length,
       loadedArtifactImages: Array.from(document.querySelectorAll(".artifact-card img")).filter(
@@ -346,6 +383,13 @@ async function inspectViewport(browser, viewport) {
       status: (await page.locator(`#${statusId}`).textContent())?.trim(),
     });
   }
+  await page.locator(".recruiter-copy-button").click();
+  await page.waitForFunction(
+    () => document.getElementById("recruiter-copy-status")?.textContent.trim() === "Copied",
+  );
+  const recruiterCopyStatus = (
+    await page.locator("#recruiter-copy-status").textContent()
+  )?.trim();
   await page.close();
 
   return {
@@ -359,6 +403,7 @@ async function inspectViewport(browser, viewport) {
     projectPitchCopyStatus,
     applicationCopyRuns,
     resumeCopyRuns,
+    recruiterCopyStatus,
     consoleErrors,
   };
 }
@@ -385,11 +430,38 @@ async function inspectDeploymentViewport(browser, viewport) {
     const missingLocalAnchors = Array.from(
       new Set(localAnchors.filter((id) => !document.getElementById(id))),
     );
+    const recruiterConversion = document.querySelector(".recruiter-conversion");
+    const recruiterConversionRect = recruiterConversion?.getBoundingClientRect();
+    const headerRect = document.querySelector(".site-header")?.getBoundingClientRect();
 
     return {
       title: document.title,
       scrollWidth: document.documentElement.scrollWidth,
       clientWidth: document.documentElement.clientWidth,
+      recruiterConversionCount: document.querySelectorAll(".recruiter-conversion").length,
+      recruiterConversionText: recruiterConversion
+        ?.querySelector("p")
+        ?.textContent.replace(/\s+/g, " ")
+        .trim(),
+      recruiterConversionButtons: Array.from(
+        recruiterConversion?.querySelectorAll(".conversion-button") ?? [],
+      ).map((element) => ({
+        label: element.textContent.trim(),
+        tagName: element.tagName,
+        href: element.getAttribute("href"),
+        target: element.getAttribute("target"),
+        rel: element.getAttribute("rel"),
+      })),
+      recruiterConversionSticky:
+        recruiterConversion && getComputedStyle(recruiterConversion).position === "sticky",
+      recruiterConversionBelowHeader:
+        recruiterConversionRect && headerRect
+          ? recruiterConversionRect.top >= headerRect.bottom - 1
+          : false,
+      strongestResumeBullet:
+        document.getElementById("resume-strongest-bullet")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
       platformNameExists:
         document.title === "AI Agent Reliability Platform" &&
         document.querySelector("h1")?.textContent.trim() === "AI Agent Reliability Platform",
@@ -513,6 +585,13 @@ async function inspectDeploymentViewport(browser, viewport) {
       status: (await page.locator(`#${statusId}`).textContent())?.trim(),
     });
   }
+  await page.locator(".recruiter-copy-button").click();
+  await page.waitForFunction(
+    () => document.getElementById("recruiter-copy-status")?.textContent.trim() === "Copied",
+  );
+  const recruiterCopyStatus = (
+    await page.locator("#recruiter-copy-status").textContent()
+  )?.trim();
   await page.close();
 
   return {
@@ -522,6 +601,7 @@ async function inspectDeploymentViewport(browser, viewport) {
     demoAnchorLandsOnConsole,
     scenarioRuns,
     resumeCopyRuns,
+    recruiterCopyStatus,
     consoleErrors,
   };
 }
@@ -529,6 +609,7 @@ async function inspectDeploymentViewport(browser, viewport) {
 function assertResult(result) {
   const failures = [];
   if (result.scrollWidth !== result.clientWidth) failures.push("horizontal overflow");
+  assertRecruiterConversion(result, failures);
   if (result.proofMetrics !== 5) failures.push("proof metric count");
   if (result.artifactCards !== 6 || result.loadedArtifactImages !== 6) {
     failures.push("proof artifact assets");
@@ -716,6 +797,7 @@ function assertResult(result) {
 function assertDeploymentResult(result) {
   const failures = [];
   if (result.scrollWidth !== result.clientWidth) failures.push("horizontal overflow");
+  assertRecruiterConversion(result, failures);
   if (!result.platformNameExists) failures.push("platform naming");
   if (!result.liveConsoleExists) failures.push("live console section");
   if (
@@ -753,6 +835,49 @@ function assertDeploymentResult(result) {
 
   if (failures.length) {
     throw new Error(`${result.viewport} failed: ${failures.join(", ")}`);
+  }
+}
+
+function assertRecruiterConversion(result, failures) {
+  if (
+    result.recruiterConversionCount !== 1 ||
+    result.recruiterConversionText !== recruiterConversionText
+  ) {
+    failures.push("recruiter conversion header");
+  }
+  if (
+    JSON.stringify(result.recruiterConversionButtons.map((button) => button.label)) !==
+    JSON.stringify(recruiterConversionLabels)
+  ) {
+    failures.push("recruiter conversion buttons");
+  }
+
+  const [resume, github, copy, contact] = result.recruiterConversionButtons;
+  if (
+    resume?.href !== resumeRelativePath ||
+    resume.target !== "_blank" ||
+    !resume.rel?.split(/\s+/).includes("noopener")
+  ) {
+    failures.push("recruiter resume route");
+  }
+  if (
+    github?.href !== "https://github.com/Electricpaper77/ai-rag-eval-platform" ||
+    github.target !== "_blank"
+  ) {
+    failures.push("recruiter GitHub route");
+  }
+  if (copy?.tagName !== "BUTTON" || copy.href !== null) {
+    failures.push("recruiter copy button");
+  }
+  if (contact?.href !== "#contact") failures.push("recruiter contact route");
+  if (!result.recruiterConversionSticky || !result.recruiterConversionBelowHeader) {
+    failures.push("recruiter sticky placement");
+  }
+  if (result.strongestResumeBullet !== strongestResumeBullet) {
+    failures.push("recruiter resume bullet text");
+  }
+  if (result.recruiterCopyStatus !== "Copied") {
+    failures.push("recruiter copy behavior");
   }
 }
 
