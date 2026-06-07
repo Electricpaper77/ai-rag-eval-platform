@@ -10,6 +10,9 @@ const deploymentUrl = pathToFileURL(path.join(projectRoot, "frontend", "index.ht
 const resumeRelativePath = "assets/Zohaib_Ahmed_AI_Solutions_Engineer_GenAI_Resume.pdf";
 const resumePath = path.join(projectRoot, resumeRelativePath);
 const deploymentResumePath = path.join(projectRoot, "frontend", resumeRelativePath);
+const faviconRelativePath = "assets/favicon.svg";
+const faviconPath = path.join(projectRoot, faviconRelativePath);
+const deploymentFaviconPath = path.join(projectRoot, "frontend", faviconRelativePath);
 const recruiterConversionText =
   "AI Solutions Engineer candidate | LLM Evaluation • RAG Reliability • Agent Guardrails";
 const strongestResumeBullet =
@@ -136,6 +139,7 @@ async function inspectViewport(browser, viewport) {
       title: document.title,
       scrollWidth: document.documentElement.scrollWidth,
       clientWidth: document.documentElement.clientWidth,
+      faviconHref: document.querySelector("link[rel='icon']")?.getAttribute("href"),
       recruiterConversionCount: document.querySelectorAll(".recruiter-conversion").length,
       recruiterConversionText: recruiterConversion
         ?.querySelector("p")
@@ -544,6 +548,7 @@ async function inspectDeploymentViewport(browser, viewport) {
       title: document.title,
       scrollWidth: document.documentElement.scrollWidth,
       clientWidth: document.documentElement.clientWidth,
+      faviconHref: document.querySelector("link[rel='icon']")?.getAttribute("href"),
       recruiterConversionCount: document.querySelectorAll(".recruiter-conversion").length,
       recruiterConversionText: recruiterConversion
         ?.querySelector("p")
@@ -799,6 +804,7 @@ async function inspectDeploymentViewport(browser, viewport) {
 function assertResult(result) {
   const failures = [];
   if (result.scrollWidth !== result.clientWidth) failures.push("horizontal overflow");
+  if (result.faviconHref !== "./assets/favicon.svg") failures.push("favicon link");
   assertTopConversionFlow(result, failures);
   assertRecruiterConversion(result, failures);
   assertRecruiterActionPanel(result, failures);
@@ -989,6 +995,7 @@ function assertResult(result) {
 function assertDeploymentResult(result) {
   const failures = [];
   if (result.scrollWidth !== result.clientWidth) failures.push("horizontal overflow");
+  if (result.faviconHref !== "./assets/favicon.svg") failures.push("favicon link");
   assertTopConversionFlow(result, failures);
   assertRecruiterConversion(result, failures);
   assertRecruiterActionPanel(result, failures);
@@ -1181,6 +1188,9 @@ function assertRecruiterActionPanel(result, failures) {
   }
   if (!fs.existsSync(resumePath) || !fs.existsSync(deploymentResumePath)) {
     throw new Error("resume PDF missing from one or more deployment roots");
+  }
+  if (!fs.existsSync(faviconPath) || !fs.existsSync(deploymentFaviconPath)) {
+    throw new Error("favicon missing from one or more deployment roots");
   }
   for (const trackedResumePath of [
     resumeRelativePath,
