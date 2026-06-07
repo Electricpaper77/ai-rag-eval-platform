@@ -20,6 +20,24 @@ const recruiterConversionLabels = [
   "Copy Resume Bullet",
   "Contact",
 ];
+const recruiterActionSubtitle =
+  "For AI Solutions Engineer, LLM Evaluation, Forward Deployed AI, and Applied GenAI roles.";
+const recruiterActionTitles = [
+  "Download resume",
+  "Inspect proof artifacts",
+  "Review Live Eval Console",
+  "Contact candidate",
+];
+const recruiterActionButtonLabels = [
+  "Download Resume",
+  "View Proof Artifacts",
+  "View Demo",
+  "Contact Me",
+];
+const recruiterAvailability =
+  "Available for Bay Area hybrid and remote AI Solutions Engineer / LLM Evaluation roles.";
+const hiringSummary =
+  "Zohaib Ahmed is targeting AI Solutions Engineer, LLM Evaluation, Forward Deployed AI, and Applied GenAI roles. His AI Agent Reliability Platform demonstrates RAG evaluation, JSONL audit logs, guardrails, pytest regression checks, Prometheus-style metrics, and production-readiness validation.";
 const staleDemoStrings = [
   "Live Eval " + "Simulator",
   "Good " + "Answer",
@@ -137,6 +155,38 @@ async function inspectViewport(browser, viewport) {
         document.getElementById("resume-strongest-bullet")?.textContent
           .replace(/\s+/g, " ")
           .trim() ?? "",
+      recruiterActionCount: document.querySelectorAll("#recruiter-action-panel").length,
+      recruiterActionEyebrow:
+        document.querySelector("#recruiter-action-panel .eyebrow")?.textContent.trim() ?? "",
+      recruiterActionTitle:
+        document.querySelector("#recruiter-action-title")?.textContent.trim() ?? "",
+      recruiterActionSubtitle:
+        document.querySelector("#recruiter-action-panel .section-note")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      recruiterActionCards: Array.from(
+        document.querySelectorAll("#recruiter-action-panel .recruiter-action-card"),
+      ).map((card) => {
+        const link = card.querySelector("a.button");
+        return {
+          title: card.querySelector("h3")?.textContent.trim() ?? "",
+          label: link?.textContent.trim() ?? "",
+          href: link?.getAttribute("href") ?? null,
+          target: link?.getAttribute("target") ?? null,
+          rel: link?.getAttribute("rel") ?? null,
+        };
+      }),
+      recruiterAvailability:
+        document.querySelector("#recruiter-action-panel .recruiter-action-footer > p")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      hiringSummary:
+        document.getElementById("hiring-summary-copy-text")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      recruiterActionPlacement:
+        document.querySelector(".hero")?.nextElementSibling?.id === "recruiter-action-panel" &&
+        document.getElementById("recruiter-action-panel")?.nextElementSibling?.id === "resume-hub",
       proofMetrics: document.querySelectorAll(".proof-bar-metrics > div").length,
       artifactCards: document.querySelectorAll(".artifact-grid .artifact-card").length,
       loadedArtifactImages: Array.from(document.querySelectorAll(".artifact-card img")).filter(
@@ -196,7 +246,7 @@ async function inspectViewport(browser, viewport) {
         },
       ),
       resumeHubPlacement:
-        document.querySelector(".hero")?.nextElementSibling?.id === "resume-hub",
+        document.getElementById("recruiter-action-panel")?.nextElementSibling?.id === "resume-hub",
       liveConsoleExists:
         document.querySelector("#live-eval-console h2")?.textContent.trim() ===
         "Live Eval Console",
@@ -390,6 +440,13 @@ async function inspectViewport(browser, viewport) {
   const recruiterCopyStatus = (
     await page.locator("#recruiter-copy-status").textContent()
   )?.trim();
+  await page.locator(".hiring-summary-copy-button").click();
+  await page.waitForFunction(
+    () => document.getElementById("hiring-summary-copy-status")?.textContent.trim() === "Copied",
+  );
+  const hiringSummaryCopyStatus = (
+    await page.locator("#hiring-summary-copy-status").textContent()
+  )?.trim();
   await page.close();
 
   return {
@@ -404,6 +461,7 @@ async function inspectViewport(browser, viewport) {
     applicationCopyRuns,
     resumeCopyRuns,
     recruiterCopyStatus,
+    hiringSummaryCopyStatus,
     consoleErrors,
   };
 }
@@ -462,6 +520,38 @@ async function inspectDeploymentViewport(browser, viewport) {
         document.getElementById("resume-strongest-bullet")?.textContent
           .replace(/\s+/g, " ")
           .trim() ?? "",
+      recruiterActionCount: document.querySelectorAll("#recruiter-action-panel").length,
+      recruiterActionEyebrow:
+        document.querySelector("#recruiter-action-panel .eyebrow")?.textContent.trim() ?? "",
+      recruiterActionTitle:
+        document.querySelector("#recruiter-action-title")?.textContent.trim() ?? "",
+      recruiterActionSubtitle:
+        document.querySelector("#recruiter-action-panel .section-note")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      recruiterActionCards: Array.from(
+        document.querySelectorAll("#recruiter-action-panel .recruiter-action-card"),
+      ).map((card) => {
+        const link = card.querySelector("a.button");
+        return {
+          title: card.querySelector("h3")?.textContent.trim() ?? "",
+          label: link?.textContent.trim() ?? "",
+          href: link?.getAttribute("href") ?? null,
+          target: link?.getAttribute("target") ?? null,
+          rel: link?.getAttribute("rel") ?? null,
+        };
+      }),
+      recruiterAvailability:
+        document.querySelector("#recruiter-action-panel .recruiter-action-footer > p")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      hiringSummary:
+        document.getElementById("hiring-summary-copy-text")?.textContent
+          .replace(/\s+/g, " ")
+          .trim() ?? "",
+      recruiterActionPlacement:
+        document.querySelector(".hero")?.nextElementSibling?.id === "recruiter-action-panel" &&
+        document.getElementById("recruiter-action-panel")?.nextElementSibling?.id === "resume-hub",
       platformNameExists:
         document.title === "AI Agent Reliability Platform" &&
         document.querySelector("h1")?.textContent.trim() === "AI Agent Reliability Platform",
@@ -518,7 +608,7 @@ async function inspectDeploymentViewport(browser, viewport) {
         },
       ),
       resumeHubPlacement:
-        document.querySelector(".hero")?.nextElementSibling?.id === "resume-hub",
+        document.getElementById("recruiter-action-panel")?.nextElementSibling?.id === "resume-hub",
       liveConsoleExists:
         document.querySelector("#live-eval-console h2")?.textContent.trim() ===
         "Live Eval Console",
@@ -592,6 +682,13 @@ async function inspectDeploymentViewport(browser, viewport) {
   const recruiterCopyStatus = (
     await page.locator("#recruiter-copy-status").textContent()
   )?.trim();
+  await page.locator(".hiring-summary-copy-button").click();
+  await page.waitForFunction(
+    () => document.getElementById("hiring-summary-copy-status")?.textContent.trim() === "Copied",
+  );
+  const hiringSummaryCopyStatus = (
+    await page.locator("#hiring-summary-copy-status").textContent()
+  )?.trim();
   await page.close();
 
   return {
@@ -602,6 +699,7 @@ async function inspectDeploymentViewport(browser, viewport) {
     scenarioRuns,
     resumeCopyRuns,
     recruiterCopyStatus,
+    hiringSummaryCopyStatus,
     consoleErrors,
   };
 }
@@ -610,6 +708,7 @@ function assertResult(result) {
   const failures = [];
   if (result.scrollWidth !== result.clientWidth) failures.push("horizontal overflow");
   assertRecruiterConversion(result, failures);
+  assertRecruiterActionPanel(result, failures);
   if (result.proofMetrics !== 5) failures.push("proof metric count");
   if (result.artifactCards !== 6 || result.loadedArtifactImages !== 6) {
     failures.push("proof artifact assets");
@@ -798,6 +897,7 @@ function assertDeploymentResult(result) {
   const failures = [];
   if (result.scrollWidth !== result.clientWidth) failures.push("horizontal overflow");
   assertRecruiterConversion(result, failures);
+  assertRecruiterActionPanel(result, failures);
   if (!result.platformNameExists) failures.push("platform naming");
   if (!result.liveConsoleExists) failures.push("live console section");
   if (
@@ -879,6 +979,46 @@ function assertRecruiterConversion(result, failures) {
   if (result.recruiterCopyStatus !== "Copied") {
     failures.push("recruiter copy behavior");
   }
+}
+
+function assertRecruiterActionPanel(result, failures) {
+  if (
+    result.recruiterActionCount !== 1 ||
+    result.recruiterActionEyebrow !== "FAST HIRING PATH" ||
+    result.recruiterActionTitle !== "What to review first" ||
+    result.recruiterActionSubtitle !== recruiterActionSubtitle
+  ) {
+    failures.push("recruiter action panel");
+  }
+  if (
+    result.recruiterActionCards.length !== 4 ||
+    JSON.stringify(result.recruiterActionCards.map((card) => card.title)) !==
+      JSON.stringify(recruiterActionTitles) ||
+    JSON.stringify(result.recruiterActionCards.map((card) => card.label)) !==
+      JSON.stringify(recruiterActionButtonLabels)
+  ) {
+    failures.push("recruiter action cards");
+  }
+
+  const [resume, proof, demo, contact] = result.recruiterActionCards;
+  if (
+    resume?.href !== resumeRelativePath ||
+    resume.target !== "_blank" ||
+    !resume.rel?.split(/\s+/).includes("noopener")
+  ) {
+    failures.push("recruiter action resume route");
+  }
+  if (proof?.href !== "#proof") failures.push("recruiter action proof route");
+  if (demo?.href !== "#live-eval-console") failures.push("recruiter action demo route");
+  if (contact?.href !== "#contact") failures.push("recruiter action contact route");
+  if (result.recruiterAvailability !== recruiterAvailability) {
+    failures.push("recruiter availability");
+  }
+  if (result.hiringSummary !== hiringSummary) failures.push("hiring summary text");
+  if (result.hiringSummaryCopyStatus !== "Copied") {
+    failures.push("hiring summary copy behavior");
+  }
+  if (!result.recruiterActionPlacement) failures.push("recruiter action placement");
 }
 
 (async () => {

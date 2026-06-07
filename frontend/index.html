@@ -148,6 +148,97 @@
         </aside>
       </section>
 
+      <section
+        id="recruiter-action-panel"
+        class="section-shell recruiter-action-panel"
+        aria-labelledby="recruiter-action-title"
+      >
+        <div class="recruiter-action-heading">
+          <div>
+            <p class="eyebrow">FAST HIRING PATH</p>
+            <h2 id="recruiter-action-title">What to review first</h2>
+          </div>
+          <p class="section-note">
+            For AI Solutions Engineer, LLM Evaluation, Forward Deployed AI, and Applied GenAI
+            roles.
+          </p>
+        </div>
+
+        <div class="recruiter-action-grid">
+          <article class="recruiter-action-card">
+            <span>01 / Resume</span>
+            <h3>Download resume</h3>
+            <p>
+              One-page AI Solutions Engineer resume with agent reliability, LLM evaluation, RAG,
+              guardrails, FastAPI, Cloud Run, Prometheus, and JSONL proof.
+            </p>
+            <a
+              class="button primary"
+              href="assets/Zohaib_Ahmed_AI_Solutions_Engineer_GenAI_Resume.pdf"
+              target="_blank"
+              rel="noopener"
+            >
+              Download Resume
+            </a>
+          </article>
+
+          <article class="recruiter-action-card">
+            <span>02 / Proof</span>
+            <h3>Inspect proof artifacts</h3>
+            <p>
+              Review JSONL audit logs, pytest regression checks, proof screenshots, and eval
+              metrics.
+            </p>
+            <a class="button secondary" href="#proof">View Proof Artifacts</a>
+          </article>
+
+          <article class="recruiter-action-card">
+            <span>03 / Technical Demo</span>
+            <h3>Review Live Eval Console</h3>
+            <p>
+              See how RAG citation checks, failure cases, prompt injection defense, PASS/REVIEW
+              gates, and JSONL evidence work.
+            </p>
+            <a class="button secondary" href="#live-eval-console">View Demo</a>
+          </article>
+
+          <article class="recruiter-action-card">
+            <span>04 / Contact</span>
+            <h3>Contact candidate</h3>
+            <p>
+              Best fit for AI Solutions Engineer, LLM Evaluation Engineer, Applied GenAI
+              Engineer, Forward Deployed AI Engineer, and RAG Reliability roles.
+            </p>
+            <a class="button secondary" href="#contact">Contact Me</a>
+          </article>
+        </div>
+
+        <div class="recruiter-action-footer">
+          <p>
+            Available for Bay Area hybrid and remote AI Solutions Engineer / LLM Evaluation
+            roles.
+          </p>
+          <div class="recruiter-action-copy">
+            <button
+              class="button secondary hiring-summary-copy-button"
+              type="button"
+              data-copy-target="hiring-summary-copy-text"
+              data-status-target="hiring-summary-copy-status"
+              aria-label="Copy hiring summary"
+            >
+              Copy Hiring Summary
+            </button>
+            <span id="hiring-summary-copy-status" role="status" aria-live="polite"></span>
+          </div>
+          <p id="hiring-summary-copy-text" class="sr-only">
+            Zohaib Ahmed is targeting AI Solutions Engineer, LLM Evaluation, Forward Deployed AI,
+            and Applied GenAI roles. His AI Agent Reliability Platform demonstrates RAG
+            evaluation, JSONL audit logs, guardrails, pytest regression checks, Prometheus-style
+            metrics, and production-readiness validation.
+          </p>
+        </div>
+      </section>
+
       <section id="resume-hub" class="section-shell resume-hub" aria-label="Resume Hub">
         <div class="resume-hub-heading">
           <div>
@@ -1184,7 +1275,7 @@
       copyButtons.forEach((button) => button.addEventListener("click", copyResumeBullet));
 
       const resumeHubCopyButtons = document.querySelectorAll(
-        ".resume-copy-button, .recruiter-copy-button",
+        ".resume-copy-button, .recruiter-copy-button, .hiring-summary-copy-button",
       );
 
       async function copyResumeHubAsset(event) {
