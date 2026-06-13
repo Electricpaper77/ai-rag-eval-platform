@@ -99,6 +99,32 @@ Expected response excerpt:
 
 This deterministic demo uses fixed local evidence and requires no external API key or paid model dependency, allowing judges to review reliability behavior reproducibly.
 
+## AgentTrust IQ Command Center
+
+The judge-facing Command Center turns the deterministic demo into a single visual flow: user question, retrieved policy evidence, cited agent answer, reliability checks, deployment decision, and JSONL audit record. It fetches `GET /demo/agenttrust-iq` when the FastAPI service is running and uses the same built-in deterministic fixture on the static walkthrough.
+
+Run it locally:
+
+```bash
+python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8000/demo/agenttrust-iq/command-center
+```
+
+Recommended screenshot filename: `agenttrust_iq_command_center.png`
+
+Suggested 60-90 second demo video flow:
+
+1. Start on the six headline reliability metrics and Agent Readiness Score of 92.
+2. Follow the animated question-to-decision workflow.
+3. Point out the three governed evidence snippets and matching citations.
+4. Show the reliability checks and "Ready for controlled deployment" release decision.
+5. Finish on the JSONL audit record and replay the workflow.
+
 ## Hackathon Judge Summary
 
 AgentTrust IQ is an evaluation and reliability layer designed to complement Microsoft Foundry / Foundry IQ reasoning-agent workflows. It turns groundedness, citation quality, hallucination risk, guardrail behavior, latency, and auditability into repeatable evidence that can gate releases through CI/CD.
