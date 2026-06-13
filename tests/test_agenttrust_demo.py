@@ -1,0 +1,51 @@
+from __future__ import annotations
+
+import json
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from backend.app.routes import agenttrust_demo
+
+
+app = FastAPI()
+app.include_router(agenttrust_demo.router)
+client = TestClient(app)
+
+
+def test_agenttrust_iq_demo_returns_full_deterministic_flow(tmp_path, monkeypatch):
+    audit_path = tmp_path / "demo_runs.jsonl"
+    monkeypatch.setattr(agenttrust_demo, "AUDIT_LOG_PATH", audit_path)
+
+    response = client.get("/demo/agenttrust-iq")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["project_name"] == "AgentTrust IQ"
+    assert payload["track"] == "Reasoning Agents"
+    assert payload["agent_readiness_score"] == 92
+    assert payload["failure_reasons"] == []
+    assert payload["recommended_fixes"] == []
+    assert [item["source_id"] for item in payload["retrieved_evidence"]] == [
+        "source_1",
+        "source_2",
+        "source_3",
+    ]
+    assert "[source_1]" in payload["agent_answer"]
+    assert "[source_2]" in payload["agent_answer"]
+    assert "[source_3]" in payload["agent_answer"]
+    assert payload["checks"] == {
+        "groundedness": "pass",
+        "citation_support": "pass",
+        "hallucination_risk": "low",
+        "prompt_injection_resistance": "pass",
+        "pii_exposure": "none",
+        "latency_ms": 12.0,
+        "audit_log_complete": "pass",
+    }
+
+    returned_record = json.loads(payload["jsonl_audit_record"])
+    written_record = json.loads(audit_path.read_text(encoding="utf-8").strip())
+    assert returned_record == written_record
+    assert written_record["demo_mode"] == "deterministic"
+    assert written_record["agent_readiness_score"] == 92
