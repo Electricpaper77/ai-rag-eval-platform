@@ -9,7 +9,7 @@ The platform measures citation coverage, hallucination risk, refusal behavior, p
 ## Microsoft Agents League Submission
 
 - Challenge track: Reasoning Agents
-- Platform alignment: Microsoft Foundry / Foundry IQ
+- Platform positioning: aligned with Microsoft Foundry / Foundry IQ
 - Core output: Agent Readiness Score
 - Evaluation artifacts: JSONL audit logs
 - Regression proof: 133+ passing pytest checks
@@ -128,7 +128,7 @@ Suggested 60-90 second demo video flow:
 
 ## Hackathon Judge Summary
 
-AgentTrust IQ is an evaluation and reliability layer designed to complement Microsoft Foundry / Foundry IQ reasoning-agent workflows. It turns groundedness, citation quality, hallucination risk, guardrail behavior, latency, and auditability into repeatable evidence that can gate releases through CI/CD.
+AgentTrust IQ is an evaluation and reliability layer aligned with Microsoft Foundry / Foundry IQ and designed to complement Microsoft reasoning-agent workflows. It turns groundedness, citation quality, hallucination risk, guardrail behavior, latency, and auditability into repeatable evidence that can gate releases through CI/CD.
 
 This repository demonstrates:
 

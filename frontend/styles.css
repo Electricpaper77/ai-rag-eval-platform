@@ -61,6 +61,57 @@ a {
   box-shadow: 0 8px 24px rgba(16, 35, 63, 0.05);
 }
 
+.hackathon-banner {
+  border-bottom: 1px solid rgba(98, 230, 216, 0.22);
+  background: #10233f;
+  color: #ffffff;
+}
+
+.hackathon-banner-inner {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: min(var(--content-max), calc(100% - 40px));
+  margin: 0 auto;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.hackathon-banner-mark {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #62e6d8;
+  box-shadow: 0 0 16px rgba(98, 230, 216, 0.8);
+}
+
+.hackathon-banner-inner strong {
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.hackathon-banner-inner a {
+  padding: 5px 9px;
+  border: 1px solid rgba(98, 230, 216, 0.34);
+  border-radius: 999px;
+  background: rgba(98, 230, 216, 0.1);
+  color: #9af3e8;
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.hackathon-banner-inner a:hover,
+.hackathon-banner-inner a:focus-visible {
+  border-color: #62e6d8;
+  background: rgba(98, 230, 216, 0.18);
+  outline: none;
+}
+
 .recruiter-conversion {
   position: sticky;
   top: 65px;
@@ -326,6 +377,36 @@ h2 {
   margin: 24px 0 0;
   color: var(--muted);
   font-size: clamp(1.05rem, 2vw, 1.28rem);
+}
+
+.hero-pitch {
+  max-width: 700px;
+  margin-top: 22px;
+  padding: 16px 18px;
+  border: 1px solid rgba(15, 139, 141, 0.22);
+  border-radius: 14px;
+  background: var(--teal-soft);
+}
+
+.hero-pitch strong {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--teal);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hero-pitch p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.hero-pitch p + p {
+  margin-top: 7px;
 }
 
 .button-row {
@@ -3626,6 +3707,19 @@ blockquote {
     width: min(100% - 28px, var(--content-max));
   }
 
+  .hackathon-banner-inner {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+    width: min(100% - 28px, var(--content-max));
+    padding: 10px 0;
+    text-align: left;
+  }
+
+  .hackathon-banner-mark {
+    display: none;
+  }
+
   .nav-links {
     width: 100%;
     flex-wrap: nowrap;
@@ -3981,7 +4075,17 @@ blockquote {
   }
 
   .hero {
-    padding-top: 46px;
+    padding-top: 30px;
+  }
+
+  .hero-pitch {
+    margin-top: 14px;
+    padding: 12px 14px;
+  }
+
+  .hero-pitch p {
+    font-size: 0.84rem;
+    line-height: 1.45;
   }
 
   h1 {
