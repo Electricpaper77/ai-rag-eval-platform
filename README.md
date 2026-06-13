@@ -1,6 +1,38 @@
-# AI RAG Evaluation and Reliability Platform
+# AgentTrust IQ — Reliability Layer for Microsoft Reasoning Agents
 
-A reproducible FastAPI evaluation platform for RAG and model-response workflows. It measures citation coverage, hallucination risk, refusal behavior, prompt-injection resistance, PII handling, latency, and regression drift, then writes reviewer-readable JSONL evidence.
+AgentTrust IQ evaluates whether Microsoft Reasoning Agent outputs are grounded, cited, safe, and deployment-ready.
+
+Most hackathon agents show what an agent can do. AgentTrust IQ shows whether an agent should be trusted in production.
+
+The platform measures citation coverage, hallucination risk, refusal behavior, prompt-injection resistance, PII handling, latency, audit-log completeness, and regression drift. Each run writes reviewer-readable JSONL evidence and produces an Agent Readiness Score with evidence-backed failure reasons.
+
+## Microsoft Agents League Submission
+
+- Challenge track: Reasoning Agents
+- Platform alignment: Microsoft Foundry / Foundry IQ
+- Core output: Agent Readiness Score
+- Evaluation artifacts: JSONL audit logs
+- Regression proof: 133+ passing pytest checks
+- Reliability checks: groundedness, citations, hallucination risk, refusal behavior, prompt injection, PII exposure, latency, and auditability
+
+## Demo Workflow
+
+1. A user asks a reasoning-agent question.
+2. The system retrieves evidence from a governed knowledge base.
+3. The agent generates a cited answer.
+4. AgentTrust IQ evaluates the answer against retrieved evidence.
+5. The dashboard returns an Agent Readiness Score, failed checks, latency, citation quality, hallucination risk, and recommended fixes.
+6. Each run creates JSONL audit logs for repeatable review and CI/CD regression testing.
+
+## Measurable Proof
+
+- 87% eval pass rate across reliability scenarios
+- Hallucination rate reduced from 18% to 6%
+- 133+ passing pytest checks
+- JSONL audit logs generated for evaluation runs
+- Checks include groundedness, citation precision, refusal behavior, prompt-injection resistance, PII exposure, latency, and audit completeness
+
+The 87% pass-rate and 18%-to-6% hallucination figures are Innovation Studio submission metrics. The checksum-backed repository fixtures are reported separately in [Evidence and Metrics](#evidence-and-metrics) so judges can distinguish submission-level outcomes from reproducible local artifacts.
 
 ## Project Links
 
@@ -11,20 +43,22 @@ A reproducible FastAPI evaluation platform for RAG and model-response workflows.
 
 The Vercel link is a static portfolio walkthrough. The FastAPI service and evaluation endpoints run locally through the commands below; this repository does not claim live customer traffic or a hosted production API.
 
-## Recruiter Summary
+## Hackathon Judge Summary
 
-This project demonstrates:
+AgentTrust IQ is an evaluation and reliability layer designed to complement Microsoft Foundry / Foundry IQ reasoning-agent workflows. It turns groundedness, citation quality, hallucination risk, guardrail behavior, latency, and auditability into repeatable evidence that can gate releases through CI/CD.
+
+This repository demonstrates:
 
 - Deterministic LLM and RAG evaluation with explicit pass/fail criteria.
-- Citation, hallucination, refusal, prompt-injection, and PII checks.
+- Groundedness, citation, hallucination, refusal, prompt-injection, and PII checks.
 - JSONL audit records and checksum-backed evidence summaries.
 - Prometheus-format evaluation and inference metrics.
 - OpenAI-compatible inference, routing, reliability, and streaming interfaces.
-- Pytest regression coverage for evaluator behavior and artifact contracts.
+- Pytest regression coverage for evaluator behavior, guardrails, and artifact contracts.
 
 Best-fit roles: AI Solutions Engineer, LLM Evaluation Engineer, Applied GenAI Engineer, and AI Reliability Engineer.
 
-## Reviewer Fast Path
+## Judge Fast Path
 
 ```bash
 python -m pytest -q
@@ -90,9 +124,10 @@ These are local artifact results. They are not capacity claims for a production 
 ### Evaluation
 
 - `POST /evaluate` for structured model-response evaluation.
-- Deterministic citation, hallucination, refusal, PII, and prompt-injection checks.
-- JSONL case records and summary artifacts.
-- Regression tests for evaluator behavior and evidence schemas.
+- Deterministic groundedness, citation, hallucination, refusal, PII, and prompt-injection checks.
+- Agent Readiness Score inputs with evidence-backed failure reasons.
+- JSONL case records, audit logs, and summary artifacts.
+- CI/CD-ready regression tests for evaluator behavior, guardrails, and evidence schemas.
 
 ### Inference and Reliability
 
@@ -127,8 +162,8 @@ flowchart LR
     Inference --> Router["Backend router"]
     Router --> Mock["Mock local adapter"]
     Router --> External["Optional external adapters"]
-    Evaluator --> Rules["Citation, hallucination, refusal, PII, injection checks"]
-    Evaluator --> JSONL["JSONL evidence"]
+    Evaluator --> Rules["Groundedness, citation, hallucination, refusal, PII, injection checks"]
+    Evaluator --> JSONL["JSONL audit evidence"]
     API --> Metrics["Prometheus metrics"]
     JSONL --> Tests["Pytest regression checks"]
 ```
@@ -203,4 +238,4 @@ Validation counts describe the current local working tree and should be refreshe
 
 ## Resume Bullet
 
-Built a FastAPI RAG and LLM evaluation platform with deterministic citation, hallucination, refusal, prompt-injection, and PII checks; generated checksum-backed JSONL evidence across 131 fixture records, exposed Prometheus metrics, and validated the current working tree with 133 passing pytest checks.
+Built AgentTrust IQ, a FastAPI reliability layer for Microsoft reasoning agents with deterministic groundedness, citation, hallucination, refusal, prompt-injection, and PII checks; generated checksum-backed JSONL audit evidence across 131 fixture records, exposed Prometheus metrics, and validated the current working tree with 133 passing pytest checks.
