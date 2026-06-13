@@ -262,6 +262,107 @@
         font-size: clamp(2rem, 3vw, 2.8rem);
       }
 
+      .judge-mode {
+        margin-bottom: 26px;
+        padding: clamp(20px, 3vw, 30px);
+        border: 1px solid rgba(98, 230, 216, 0.22);
+        border-radius: var(--radius);
+        background:
+          linear-gradient(145deg, rgba(98, 230, 216, 0.07), rgba(106, 168, 255, 0.06)),
+          rgba(11, 27, 44, 0.86);
+        box-shadow: 0 20px 55px rgba(0, 0, 0, 0.18);
+      }
+
+      .judge-mode-heading {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 18px;
+      }
+
+      .judge-mode-heading h2 {
+        margin: 0;
+        font-size: clamp(1.45rem, 2.4vw, 2.2rem);
+      }
+
+      .judge-mode-heading p {
+        max-width: 560px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .judge-card-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .judge-card {
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        background: rgba(6, 17, 31, 0.62);
+      }
+
+      .judge-card span {
+        display: inline-grid;
+        width: 28px;
+        height: 28px;
+        margin-bottom: 14px;
+        place-items: center;
+        border: 1px solid rgba(98, 230, 216, 0.28);
+        border-radius: 9px;
+        background: var(--cyan-soft);
+        color: var(--cyan);
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.65rem;
+        font-weight: 900;
+      }
+
+      .judge-card h3 {
+        margin-bottom: 8px;
+        font-size: 0.88rem;
+      }
+
+      .judge-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.76rem;
+        line-height: 1.55;
+      }
+
+      .judge-notice {
+        display: grid;
+        grid-template-columns: minmax(190px, 0.32fr) minmax(0, 1fr);
+        gap: 20px;
+        align-items: start;
+        margin-top: 16px;
+        padding: 18px;
+        border: 1px solid rgba(106, 168, 255, 0.22);
+        border-radius: 15px;
+        background: rgba(106, 168, 255, 0.07);
+      }
+
+      .judge-notice h3 {
+        margin: 0;
+        color: var(--blue);
+        font-size: 0.92rem;
+      }
+
+      .judge-notice ul {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px 24px;
+        margin: 0;
+        padding-left: 18px;
+        color: #c4d5e3;
+        font-size: 0.78rem;
+        line-height: 1.5;
+      }
+
       .workspace {
         display: grid;
         min-width: 0;
@@ -547,6 +648,18 @@
         overflow-wrap: anywhere;
       }
 
+      .audit-callout {
+        margin: 0 16px 16px;
+        padding: 13px 14px;
+        border: 1px solid rgba(98, 230, 216, 0.28);
+        border-radius: 12px;
+        background: var(--cyan-soft);
+        color: #d9f8f3;
+        font-size: 0.78rem;
+        font-weight: 800;
+        line-height: 1.5;
+      }
+
       .audit-footer {
         padding: 15px 18px;
         border-top: 1px solid var(--line);
@@ -572,6 +685,10 @@
 
       @media (max-width: 1080px) {
         .metrics {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .judge-card-grid {
           grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
@@ -604,6 +721,21 @@
           grid-template-columns: 1fr;
         }
 
+        .judge-notice {
+          grid-template-columns: 1fr;
+        }
+
+        .judge-mode-heading {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .judge-card-grid,
+        .judge-notice ul {
+          grid-template-columns: 1fr 1fr;
+        }
+
         .metrics,
         .evidence-grid,
         .checks-grid {
@@ -617,6 +749,8 @@
         }
 
         .metrics,
+        .judge-card-grid,
+        .judge-notice ul,
         .evidence-grid,
         .checks-grid,
         .audit-meta {
@@ -725,6 +859,80 @@
         </article>
       </section>
 
+      <section class="shell judge-mode" aria-labelledby="judge-mode-title">
+        <div class="judge-mode-heading">
+          <div>
+            <p class="eyebrow">30-second submission context</p>
+            <h2 id="judge-mode-title">Judge Mode: Why This Matters</h2>
+          </div>
+          <p>
+            AgentTrust IQ is designed to complement Microsoft reasoning-agent workflows with a
+            repeatable reliability gate between an agent answer and deployment.
+          </p>
+        </div>
+
+        <div class="judge-card-grid">
+          <article class="judge-card">
+            <span>01</span>
+            <h3>The Problem</h3>
+            <p>
+              Reasoning agents can produce fluent answers that are not grounded, cited, safe, or
+              auditable.
+            </p>
+          </article>
+          <article class="judge-card">
+            <span>02</span>
+            <h3>The Demo Scenario</h3>
+            <p>
+              A support agent is asked whether it can promise refunds are always approved within
+              24 hours.
+            </p>
+          </article>
+          <article class="judge-card">
+            <span>03</span>
+            <h3>The Reliability Gate</h3>
+            <p>
+              AgentTrust IQ checks the answer against retrieved evidence before it is trusted.
+            </p>
+          </article>
+          <article class="judge-card">
+            <span>04</span>
+            <h3>The Deployment Decision</h3>
+            <p>
+              A score of 92 means the output is ready for controlled deployment with audit
+              evidence.
+            </p>
+          </article>
+          <article class="judge-card">
+            <span>05</span>
+            <h3>Microsoft Alignment</h3>
+            <p>
+              The workflow is aligned with Microsoft Foundry / Foundry IQ by treating enterprise
+              knowledge as the governed grounding layer.
+            </p>
+          </article>
+        </div>
+
+        <div class="judge-notice">
+          <h3>What judges should notice</h3>
+          <ul>
+            <li>Not another agent demo: this is a trust layer for agents.</li>
+            <li>
+              Evidence-backed checks: groundedness, citation support, hallucination risk, PII
+              exposure, latency, and audit completeness.
+            </li>
+            <li>
+              Repeatable proof: each run produces JSONL audit evidence for regression testing and
+              CI/CD gates.
+            </li>
+            <li>
+              Practical deployment value: outputs can be approved, fixed, or escalated based on
+              readiness score.
+            </li>
+          </ul>
+        </div>
+      </section>
+
       <section class="shell workspace">
         <section class="flow-panel" aria-labelledby="workflow-title">
           <div class="panel-heading">
@@ -809,6 +1017,10 @@
             </div>
           </div>
           <pre id="audit-json" aria-label="JSONL audit record"></pre>
+          <p class="audit-callout">
+            Auditability is the product: every decision can be reviewed, replayed, and
+            regression-tested.
+          </p>
           <div class="audit-footer">
             <p>Writes locally to artifacts/agenttrust_iq/demo_runs.jsonl</p>
           </div>
