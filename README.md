@@ -1,4 +1,4 @@
-# AgentTrust IQ — Reliability Layer for Microsoft Reasoning Agents
+# AgentTrust IQ - Reliability Layer for Microsoft Reasoning Agents
 
 AgentTrust IQ evaluates whether Microsoft Reasoning Agent outputs are grounded, cited, safe, and deployment-ready.
 
