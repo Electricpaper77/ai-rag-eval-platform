@@ -14,6 +14,7 @@ from .metrics import GRAPHRAG_LATENCY_SECONDS, GRAPHRAG_REQUESTS_TOTAL
 from .routes.regression_eval import router as regression_router
 from .routes.eval_compare import router as eval_compare_router
 from .routes.dashboard import router as dashboard_router
+from .routes.agenttrust_demo import router as agenttrust_demo_router
 from .inference import handle_chat_completions
 from gpu_platform.api import router as platform_router
 from gpu_platform.api import summary_router as shadow_eval_router
@@ -114,6 +115,7 @@ app = FastAPI(title="AI RAG Eval Platform")
 app.include_router(regression_router)
 app.include_router(eval_compare_router)
 app.include_router(dashboard_router)
+app.include_router(agenttrust_demo_router)
 app.include_router(platform_router)
 app.include_router(shadow_eval_router)
 app.include_router(benchmark_router)

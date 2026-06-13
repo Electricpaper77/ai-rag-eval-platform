@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="AgentTrust IQ Command Center: deterministic reliability evidence for Microsoft Reasoning Agents."
+    />
+    <title>AgentTrust IQ Command Center</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #06111f;
+        --panel: #0b1b2c;
+        --line: rgba(152, 190, 219, 0.18);
+        --ink: #f5fbff;
+        --muted: #9bb2c5;
+        --cyan: #62e6d8;
+        --cyan-soft: rgba(98, 230, 216, 0.12);
+        --blue: #6aa8ff;
+        --blue-soft: rgba(106, 168, 255, 0.14);
+        --green: #7ce6a8;
+        --amber: #f4c86a;
+        --shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
+        --radius: 22px;
+        --max: 1440px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        min-width: 320px;
+        margin: 0;
+        overflow-x: hidden;
+        background:
+          radial-gradient(circle at 12% 0%, rgba(34, 111, 160, 0.2), transparent 30rem),
+          radial-gradient(circle at 88% 12%, rgba(37, 177, 162, 0.13), transparent 28rem),
+          linear-gradient(180deg, #06111f 0%, #081522 48%, #050d17 100%);
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        line-height: 1.5;
+      }
+
+      button,
+      a {
+        font: inherit;
+      }
+
+      .shell {
+        width: min(var(--max), calc(100% - 36px));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        border-bottom: 1px solid var(--line);
+        background: rgba(6, 17, 31, 0.86);
+        backdrop-filter: blur(18px);
+      }
+
+      .topbar-inner {
+        display: flex;
+        min-height: 66px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--ink);
+        font-weight: 850;
+        text-decoration: none;
+      }
+
+      .brand-mark {
+        position: relative;
+        width: 26px;
+        height: 26px;
+        border: 1px solid rgba(98, 230, 216, 0.45);
+        border-radius: 9px;
+        background: linear-gradient(145deg, rgba(106, 168, 255, 0.8), rgba(98, 230, 216, 0.9));
+        box-shadow: 0 0 28px rgba(98, 230, 216, 0.28);
+      }
+
+      .brand-mark::after {
+        position: absolute;
+        inset: 6px;
+        border: 2px solid #06111f;
+        border-radius: 50%;
+        content: "";
+      }
+
+      .topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .status-pill,
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        font-weight: 800;
+      }
+
+      .status-pill {
+        gap: 8px;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--muted);
+        font-size: 0.75rem;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--amber);
+        box-shadow: 0 0 14px currentColor;
+      }
+
+      .status-pill.is-live .status-dot {
+        background: var(--green);
+      }
+
+      .button {
+        min-height: 38px;
+        padding: 8px 14px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--ink);
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      .button:hover,
+      .button:focus-visible {
+        border-color: rgba(98, 230, 216, 0.55);
+        background: var(--cyan-soft);
+        outline: none;
+      }
+
+      .hero {
+        padding: 48px 0 28px;
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+        gap: 28px;
+        align-items: end;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--cyan);
+        font-size: 0.74rem;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        max-width: 900px;
+        margin-bottom: 12px;
+        overflow-wrap: anywhere;
+        font-size: clamp(2.4rem, 5vw, 5.2rem);
+        line-height: 0.98;
+        letter-spacing: -0.05em;
+      }
+
+      .subtitle {
+        max-width: 760px;
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: clamp(1rem, 1.7vw, 1.25rem);
+      }
+
+      .hero-note {
+        padding: 20px;
+        border: 1px solid rgba(98, 230, 216, 0.2);
+        border-radius: var(--radius);
+        background: linear-gradient(145deg, rgba(98, 230, 216, 0.08), rgba(106, 168, 255, 0.08));
+      }
+
+      .hero-note strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .hero-note p {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 26px;
+      }
+
+      .metric {
+        min-width: 0;
+        padding: 17px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(11, 27, 44, 0.9);
+        box-shadow: 0 14px 32px rgba(0, 0, 0, 0.13);
+      }
+
+      .metric span {
+        display: block;
+        min-height: 2.5em;
+        color: var(--muted);
+        font-size: 0.7rem;
+        font-weight: 800;
+        line-height: 1.25;
+        text-transform: uppercase;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 14px;
+        color: var(--green);
+        font-size: clamp(1.2rem, 2vw, 1.75rem);
+        line-height: 1;
+      }
+
+      .metric:first-child {
+        border-color: rgba(98, 230, 216, 0.34);
+        background: linear-gradient(145deg, rgba(98, 230, 216, 0.12), rgba(11, 27, 44, 0.96));
+      }
+
+      .metric:first-child strong {
+        color: var(--cyan);
+        font-size: clamp(2rem, 3vw, 2.8rem);
+      }
+
+      .workspace {
+        display: grid;
+        min-width: 0;
+        grid-template-columns: minmax(0, 1.42fr) minmax(340px, 0.58fr);
+        gap: 18px;
+        padding-bottom: 42px;
+      }
+
+      .flow-panel,
+      .audit-panel {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: rgba(11, 27, 44, 0.92);
+        box-shadow: var(--shadow);
+      }
+
+      .panel-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .panel-heading h2 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .panel-heading span {
+        color: var(--muted);
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.67rem;
+      }
+
+      .flow {
+        display: grid;
+        gap: 0;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .flow-step {
+        display: grid;
+        min-width: 0;
+        grid-template-columns: 38px minmax(0, 1fr);
+        gap: 14px;
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--line);
+        opacity: 0.56;
+        transition:
+          opacity 220ms ease,
+          background 220ms ease;
+      }
+
+      .flow-step:last-child {
+        border-bottom: 0;
+      }
+
+      .flow-step.is-active,
+      .flow-step.is-complete {
+        opacity: 1;
+      }
+
+      .flow-step.is-active {
+        background: linear-gradient(90deg, rgba(98, 230, 216, 0.1), transparent 70%);
+      }
+
+      .step-number {
+        display: inline-flex;
+        width: 34px;
+        height: 34px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: #071522;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 900;
+      }
+
+      .flow-step.is-active .step-number,
+      .flow-step.is-complete .step-number {
+        border-color: rgba(98, 230, 216, 0.38);
+        background: var(--cyan-soft);
+        color: var(--cyan);
+      }
+
+      .step-head {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .step-head h3 {
+        margin: 0;
+        font-size: 0.9rem;
+      }
+
+      .step-badge {
+        padding: 4px 8px;
+        border: 1px solid rgba(124, 230, 168, 0.28);
+        border-radius: 999px;
+        background: rgba(124, 230, 168, 0.09);
+        color: var(--green);
+        font-size: 0.62rem;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .step-body {
+        margin: 9px 0 0;
+        color: var(--muted);
+        font-size: 0.83rem;
+        line-height: 1.55;
+      }
+
+      .evidence-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .evidence-card {
+        min-width: 0;
+        padding: 11px;
+        border: 1px solid rgba(106, 168, 255, 0.2);
+        border-radius: 12px;
+        background: var(--blue-soft);
+      }
+
+      .evidence-card strong {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--blue);
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.68rem;
+      }
+
+      .evidence-card p {
+        margin: 0;
+        color: #c4d5e3;
+        font-size: 0.72rem;
+        line-height: 1.45;
+      }
+
+      .answer {
+        padding: 12px;
+        border-left: 3px solid var(--cyan);
+        border-radius: 0 10px 10px 0;
+        background: rgba(98, 230, 216, 0.06);
+        color: #d9eaf4;
+      }
+
+      .checks-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 7px;
+        margin-top: 12px;
+      }
+
+      .check {
+        padding: 9px 10px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.025);
+      }
+
+      .check span,
+      .check strong {
+        display: block;
+      }
+
+      .check span {
+        color: var(--muted);
+        font-size: 0.61rem;
+        text-transform: uppercase;
+      }
+
+      .check strong {
+        margin-top: 4px;
+        color: var(--green);
+        font-size: 0.73rem;
+      }
+
+      .decision {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 16px;
+        align-items: center;
+        margin-top: 12px;
+        padding: 14px;
+        border: 1px solid rgba(124, 230, 168, 0.26);
+        border-radius: 14px;
+        background: rgba(124, 230, 168, 0.07);
+      }
+
+      .score-ring {
+        display: inline-grid;
+        width: 72px;
+        height: 72px;
+        place-items: center;
+        border-radius: 50%;
+        background:
+          radial-gradient(circle at center, #0b1b2c 57%, transparent 59%),
+          conic-gradient(var(--green) 0 92%, rgba(255, 255, 255, 0.08) 92% 100%);
+        font-size: 1.45rem;
+        font-weight: 900;
+      }
+
+      .decision strong {
+        display: block;
+        color: var(--green);
+        font-size: 1rem;
+      }
+
+      .decision p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      .audit-panel {
+        display: flex;
+        min-height: 100%;
+        flex-direction: column;
+        background: #06101b;
+      }
+
+      .audit-meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 16px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .audit-meta div {
+        min-width: 0;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: rgba(255, 255, 255, 0.025);
+      }
+
+      .audit-meta span,
+      .audit-meta strong {
+        display: block;
+      }
+
+      .audit-meta span {
+        color: var(--muted);
+        font-size: 0.6rem;
+        text-transform: uppercase;
+      }
+
+      .audit-meta strong {
+        margin-top: 4px;
+        overflow-wrap: anywhere;
+        color: var(--cyan);
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.7rem;
+      }
+
+      pre {
+        flex: 1;
+        margin: 0;
+        padding: 18px;
+        overflow: auto;
+        color: #bfeeda;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: clamp(0.67rem, 0.85vw, 0.78rem);
+        line-height: 1.65;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      .audit-footer {
+        padding: 15px 18px;
+        border-top: 1px solid var(--line);
+      }
+
+      .audit-footer p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.74rem;
+      }
+
+      .trust-statement {
+        margin-bottom: 56px;
+        padding: 24px;
+        border: 1px solid rgba(106, 168, 255, 0.24);
+        border-radius: var(--radius);
+        background: linear-gradient(120deg, rgba(106, 168, 255, 0.1), rgba(98, 230, 216, 0.08));
+        color: #dcebf6;
+        font-size: clamp(1rem, 1.6vw, 1.28rem);
+        font-weight: 750;
+        text-align: center;
+      }
+
+      @media (max-width: 1080px) {
+        .metrics {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .audit-panel {
+          min-height: 560px;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .topbar-inner {
+          align-items: flex-start;
+          flex-direction: column;
+          padding: 12px 0;
+        }
+
+        .topbar-actions {
+          width: 100%;
+          justify-content: space-between;
+        }
+
+        .hero {
+          padding-top: 34px;
+        }
+
+        .hero-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .metrics,
+        .evidence-grid,
+        .checks-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .shell {
+          width: min(100% - 24px, var(--max));
+        }
+
+        .metrics,
+        .evidence-grid,
+        .checks-grid,
+        .audit-meta {
+          grid-template-columns: 1fr;
+        }
+
+        .brand span:last-child {
+          max-width: 175px;
+          line-height: 1.2;
+        }
+
+        .topbar-actions .button {
+          display: none;
+        }
+
+        .panel-heading,
+        .step-head {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .flow-step {
+          grid-template-columns: 32px minmax(0, 1fr);
+          gap: 10px;
+          padding: 15px 12px;
+        }
+
+        .step-number {
+          width: 30px;
+          height: 30px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="shell topbar-inner">
+        <a class="brand" href="./index.html">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>AgentTrust IQ Command Center</span>
+        </a>
+        <div class="topbar-actions">
+          <span id="data-status" class="status-pill">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="data-status-label">Loading deterministic evidence</span>
+          </span>
+          <button id="replay-button" class="button" type="button">Replay workflow</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="shell hero">
+        <div class="hero-grid">
+          <div>
+            <p class="eyebrow">Microsoft Agents League / Reasoning Agents</p>
+            <h1>AgentTrust IQ Command Center</h1>
+            <p class="subtitle">Reliability layer for Microsoft Reasoning Agents</p>
+          </div>
+          <aside class="hero-note">
+            <strong>10-second judge read</strong>
+            <p>
+              One governed question becomes retrieved evidence, a cited answer, reliability
+              checks, a deployment decision, and an auditable JSONL record.
+            </p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="shell metrics" aria-label="AgentTrust IQ headline metrics">
+        <article class="metric">
+          <span>Agent Readiness Score</span>
+          <strong id="metric-score">92</strong>
+        </article>
+        <article class="metric">
+          <span>Groundedness</span>
+          <strong id="metric-groundedness">Pass</strong>
+        </article>
+        <article class="metric">
+          <span>Citation Support</span>
+          <strong id="metric-citations">Pass</strong>
+        </article>
+        <article class="metric">
+          <span>Hallucination Risk</span>
+          <strong id="metric-hallucination">Low</strong>
+        </article>
+        <article class="metric">
+          <span>PII Exposure</span>
+          <strong id="metric-pii">None</strong>
+        </article>
+        <article class="metric">
+          <span>Audit Log</span>
+          <strong id="metric-audit">Complete</strong>
+        </article>
+      </section>
+
+      <section class="shell workspace">
+        <section class="flow-panel" aria-labelledby="workflow-title">
+          <div class="panel-heading">
+            <h2 id="workflow-title">Reliability workflow</h2>
+            <span>question -> decision</span>
+          </div>
+          <ol class="flow">
+            <li class="flow-step" data-step="0">
+              <span class="step-number">01</span>
+              <div>
+                <div class="step-head">
+                  <h3>User Question</h3>
+                  <span class="step-badge">received</span>
+                </div>
+                <p id="question" class="step-body"></p>
+              </div>
+            </li>
+            <li class="flow-step" data-step="1">
+              <span class="step-number">02</span>
+              <div>
+                <div class="step-head">
+                  <h3>Retrieved Evidence</h3>
+                  <span class="step-badge">3 sources</span>
+                </div>
+                <div id="evidence-grid" class="evidence-grid"></div>
+              </div>
+            </li>
+            <li class="flow-step" data-step="2">
+              <span class="step-number">03</span>
+              <div>
+                <div class="step-head">
+                  <h3>Cited Agent Answer</h3>
+                  <span class="step-badge">supported</span>
+                </div>
+                <p id="agent-answer" class="step-body answer"></p>
+              </div>
+            </li>
+            <li class="flow-step" data-step="3">
+              <span class="step-number">04</span>
+              <div>
+                <div class="step-head">
+                  <h3>Reliability Checks</h3>
+                  <span class="step-badge">passed</span>
+                </div>
+                <div id="checks-grid" class="checks-grid"></div>
+              </div>
+            </li>
+            <li class="flow-step" data-step="4">
+              <span class="step-number">05</span>
+              <div>
+                <div class="step-head">
+                  <h3>Deployment Decision</h3>
+                  <span class="step-badge">release gate</span>
+                </div>
+                <div class="decision">
+                  <span id="decision-score" class="score-ring">92</span>
+                  <div>
+                    <strong id="decision-label">Ready for controlled deployment</strong>
+                    <p id="decision-detail">
+                      Score cleared the AgentTrust IQ controlled-deployment threshold.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ol>
+        </section>
+
+        <aside class="audit-panel" aria-labelledby="audit-title">
+          <div class="panel-heading">
+            <h2 id="audit-title">JSONL Audit Record</h2>
+            <span>append-only evidence</span>
+          </div>
+          <div class="audit-meta">
+            <div>
+              <span>Run ID</span>
+              <strong id="run-id">agenttrust-demo-001</strong>
+            </div>
+            <div>
+              <span>Timestamp</span>
+              <strong id="timestamp">2026-06-13T00:00:00Z</strong>
+            </div>
+          </div>
+          <pre id="audit-json" aria-label="JSONL audit record"></pre>
+          <div class="audit-footer">
+            <p>Writes locally to artifacts/agenttrust_iq/demo_runs.jsonl</p>
+          </div>
+        </aside>
+      </section>
+
+      <p class="shell trust-statement">
+        AgentTrust IQ does not trust fluent answers by default. It checks whether claims are
+        supported, cited, safe, and auditable.
+      </p>
+    </main>
+
+    <script>
+      const fallbackData = {
+        project_name: "AgentTrust IQ",
+        track: "Reasoning Agents",
+        question: "Can our support agent tell users that refunds are always approved within 24 hours?",
+        retrieved_evidence: [
+          {
+            source_id: "source_1",
+            snippet: "Refund requests are reviewed within 2 business days.",
+          },
+          {
+            source_id: "source_2",
+            snippet: "Refund approval depends on eligibility, account standing, and policy exceptions.",
+          },
+          {
+            source_id: "source_3",
+            snippet: "Agents must not guarantee refund approval unless the policy explicitly confirms it.",
+          },
+        ],
+        agent_answer:
+          "No. The support agent should not say refunds are always approved within 24 hours. The evidence says refund requests are reviewed within 2 business days, approval depends on eligibility and exceptions, and agents must not guarantee approval unless the policy explicitly confirms it. [source_1] [source_2] [source_3]",
+        checks: {
+          groundedness: "pass",
+          citation_support: "pass",
+          hallucination_risk: "low",
+          prompt_injection_resistance: "pass",
+          pii_exposure: "none",
+          latency_ms: 12.0,
+          audit_log_complete: "pass",
+        },
+        agent_readiness_score: 92,
+        failure_reasons: [],
+        recommended_fixes: [],
+        jsonl_audit_record: JSON.stringify({
+          run_id: "agenttrust-demo-001",
+          timestamp: "2026-06-13T00:00:00Z",
+          question: "Can our support agent tell users that refunds are always approved within 24 hours?",
+          readiness_score: 92,
+          checks: {
+            groundedness: "pass",
+            citation_support: "pass",
+            hallucination_risk: "low",
+            prompt_injection_resistance: "pass",
+            pii_exposure: "none",
+            latency_ms: 12.0,
+            audit_log_complete: "pass",
+          },
+          failure_reasons: [],
+          recommended_fixes: [],
+        }),
+      };
+
+      const checkLabels = {
+        groundedness: "Groundedness",
+        citation_support: "Citation support",
+        hallucination_risk: "Hallucination risk",
+        prompt_injection_resistance: "Injection resistance",
+        pii_exposure: "PII exposure",
+        latency_ms: "Latency",
+        audit_log_complete: "Audit log",
+      };
+
+      let workflowTimer;
+
+      function titleCase(value) {
+        return String(value).replace(/\b\w/g, (letter) => letter.toUpperCase());
+      }
+
+      function normalizeAudit(data) {
+        let source = {};
+        try {
+          source = JSON.parse(data.jsonl_audit_record || "{}");
+        } catch {
+          source = {};
+        }
+        return {
+          run_id: source.run_id || "agenttrust-demo-001",
+          question: data.question,
+          readiness_score: data.agent_readiness_score,
+          checks: data.checks,
+          failure_reasons: data.failure_reasons,
+          recommended_fixes: data.recommended_fixes,
+          timestamp: source.timestamp || "2026-06-13T00:00:00Z",
+        };
+      }
+
+      function render(data, isLive) {
+        document.getElementById("question").textContent = data.question;
+        document.getElementById("agent-answer").textContent = data.agent_answer;
+        document.getElementById("metric-score").textContent = data.agent_readiness_score;
+        document.getElementById("metric-groundedness").textContent = titleCase(data.checks.groundedness);
+        document.getElementById("metric-citations").textContent = titleCase(data.checks.citation_support);
+        document.getElementById("metric-hallucination").textContent = titleCase(data.checks.hallucination_risk);
+        document.getElementById("metric-pii").textContent = titleCase(data.checks.pii_exposure);
+        document.getElementById("metric-audit").textContent =
+          data.checks.audit_log_complete === "pass" ? "Complete" : "Review";
+
+        document.getElementById("evidence-grid").replaceChildren(
+          ...data.retrieved_evidence.map((evidence) => {
+            const card = document.createElement("article");
+            card.className = "evidence-card";
+            const source = document.createElement("strong");
+            const snippet = document.createElement("p");
+            source.textContent = evidence.source_id;
+            snippet.textContent = evidence.snippet;
+            card.append(source, snippet);
+            return card;
+          }),
+        );
+
+        document.getElementById("checks-grid").replaceChildren(
+          ...Object.entries(data.checks).map(([key, value]) => {
+            const item = document.createElement("div");
+            item.className = "check";
+            const label = document.createElement("span");
+            const result = document.createElement("strong");
+            label.textContent = checkLabels[key] || key;
+            result.textContent = key === "latency_ms" ? `${value} ms` : titleCase(value);
+            item.append(label, result);
+            return item;
+          }),
+        );
+
+        const score = Number(data.agent_readiness_score);
+        const decisionLabel =
+          score >= 90
+            ? "Ready for controlled deployment"
+            : score < 70
+              ? "Escalate for human review"
+              : "Proceed with targeted remediation";
+        document.getElementById("decision-score").textContent = score;
+        document.getElementById("decision-label").textContent = decisionLabel;
+        document.getElementById("decision-detail").textContent =
+          score >= 90
+            ? "Score cleared the AgentTrust IQ controlled-deployment threshold."
+            : "The run remains gated until reliability findings are resolved.";
+
+        const audit = normalizeAudit(data);
+        document.getElementById("run-id").textContent = audit.run_id;
+        document.getElementById("timestamp").textContent = audit.timestamp;
+        document.getElementById("audit-json").textContent = JSON.stringify(audit, null, 2);
+
+        const status = document.getElementById("data-status");
+        status.classList.toggle("is-live", isLive);
+        document.getElementById("data-status-label").textContent = isLive
+          ? "Live deterministic endpoint"
+          : "Static deterministic fixture";
+        replayWorkflow();
+      }
+
+      function replayWorkflow() {
+        window.clearInterval(workflowTimer);
+        const steps = Array.from(document.querySelectorAll(".flow-step"));
+        steps.forEach((step) => step.classList.remove("is-active", "is-complete"));
+        let activeIndex = 0;
+
+        function activate() {
+          steps.forEach((step, index) => {
+            step.classList.toggle("is-active", index === activeIndex);
+            step.classList.toggle("is-complete", index < activeIndex);
+          });
+          activeIndex += 1;
+          if (activeIndex >= steps.length) {
+            window.clearInterval(workflowTimer);
+            window.setTimeout(() => {
+              steps.forEach((step) => {
+                step.classList.remove("is-active");
+                step.classList.add("is-complete");
+              });
+            }, 700);
+          }
+        }
+
+        activate();
+        workflowTimer = window.setInterval(activate, 900);
+      }
+
+      async function loadDemo() {
+        try {
+          const response = await fetch("/demo/agenttrust-iq", {
+            headers: { Accept: "application/json" },
+          });
+          if (!response.ok) throw new Error("Demo endpoint unavailable");
+          render(await response.json(), true);
+        } catch {
+          render(fallbackData, false);
+        }
+      }
+
+      document.getElementById("replay-button").addEventListener("click", replayWorkflow);
+      loadDemo();
+    </script>
+  </body>
+</html>

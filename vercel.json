@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/frontend/index.html"
+    },
+    {
+      "source": "/index.html",
+      "destination": "/frontend/index.html"
+    },
+    {
+      "source": "/agenttrust-iq-command-center.html",
+      "destination": "/frontend/agenttrust-iq-command-center.html"
+    },
+    {
+      "source": "/styles.css",
+      "destination": "/frontend/styles.css"
+    },
+    {
+      "source": "/assets/:path*",
+      "destination": "/frontend/assets/:path*"
+    }
+  ]
+}

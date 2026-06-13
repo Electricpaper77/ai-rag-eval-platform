@@ -5,17 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Reproducible LLM evaluation and RAG reliability project with JSONL evidence, regression tests, controlled metrics, and recruiter-readable artifacts."
+      content="AgentTrust IQ evaluates groundedness, citations, hallucination risk, guardrails, PII exposure, latency, and audit completeness for Microsoft Reasoning Agents."
     />
-    <title>AI Agent Reliability Platform</title>
+    <title>AgentTrust IQ Command Center</title>
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="#top" aria-label="AI Agent Reliability home">
+      <a class="brand" href="#top" aria-label="AgentTrust IQ home">
         <span class="brand-mark" aria-hidden="true"></span>
-        <span>AI Agent Reliability Platform</span>
+        <span>AgentTrust IQ</span>
       </a>
       <nav class="nav-links" aria-label="Recruiter navigation">
         <a href="#metrics">Metrics</a>
@@ -44,6 +44,14 @@
       </div>
       <span class="sr-only" id="copy-status" role="status" aria-live="polite"></span>
     </header>
+
+    <aside class="hackathon-banner" aria-label="Hackathon submission">
+      <div class="hackathon-banner-inner">
+        <span class="hackathon-banner-mark" aria-hidden="true"></span>
+        <strong>Microsoft Agents League Hackathon Submission — Reasoning Agents Track</strong>
+        <a href="/agenttrust-iq-command-center.html">Open Command Center</a>
+      </div>
+    </aside>
 
     <aside class="recruiter-conversion" aria-label="Recruiter conversion actions">
       <div class="recruiter-conversion-inner">
@@ -113,24 +121,32 @@
     <main id="top">
       <section class="hero section-shell">
         <div class="hero-copy">
-          <p class="eyebrow">Recruiter-ready AI reliability proof</p>
-          <h1>AI Agent Reliability Platform</h1>
+          <p class="eyebrow">Microsoft Agents League / Reasoning Agents</p>
+          <h1>AgentTrust IQ Command Center</h1>
           <p class="subtitle">
-            FastAPI-based reliability harness for evaluating RAG and LLM outputs across
-            hallucination risk, citation quality, refusal behavior, prompt injection, and PII
-            handling.
+            Reliability layer for Microsoft Reasoning Agents.
           </p>
           <div class="hero-pitch">
-            <strong>60-second pitch</strong>
+            <strong>Production trust, not just fluent output</strong>
             <p>
-              This project demonstrates how I validate GenAI systems before production using
-              repeatable eval fixtures, JSONL audit logs, regression tests, guardrails, and
-              reliability metrics.
+              Most agent demos show what an agent can do. AgentTrust IQ shows whether an agent
+              should be trusted.
+            </p>
+            <p>
+              Evaluate groundedness, citation support, hallucination risk, prompt-injection
+              resistance, PII exposure, latency, and audit completeness, then return an Agent
+              Readiness Score with JSONL audit evidence.
             </p>
           </div>
           <div class="button-row hero-actions" aria-label="Primary actions">
             <a
               class="button primary"
+              href="/agenttrust-iq-command-center.html"
+            >
+              Open AgentTrust IQ Command Center
+            </a>
+            <a
+              class="button secondary"
               href="https://github.com/Electricpaper77/ai-rag-eval-platform"
               target="_blank"
               rel="noreferrer"
@@ -163,32 +179,31 @@
           </nav>
         </div>
 
-        <aside class="hero-panel" aria-label="Hiring Snapshot">
+        <aside class="hero-panel" aria-label="AgentTrust IQ Snapshot">
           <p class="hero-proof-summary">
-            Built to demonstrate production-readiness for GenAI systems: deterministic eval
-            fixtures, JSONL audit logs, guardrails, regression checks, and measurable RAG
-            reliability metrics.
+            A deterministic, no-key judge flow from governed evidence to a cited answer,
+            reliability checks, deployment decision, and reviewer-readable JSONL proof.
           </p>
-          <div class="panel-kicker">Hiring Snapshot</div>
+          <div class="panel-kicker">AgentTrust IQ Snapshot</div>
           <dl class="validation-list">
             <div>
-              <dt>Best fit</dt>
-              <dd>AI Solutions Engineer / LLM Evaluation</dd>
+              <dt>Track</dt>
+              <dd>Microsoft Agents League / Reasoning Agents</dd>
+            </div>
+            <div>
+              <dt>Decision</dt>
+              <dd>Ready for controlled deployment</dd>
             </div>
             <div>
               <dt>Evidence</dt>
-              <dd>Checksum-backed JSONL and machine-readable summaries</dd>
-            </div>
-            <div>
-              <dt>Validation</dt>
-              <dd>Deterministic fixtures and pytest regression checks</dd>
+              <dd>Citations, reliability checks, and JSONL audit record</dd>
             </div>
           </dl>
           <pre><code>{
-  "pytest": "133 passed",
-  "fixture_records": 131,
-  "security_checks": "5 passed",
-  "integrity_checks": "3 passed"
+  "agent_readiness_score": 92,
+  "groundedness": "pass",
+  "citation_support": "pass",
+  "hallucination_risk": "low"
 }</code></pre>
         </aside>
       </section>
@@ -1608,6 +1623,10 @@
           <div class="button-row command-center-actions" aria-label="Command center proof actions">
             <a
               class="button primary"
+              href="./agenttrust-iq-command-center.html"
+            >Open AgentTrust IQ Command Center</a>
+            <a
+              class="button secondary"
               href="https://github.com/Electricpaper77/ai-rag-eval-platform"
               target="_blank"
               rel="noreferrer"
