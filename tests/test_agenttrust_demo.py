@@ -48,4 +48,19 @@ def test_agenttrust_iq_demo_returns_full_deterministic_flow(tmp_path, monkeypatc
     written_record = json.loads(audit_path.read_text(encoding="utf-8").strip())
     assert returned_record == written_record
     assert written_record["demo_mode"] == "deterministic"
+    assert written_record["run_id"] == "agenttrust-demo-001"
+    assert written_record["timestamp"] == "2026-06-13T00:00:00Z"
     assert written_record["agent_readiness_score"] == 92
+
+
+def test_agenttrust_iq_command_center_renders_judge_workflow():
+    response = client.get("/demo/agenttrust-iq/command-center")
+
+    assert response.status_code == 200
+    assert "AgentTrust IQ Command Center" in response.text
+    assert "Reliability layer for Microsoft Reasoning Agents" in response.text
+    assert "Retrieved Evidence" in response.text
+    assert "Cited Agent Answer" in response.text
+    assert "Deployment Decision" in response.text
+    assert "JSONL Audit Record" in response.text
+    assert "/demo/agenttrust-iq" in response.text
