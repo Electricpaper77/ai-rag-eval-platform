@@ -37,6 +37,7 @@ The 87% pass-rate and 18%-to-6% hallucination figures are Innovation Studio subm
 ## Project Links
 
 - [Static project walkthrough](https://ai-agent-reliability-platform-rtcd.vercel.app/)
+- [AgentTrust IQ Command Center](https://ai-agent-reliability-platform-rtcd.vercel.app/agenttrust-iq-command-center.html)
 - [GitHub repository](https://github.com/Electricpaper77/ai-rag-eval-platform)
 - [Proof checklist](PROOF.md)
 - [LinkedIn](https://www.linkedin.com/in/zohaib-a-1a8017174/)
