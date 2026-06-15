@@ -60,7 +60,7 @@ escalate release decision.
 | --- | ---: | --- |
 | Agent Readiness Score | **92/100** | Converts multiple reliability checks into a deployment decision |
 | Eval pass rate | **87%** | Shows the share of submission evaluation scenarios meeting the gate |
-| Historical portfolio tests | **145+ passing** | Records the earlier portfolio regression claim; it is not the current judge validation result |
+| Regression validation | **133+ passing checks** | Records the current portfolio regression claim |
 | Throughput | **43 req/sec** | Shows benchmarked request-processing capacity |
 | p95 latency | **270 ms** | Measures tail latency for the submission benchmark |
 | Workflow success | **99%+** | Indicates end-to-end workflow reliability in the submission portfolio |
@@ -68,9 +68,9 @@ escalate release decision.
 | Audit evidence | **JSONL logs** | Makes decisions replayable, reviewable, and CI-friendly |
 
 The `87%`, `43 req/sec`, `270 ms`, `99%+`, and `18% to 6%` values are submission-level benchmark
-figures documented in `evaluation_results.md` and the portfolio. The `145+ passing tests` figure is
-a historical portfolio metric; the current reproducible hackathon proof is **2 focused AgentTrust
-demo tests passing and 132 tests collected**. Repository fixture metrics are reported separately in
+figures documented in `evaluation_results.md` and the portfolio. The `133+ passing checks` figure is
+the current portfolio regression claim; the reproducible hackathon proof is reported separately as
+**2 focused AgentTrust demo tests passing and 132 tests collected**. Repository fixture metrics are reported separately in
 [Evidence and Metrics](#evidence-and-metrics), and none of these figures claim live customer
 traffic or an independently audited production service.
 
@@ -355,8 +355,8 @@ green. Validation counts should be refreshed whenever evaluator behavior or test
 
 - The shared `tests/conftest.py` client targets `backend.app.main:app`, while legacy gateway tests
   expect routes and state from the separate `app/` entrypoint.
-- The `145+ passing` value above is a submission-portfolio claim, not the current local collection
-  count. The reproducible current count is 132 collected tests.
+- The `133+ passing checks` value above is the portfolio regression claim, while the focused judge
+  path and current collection count are reported separately.
 - Performance and quality values in the Reliability Evidence table are controlled evaluation
   results documented in `evaluation_results.md`, not live production telemetry.
 

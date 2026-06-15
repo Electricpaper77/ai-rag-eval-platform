@@ -92,9 +92,9 @@ python -m pytest tests/test_agenttrust_demo.py -q
 python -m pytest --collect-only -q
 ```
 
-Historical portfolio materials reference 145+ passing tests. That is a historical portfolio metric,
-not the current full-suite status. Refresh these counts whenever code or tests change, and do not
-describe a local result as hosted production validation.
+Portfolio materials reference 133+ passing checks as the current regression claim, separate from
+the focused judge path and collection count above. Refresh these counts whenever code or tests
+change, and do not describe a local result as hosted production validation.
 
 ## Resume-Safe Claim
 

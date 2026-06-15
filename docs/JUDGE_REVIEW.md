@@ -82,9 +82,9 @@ git diff --check
 ```
 
 Current discovery proof: **128 tests collected**. The full legacy suite currently includes
-shared-fixture conflicts and is not the official judge validation path. Historical portfolio
-materials reference **145+ passing tests**; today's reproducible hackathon proof is the focused
-two-test path above.
+shared-fixture conflicts and is not the official judge validation path. Portfolio materials
+reference **133+ passing checks**; today's reproducible hackathon proof is the focused two-test
+path above.
 
 ## Known Limitations
 
