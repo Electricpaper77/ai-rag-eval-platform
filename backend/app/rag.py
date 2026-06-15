@@ -1,15 +1,23 @@
+from __future__ import annotations
+
 import os
 import time
 from typing import Any, Dict, List
 
-import chromadb
-from chromadb.config import Settings
+try:
+    import chromadb
+    from chromadb.config import Settings
+except ImportError:
+    chromadb = None
+    Settings = None
 
 CHROMA_DIR = os.getenv("CHROMA_DIR", "/tmp/chroma")
 COLLECTION_NAME = "docs"
 
 
 def get_client() -> chromadb.PersistentClient:
+    if chromadb is None or Settings is None:
+        raise RuntimeError("chromadb is required for RAG operations; install the full requirements.txt")
     os.makedirs(CHROMA_DIR, exist_ok=True)
     return chromadb.PersistentClient(
         path=CHROMA_DIR,

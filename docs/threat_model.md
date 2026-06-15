@@ -1,5 +1,9 @@
 # AI RAG Threat Model
 
+> **Historical design document:** The security fixture, validator module, and dedicated security
+> tests described here are not present in this checkout. Treat the controls below as historical
+> design documentation, not current reproducible judge proof.
+
 ## Scope
 
 This threat model covers the local RAG evaluation platform, including user prompts, retrieved context, generated model responses, evaluation datasets, JSONL audit artifacts, and metrics endpoints.
@@ -39,9 +43,10 @@ This threat model covers the local RAG evaluation platform, including user promp
 
 ## Controls
 
-- `app/security/validators.py` returns structured actions and reason codes.
-- `data/security_eval_prompts.jsonl` provides 31 deterministic adversarial cases.
-- `tests/test_security_eval.py` validates expected safe behavior and exports a pass/fail summary.
+- The historical validator returned structured actions and reason codes.
+- `docs/security_eval_report.md` preserves the historical 31-case adversarial methodology.
+- The original fixture and dedicated security test files are not present in this checkout, so the
+  historical report is not current reproducible judge proof.
 - Security metrics are added to the project metrics modules.
 - `docs/security_eval_report.md` documents methodology, sample results, and OWASP LLM Top 10 mapping.
 

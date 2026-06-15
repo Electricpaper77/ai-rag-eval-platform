@@ -28,8 +28,11 @@ This report is a checksum-backed evidence index for checked-in eval artifacts. T
 | `docs/artifacts/eval_runs/eval_runs.jsonl` | guardrail_smoke_sample | 6 | `94bc8f569f4a3cdb2b29ab69ff2a2cfd0e65db77ed2aebb48522d2e7298a6867` |
 | `docs/artifacts/runs/eval_run_001.jsonl` | historical_eval_benchmark | 125 | `7df1a74d01a98b1e7d74457c3353129dbc82019b34632bd05f32389fa41db307` |
 
-Regenerate with:
+Historical generator command:
 
 ```bash
 python scripts/generate_eval_evidence.py
 ```
+
+The generation script is not present in this checkout. Use the checked-in JSON and Markdown
+summaries as historical checksum-backed evidence, not as a currently reproducible generation step.

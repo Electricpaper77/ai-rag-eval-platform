@@ -49,7 +49,9 @@ The project is not a low-level CUDA/kernel optimization project, so it is strong
   - `k8s/pdb.yaml`
   - `k8s/servicemonitor.yaml`
 - Validation:
-  - `133 passed, 1 xfailed` in the current local working tree
+  - Focused AgentTrust demo tests: `2 passed`
+  - Repository collection: `128 tests collected`
+  - Full legacy/shared fixture suite is not the official judge validation path
   - Docker and Kubernetes files provide packaging evidence, not deployment proof
 
 ## Performance Snapshot

@@ -5,6 +5,7 @@ pydantic
 requests
 gunicorn==21.2.0
 google-cloud-storage==3.8.0
+google-genai>=1.0.0,<2.0.0
 psutil
 chromadb==0.4.24
 prometheus-client==0.20.0

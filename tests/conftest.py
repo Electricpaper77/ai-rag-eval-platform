@@ -3,12 +3,11 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import create_app
+from backend.app.main import app
 
 
 @pytest.fixture()
-def client(tmp_path):
-    app = create_app(tmp_path)
+def client():
     return TestClient(app)
 
 
@@ -19,4 +18,3 @@ def chat_payload():
         "messages": [{"role": "user", "content": "Explain inference routing in one sentence."}],
         "max_tokens": 64,
     }
-

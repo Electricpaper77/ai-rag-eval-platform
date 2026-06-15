@@ -2,7 +2,7 @@
 
 ## 60-Second Explanation
 
-This project is a portfolio-grade AI RAG evaluation platform. It exposes an OpenAI-compatible inference endpoint, evaluates model responses for hallucination risk, citation coverage, refusal behavior, PII leakage, and prompt-injection compliance, and records evidence as JSONL logs and Prometheus metrics. The deterministic security layer contains 31 cases, while the checksum-backed evidence report summarizes 131 fixture records. The current local working tree has 133 passing pytest checks and 1 expected xfail.
+This project is a portfolio-grade AI RAG evaluation platform. It exposes an OpenAI-compatible inference endpoint, evaluates model responses for hallucination risk, citation coverage, refusal behavior, PII leakage, and prompt-injection compliance, and records evidence as JSONL logs and Prometheus metrics. The historical security report documents 31 cases, while the checksum-backed evidence report summarizes 131 fixture records. Current validation reports 2 focused AgentTrust demo tests passing, 128 tests collected, and a non-green full suite with 99 passed, 28 failed, and 1 expected xfail.
 
 ## Technical Deep-Dive Answers
 
@@ -10,10 +10,10 @@ This project is a portfolio-grade AI RAG evaluation platform. It exposes an Open
 The core service is FastAPI. It has an OpenAI-compatible `/v1/chat/completions` surface, evaluation logic, RAG citation checks, metrics, routing, GPU/platform proof paths, and deployment packaging. The important design choice is that evaluation and proof artifacts are first-class outputs rather than hidden logs.
 
 **How do you avoid flaky LLM eval tests?**  
-Security validation is deterministic. The red-team dataset declares expected safe behavior, and `app/security/validators.py` evaluates prompt, context, and response fields without external model calls. That keeps CI stable while still testing real risk categories.
+The current AgentTrust demo validation is deterministic and requires no external model call. The historical security report also documents a deterministic red-team dataset and validator design, but those original source files are not present in this checkout.
 
 **How does the evidence layer work?**  
-`scripts/generate_eval_evidence.py` reads checked-in JSONL eval logs, computes pass rate, hallucination rate, citation precision, refusal/guardrail accuracy, prompt counts, timestamps, and SHA256 checksums, then writes `docs/artifacts/eval_summary.json` and `docs/artifacts/eval_summary.md`.
+The checked-in `docs/artifacts/eval_summary.json` and `docs/artifacts/eval_summary.md` record pass rate, hallucination rate, citation precision, refusal/guardrail accuracy, prompt counts, timestamps, and SHA256 checksums. They are preserved evidence artifacts; the original generation script is not present in this checkout.
 
 ## Business / Customer-Facing Answers
 
@@ -29,21 +29,25 @@ Solutions Engineers often need to bridge technical depth and customer trust. Thi
 ## Security / Evaluation Answers
 
 **What security cases are covered?**  
-The deterministic suite covers prompt injection, jailbreak-style instruction conflicts, PII leakage, unsafe retrieval, malformed input, and irrelevant-context RAG abuse.
+The historical 31-case report covers prompt injection, jailbreak-style instruction conflicts, PII leakage, unsafe retrieval, malformed input, and irrelevant-context RAG abuse. Its original fixture and dedicated tests are not present in this checkout.
 
 **How do you evaluate hallucination and citation behavior?**  
 The reliability evaluator scores hallucination risk and citation coverage, records failure reasons, and persists the results to JSONL. The evidence summary then aggregates documented eval artifacts and separates smoke validation from historical benchmark evidence.
 
 **How do you prove the metrics are tied to the underlying data?**  
-The evidence layer records SHA256 checksums for each input artifact. A reviewer can regenerate the summary with `python scripts/generate_eval_evidence.py` and compare the checksums and metrics.
+The checked-in evidence summary records SHA256 checksums for each input artifact so a reviewer can compare the documented metrics with the referenced JSONL files. The original regeneration script is not included in this checkout.
 
 ## Metrics-Focused Answers
 
 **What validation metrics should I quote?**  
-Quote 5 passing security eval tests, 3 passing evidence integrity tests, 2 passing LLM eval harness tests, and 133 passing pytest checks. For evidence artifacts, quote 131 documented eval prompts aggregated across the smoke sample and historical benchmark.
+Quote 2 passing focused AgentTrust demo tests and 128 collected tests. If discussing the full suite, state the complete current result: 99 passed, 28 failed, and 1 expected xfail. For evidence artifacts, quote 131 documented eval prompts aggregated across the smoke sample and historical benchmark.
 
 **What operational metrics are exposed?**  
 The platform exposes Prometheus-format metrics for inference latency, TTFT, tokens/sec, routing decisions, eval pass/fail counts, category failures, GPU serving signals, and AI security gauges.
 
 **What proof artifacts show engineering readiness?**
-Use `docs/artifacts/eval_summary.md`, `docs/security_eval_report.md`, `docs/artifacts/metrics_sample.txt`, `artifacts/proof/gpu_benchmark_run.jsonl`, `tests/test_canary_policy.py`, `cloudbuild.yaml`, and the `k8s/` manifests. These demonstrate implementation and packaging, not a live production cluster.
+Use `docs/artifacts/eval_summary.md`, `docs/security_eval_report.md`,
+`docs/artifacts/metrics_sample.txt`, `docs/artifacts/gpu_observability_runs.jsonl`,
+`tests/test_canary_policy.py`, `cloudbuild.yaml`, and the `k8s/` manifests. These demonstrate
+implementation and packaging, not a live production cluster. The security report is historical
+documentation; its original fixture and dedicated tests are not present in this checkout.
