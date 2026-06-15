@@ -21,7 +21,9 @@ RAG and LLM applications need repeatable checks for unsupported answers, missing
 | Combined hallucination rate | 0.8% |
 | Combined citation precision | 83.3% |
 | Combined refusal accuracy | 83.3% |
-| Current local pytest result | 133 passed, 1 expected xfail |
+| Focused AgentTrust demo tests | 2 passed |
+| Repository collection | 128 tests collected |
+| Full legacy/shared fixture suite | Not the official judge validation path |
 
 ## Operational Artifact
 

@@ -23,13 +23,15 @@ Teams need a repeatable way to prove that GenAI systems are safe, observable, an
 
 | Check | Result |
 |---|---:|
-| Security eval tests | 5 passed |
-| Evidence integrity tests | 3 passed |
-| Full pytest suite | 133 passed, 1 xfailed |
+| Focused AgentTrust demo tests | 2 passed |
+| Repository collection | 128 tests collected |
+| Full legacy/shared fixture suite | Not the official judge validation path |
 
 ## Security Eval Layer Summary
 
-The security layer uses `data/security_eval_prompts.jsonl` and `app/security/validators.py` to validate 31 deterministic adversarial cases across prompt injection, PII leakage, unsafe retrieval, malformed input, jailbreak-style instruction conflicts, and irrelevant-context RAG abuse. The test suite validates safe actions such as `block`, `redact`, `reject`, and `allow`.
+The security report documents a historical 31-case deterministic suite. Its referenced source
+fixture, validator module, and dedicated tests are not present in this checkout, so it is not part
+of the current reproducible judge validation path.
 
 Key artifact: [security_eval_report.md](security_eval_report.md)
 
@@ -51,22 +53,22 @@ The report separates the 6-prompt guardrail smoke sample from the 125-prompt his
 - [Eval JSONL log](artifacts/eval_runs/eval_runs.jsonl)
 - [Historical eval run](artifacts/runs/eval_run_001.jsonl)
 - [Metrics sample](artifacts/metrics_sample.txt)
-- [GPU proof run](../artifacts/proof/gpu_benchmark_run.jsonl)
 - [Cloud Build config](../cloudbuild.yaml)
 - [Kubernetes manifests](../k8s/)
 
 ## Commands To Reproduce Results
 
 ```bash
-python scripts/generate_eval_evidence.py
-python -m pytest tests/test_security_eval.py -q -s
-python -m pytest tests/test_generate_eval_evidence.py -q
-python -m pytest -q
+python -m pytest tests/test_agenttrust_demo.py -q
+python -m pytest --collect-only -q
+git diff --check
 ```
 
 ## Resume-Ready Bullets
 
-- Built a FastAPI RAG and LLM evaluation platform with deterministic security checks, checksum-backed JSONL evidence, Prometheus metrics, OpenAI-compatible inference, and 133 passing pytest checks in the current local working tree.
+- Built a FastAPI RAG and LLM evaluation platform with deterministic reliability checks,
+  checksum-backed JSONL evidence, Prometheus metrics, OpenAI-compatible inference, and a focused
+  reproducible AgentTrust judge-validation path.
 - Implemented AI security evaluation coverage for prompt injection, PII redaction, unsafe retrieval, malformed input, jailbreak-style instruction conflicts, and irrelevant-context RAG abuse using deterministic validators and documented threat mapping.
 - Added recruiter-verifiable proof artifacts including eval JSONL logs, SHA256 evidence summaries, Prometheus metric samples, GPU benchmark proof logs, and Docker/Kubernetes/Cloud Build configuration.
 

@@ -1,8 +1,16 @@
 # AI Security Evaluation Report
 
+> **Historical artifact:** The source fixture `data/security_eval_prompts.jsonl`, validator module
+> `app/security/validators.py`, and dedicated `tests/test_security_eval.py` referenced below are
+> not present in this checkout. Preserve this report as historical documentation, not as current
+> reproducible judge proof.
+
 ## Methodology
 
-This repository includes a deterministic defensive red-team suite for RAG and LLM application security. The suite lives in `data/security_eval_prompts.jsonl` and contains 31 adversarial cases across prompt injection, PII leakage, unsafe retrieval, malformed input, jailbreak-style instruction conflicts, and irrelevant-context RAG abuse.
+This historical report described a deterministic defensive red-team suite for RAG and LLM
+application security. The original suite used `data/security_eval_prompts.jsonl` and contained 31
+adversarial cases across prompt injection, PII leakage, unsafe retrieval, malformed input,
+jailbreak-style instruction conflicts, and irrelevant-context RAG abuse.
 
 The tests do not call an external model. Instead, `app/security/validators.py` applies deterministic validation logic to the prompt, retrieved context, and candidate model response. Each case declares the expected safe behavior as one of:
 
@@ -23,7 +31,8 @@ This design keeps the suite stable in CI and makes failures easy to debug.
 | `unsafe_response_rate` | Unsafe cases that would have been allowed through. | Lower is better |
 | `malformed_request_rejection_total` | Count of malformed requests rejected before retrieval or generation. | Tracked count |
 
-The metrics are exported through the project metrics modules and validated in `tests/test_security_eval.py`.
+The metrics were historically validated by `tests/test_security_eval.py`; that file is not present
+in this checkout.
 
 ## Example Test Cases
 
@@ -37,13 +46,7 @@ The metrics are exported through the project metrics modules and validated in `t
 
 ## Sample Results
 
-Command:
-
-```bash
-python -m pytest tests/test_security_eval.py -q
-```
-
-Observed local result:
+Historically recorded local result:
 
 | Result | Value |
 |---|---:|
