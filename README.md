@@ -41,8 +41,8 @@ production workflows.
 
 | Judge action | Link or command | Expected proof |
 | --- | --- | --- |
-| Open the judge dashboard | [AgentTrust IQ Command Center](https://ai-agent-reliability-platform-rtcd.vercel.app/agenttrust-iq-command-center.html) | Score 92, checks, decision, and audit record |
-| Open the live walkthrough | [Portfolio / home](https://ai-agent-reliability-platform-rtcd.vercel.app/) | Project positioning and supporting evidence |
+| Open the judge dashboard | [AgentTrust IQ Command Center](https://ai-agent-reliability-platform-rtcd.vercel.app/agenttrust-iq-command-center.html) | Static walkthrough, primary metrics, decision flow, and audit record |
+| Open the static walkthrough | [Portfolio / home](https://ai-agent-reliability-platform-rtcd.vercel.app/) | Project positioning and supporting evidence |
 | Inspect repository proof | [`PROOF.md`](PROOF.md) and [`SUBMISSION_PACKET.md`](SUBMISSION_PACKET.md) | Evidence sources, architecture, and judge summary |
 | Run the official judge test | `python -m pytest tests/test_agenttrust_demo.py -q` | `2 passed` |
 | Inspect checked-in audit evidence | [`docs/artifacts/eval_runs/hiring_eval.jsonl`](docs/artifacts/eval_runs/hiring_eval.jsonl) | Replayable JSONL evaluation records |
@@ -58,19 +58,16 @@ escalate release decision.
 
 | Metric | Result | Why it matters |
 | --- | ---: | --- |
-| Agent Readiness Score | **92/100** | Converts multiple reliability checks into a deployment decision |
 | Eval pass rate | **87%** | Shows the share of submission evaluation scenarios meeting the gate |
-| Regression validation | **133+ passing checks** | Records the current portfolio regression claim |
+| Regression validation | **145+ passing tests** | Records the current portfolio regression claim |
 | Throughput | **43 req/sec** | Shows benchmarked request-processing capacity |
-| p95 latency | **270 ms** | Measures tail latency for the submission benchmark |
-| Workflow success | **99%+** | Indicates end-to-end workflow reliability in the submission portfolio |
+| Workflow success | **~99%** | Indicates end-to-end workflow reliability in the submission portfolio |
 | Hallucination reduction | **18% to 6%** | Shows improvement after evaluation and retrieval controls |
 | Audit evidence | **JSONL logs** | Makes decisions replayable, reviewable, and CI-friendly |
 
-The `87%`, `43 req/sec`, `270 ms`, `99%+`, and `18% to 6%` values are submission-level benchmark
-figures documented in `evaluation_results.md` and the portfolio. The `133+ passing checks` figure is
-the current portfolio regression claim; the reproducible hackathon proof is reported separately as
-**2 focused AgentTrust demo tests passing and 132 tests collected**. Repository fixture metrics are reported separately in
+The `87%`, `43 req/sec`, `~99%`, and `18% to 6%` values are submission-level benchmark
+figures documented in `evaluation_results.md` and the portfolio. The `145+ passing tests` figure is
+the current portfolio regression claim. Repository fixture metrics are reported separately in
 [Evidence and Metrics](#evidence-and-metrics), and none of these figures claim live customer
 traffic or an independently audited production service.
 
@@ -82,7 +79,7 @@ traffic or an independently audited production service.
 - [Proof checklist](PROOF.md)
 - [LinkedIn](https://www.linkedin.com/in/zohaib-a-1a8017174/)
 
-The Vercel link is a static portfolio walkthrough. The FastAPI service and evaluation endpoints run locally through the commands below; this repository does not claim live customer traffic or a hosted production API.
+Vercel hosts the static judge-facing walkthrough. The FastAPI evaluation service is represented through documented local/API proof artifacts, tests, JSONL logs, and metrics.
 
 ## 60-Second Judge Demo
 
@@ -161,7 +158,7 @@ evaluation as its backbone.
 
 ## AgentTrust IQ Command Center
 
-The judge-facing Command Center turns the deterministic demo into a single visual flow: user question, retrieved policy evidence, cited agent answer, reliability checks, deployment decision, and JSONL audit record. It fetches `GET /demo/agenttrust-iq` when the FastAPI service is running and uses the same built-in deterministic fixture on the static walkthrough.
+The judge-facing Command Center turns the deterministic demo into a single visual flow: user question, retrieved policy evidence, cited agent answer, reliability checks, deployment decision, and JSONL audit record. Vercel hosts the static judge-facing walkthrough. The FastAPI evaluation service is represented through documented local/API proof artifacts, tests, JSONL logs, and metrics.
 
 Run it locally:
 
@@ -175,11 +172,9 @@ Then open:
 http://127.0.0.1:8000/demo/agenttrust-iq/command-center
 ```
 
-Recommended screenshot filename: `agenttrust_iq_command_center.png`
-
 Suggested 60-90 second demo video flow:
 
-1. Start on the six headline reliability metrics and Agent Readiness Score of 92.
+1. Start on the four headline reliability metrics.
 2. Follow the animated question-to-decision workflow.
 3. Point out the three governed evidence snippets and matching citations.
 4. Show the reliability checks and "Ready for controlled deployment" release decision.
@@ -342,7 +337,7 @@ Current local validation:
 | Check | Result |
 |---|---:|
 | Focused AgentTrust demo tests: `python -m pytest tests/test_agenttrust_demo.py -q` | 2 passing |
-| Pytest collection | 132 tests collected |
+| Pytest collection | Documented local collection proof |
 | Full legacy/shared suite | 103 passed, 28 failed, 1 expected xfail; not the official judge path |
 | Diff hygiene | `git diff --check` passed |
 
@@ -355,7 +350,7 @@ green. Validation counts should be refreshed whenever evaluator behavior or test
 
 - The shared `tests/conftest.py` client targets `backend.app.main:app`, while legacy gateway tests
   expect routes and state from the separate `app/` entrypoint.
-- The `133+ passing checks` value above is the portfolio regression claim, while the focused judge
+- The `145+ passing tests` value above is the portfolio regression claim, while the focused judge
   path and current collection count are reported separately.
 - Performance and quality values in the Reliability Evidence table are controlled evaluation
   results documented in `evaluation_results.md`, not live production telemetry.

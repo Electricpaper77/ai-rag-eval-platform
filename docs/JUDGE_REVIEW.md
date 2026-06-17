@@ -21,7 +21,7 @@ whether an answer is supported, cited, safe, and auditable before deployment.
 ## What To Click First
 
 1. Open the [AgentTrust IQ Command Center](https://ai-agent-reliability-platform-rtcd.vercel.app/agenttrust-iq-command-center.html).
-2. Read the first-screen Agent Readiness Score of **92** and deployment decision:
+2. Read the first-screen primary metrics and deployment decision:
    **APPROVE WITH AUDIT EVIDENCE**.
 3. Follow the visible video path: **Score -> Foundry Pipeline -> Failure Case -> Audit Proof**.
 4. Use **Replay Audit Evidence** to restart the deterministic question-to-decision workflow.
@@ -81,9 +81,9 @@ python -m pytest --collect-only
 git diff --check
 ```
 
-Current discovery proof: **128 tests collected**. The full legacy suite currently includes
+Current discovery proof is documented in the repository. The full legacy suite currently includes
 shared-fixture conflicts and is not the official judge validation path. Portfolio materials
-reference **133+ passing checks**; today's reproducible hackathon proof is the focused two-test
+reference **145+ passing tests**; today's reproducible hackathon proof is the focused two-test
 path above.
 
 ## Known Limitations

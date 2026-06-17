@@ -218,7 +218,7 @@
             <h3>Measured Impact</h3>
             <p>
               87% eval pass rate, hallucination risk reduced from 18% to 6%, 43 req/sec
-              throughput, p95 latency tracked, and 133+ passing checks.
+              throughput, p95 latency tracked, and 145+ passing tests.
             </p>
           </article>
 
@@ -495,7 +495,7 @@
             <span>03 / Validated impact</span>
             <h3>Proof metrics</h3>
             <p id="resume-proof-metrics">
-              87% eval pass rate, 133+ passing checks, 43 req/sec throughput, p50 57ms / p95 270ms
+              87% eval pass rate, 145+ passing tests, 43 req/sec throughput, p50 57ms / p95 270ms
               latency, 1,000+ automated evaluations, 99%+ workflow success, hallucination
               reduction from 18% to 6%.
             </p>
@@ -801,62 +801,62 @@
           </a>
         </div>
         <div
-          id="proof-screenshot-checklist"
+          id="proof-screenshot-evidence"
           class="proof-screenshot-checklist"
           aria-labelledby="proof-screenshot-title"
         >
           <div class="proof-screenshot-heading">
             <div>
-              <h3 id="proof-screenshot-title">Proof Screenshot Checklist</h3>
-              <p>Suggested screenshots for reviewers who want fast visual evidence of the project.</p>
+              <h3 id="proof-screenshot-title">Proof Screenshot Evidence</h3>
+              <p>Existing screenshot artifacts linked directly from the repository.</p>
             </div>
           </div>
           <ul class="proof-screenshot-list">
             <li>
               <span class="proof-check" aria-hidden="true"></span>
               <div>
-                <strong>Hero metrics summary</strong>
-                <code>hero_metrics.png</code>
+                <strong>Regression gate</strong>
+                <a href="./assets/proof/pytest_regression_pass.png">pytest_regression_pass.png</a>
               </div>
             </li>
             <li>
               <span class="proof-check" aria-hidden="true"></span>
               <div>
-                <strong>30-second hiring summary</strong>
-                <code>30_second_hiring_summary.png</code>
+                <strong>JSONL audit logs</strong>
+                <a href="./assets/proof/jsonl_audit_logs.png">jsonl_audit_logs.png</a>
               </div>
             </li>
             <li>
               <span class="proof-check" aria-hidden="true"></span>
               <div>
-                <strong>Interactive agent demo</strong>
-                <code>interactive_agent_demo.png</code>
+                <strong>Metrics dashboard</strong>
+                <a href="./assets/proof/eval_metrics_dashboard.png">eval_metrics_dashboard.png</a>
               </div>
             </li>
             <li>
               <span class="proof-check" aria-hidden="true"></span>
               <div>
-                <strong>JSONL evidence logs</strong>
-                <code>jsonl_eval_logs.png</code>
+                <strong>RAG citation demo</strong>
+                <a href="./assets/proof/rag_citations_demo.png">rag_citations_demo.png</a>
               </div>
             </li>
             <li>
               <span class="proof-check" aria-hidden="true"></span>
               <div>
-                <strong>Pytest regression pass</strong>
-                <code>pytest_regression_pass.png</code>
+                <strong>PII redaction guardrail</strong>
+                <a href="./assets/proof/pii_redaction_guardrail.png">pii_redaction_guardrail.png</a>
               </div>
             </li>
             <li>
               <span class="proof-check" aria-hidden="true"></span>
               <div>
-                <strong>Metrics dashboard sample</strong>
-                <code>eval_metrics_dashboard.png</code>
+                <strong>Prompt-injection defense</strong>
+                <a href="./assets/proof/prompt_injection_defense.png">prompt_injection_defense.png</a>
               </div>
             </li>
           </ul>
           <p class="proof-screenshot-note">
-            These artifacts map directly to the README, proof files, evaluation logs, and live demo.
+            These artifacts map directly to the README, proof files, evaluation logs, and static walkthrough.
           </p>
         </div>
 
@@ -896,7 +896,7 @@
             Built a FastAPI RAG/LLM evaluation platform with deterministic checks for
             hallucination, citation quality, refusal behavior, prompt injection, and PII handling;
             generated checksum-backed JSONL evidence across 131 fixture records, exposed
-            Prometheus metrics, and validated reliability with 133 passing pytest checks.
+            Prometheus metrics, and validated reliability with 145+ passing tests.
           </p>
           <button class="button primary copy-resume-bullet" type="button">Copy Resume Bullet</button>
         </div>
@@ -1415,39 +1415,27 @@
         <div class="command-metric-grid" aria-label="AI agent reliability metrics">
           <article class="command-metric-card">
             <span>Eval Pass Rate</span>
-            <strong>94%</strong>
-            <p>47 / 50 deterministic evals passed</p>
-            <small>+12% after regression fixes</small>
+            <strong>87%</strong>
+            <p>Submission evaluation scenarios meeting the gate</p>
+            <small>Primary headline metric</small>
           </article>
           <article class="command-metric-card">
-            <span>Hallucination Risk</span>
-            <strong>3%</strong>
-            <p>Down from 18% baseline</p>
-            <small>15-point reduction</small>
+            <span>Hallucination Reduction</span>
+            <strong>18% -> 6%</strong>
+            <p>Reduced after evaluation and retrieval controls</p>
+            <small>Primary headline metric</small>
           </article>
           <article class="command-metric-card">
-            <span>Citation Precision</span>
-            <strong>91%</strong>
-            <p>Verified cited answer support</p>
-            <small>+21% after retrieval tuning</small>
+            <span>Throughput</span>
+            <strong>43 req/sec</strong>
+            <p>Measured at ~99% success</p>
+            <small>Primary headline metric</small>
           </article>
           <article class="command-metric-card">
-            <span>Guardrail Blocks</span>
-            <strong>8</strong>
-            <p>Prompt injection and unsafe requests blocked</p>
-            <small>100% logged to JSONL</small>
-          </article>
-          <article class="command-metric-card">
-            <span>p95 Latency</span>
-            <strong>270ms</strong>
-            <p>Eval response latency</p>
-            <small>Production-readiness target met</small>
-          </article>
-          <article class="command-metric-card">
-            <span>Cost / Request</span>
-            <strong>$0.014</strong>
-            <p>Estimated agent eval cost</p>
-            <small>Tracked for deployment planning</small>
+            <span>Passing Tests</span>
+            <strong>145+</strong>
+            <p>Regression evidence for the portfolio claim</p>
+            <small>Primary headline metric</small>
           </article>
         </div>
 
@@ -1756,8 +1744,8 @@
             <small>Cited response gate</small>
           </article>
           <article class="command-metric-card">
-            <span>Eval Pass Rate</span>
-            <strong>94%</strong>
+            <span>Eval Status</span>
+            <strong>Pass</strong>
             <p>Cyber-agent reliability cases passed repeatable eval checks.</p>
             <small>Release criteria</small>
           </article>
@@ -2115,7 +2103,7 @@
     </main>
     <script>
       const resumeBullet =
-        "Built a FastAPI RAG/LLM evaluation platform with deterministic checks for hallucination, citation quality, refusal behavior, prompt injection, and PII handling; generated checksum-backed JSONL evidence across 131 fixture records, exposed Prometheus metrics, and validated reliability with 133 passing pytest checks.";
+        "Built a FastAPI RAG/LLM evaluation platform with deterministic checks for hallucination, citation quality, refusal behavior, prompt injection, and PII handling; generated checksum-backed JSONL evidence across 131 fixture records, exposed Prometheus metrics, and validated reliability with 145+ passing tests.";
       const copyButtons = document.querySelectorAll(".copy-resume-bullet");
       const copyStatus = document.getElementById("copy-status");
 
@@ -2472,7 +2460,7 @@
           body:
             "Scores answer quality, citation precision, hallucination risk, refusal behavior, and regression drift.",
           metrics: [
-            ["Eval pass rate", "94%"],
+            ["Eval pass rate", "87%"],
             ["Hallucination risk", "3%"],
             ["Citation precision", "91%"],
             ["Cost/request", "$0.014"],

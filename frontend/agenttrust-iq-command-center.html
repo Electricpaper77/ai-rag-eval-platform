@@ -1464,7 +1464,6 @@
             <span class="status-dot" aria-hidden="true"></span>
             <span id="data-status-label">Loading deterministic evidence</span>
           </span>
-          <button id="replay-button" class="button" type="button">Replay Audit Evidence</button>
         </div>
       </div>
     </header>
@@ -1483,6 +1482,11 @@
               Reliability gate for Microsoft Foundry-style agents: grounded, cited, safe,
               auditable.
             </p>
+            <p class="subtitle">
+              This demo is a static walkthrough of the reliability workflow. It shows documented
+              eval outputs, guardrail decisions, JSONL audit structure, and regression evidence. It
+              is not currently connected to a live hosted FastAPI backend.
+            </p>
             <div class="hero-actions">
               <a
                 class="button button-primary"
@@ -1490,7 +1494,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                View GitHub Proof
+                View GitHub
                 <svg viewBox="0 0 20 20" aria-hidden="true">
                   <path
                     d="M6 14 14 6m-6 0h6v6"
@@ -1502,16 +1506,15 @@
                   />
                 </svg>
               </a>
-              <a class="button" href="#demo-workflow">Open Live Demo</a>
-              <button id="hero-replay-button" class="button" type="button">
-                Replay Audit Evidence
-              </button>
+              <a class="button" href="./docs/artifacts/xprize/judge_replay_latest.jsonl">
+                View JSONL Evidence
+              </a>
             </div>
           </div>
           <aside class="hero-note">
-            <span class="hero-score-label">Agent Readiness Score</span>
-            <strong>92</strong>
-            <p>Deployment-ready with complete audit evidence</p>
+            <span class="hero-score-label">Eval Pass Rate</span>
+            <strong>87%</strong>
+            <p>Primary submission metric with documented evidence</p>
             <div class="hero-decision">
               Deployment Decision: APPROVE WITH AUDIT EVIDENCE
             </div>
@@ -1529,36 +1532,28 @@
 
       <section id="score" class="shell metrics" aria-label="AgentTrust IQ headline metrics">
         <article class="metric">
-          <span>Agent Readiness Score</span>
-          <strong id="metric-score">92</strong>
+          <span>Eval Pass Rate</span>
+          <strong>87%</strong>
         </article>
         <article class="metric">
-          <span>Groundedness</span>
-          <strong id="metric-groundedness">Pass</strong>
+          <span>Hallucination Reduction</span>
+          <strong>18% -> 6%</strong>
         </article>
         <article class="metric">
-          <span>Citation Support</span>
-          <strong id="metric-citations">Pass</strong>
+          <span>Throughput</span>
+          <strong>43 req/sec</strong>
         </article>
         <article class="metric">
-          <span>Hallucination Risk</span>
-          <strong id="metric-hallucination">Low</strong>
-        </article>
-        <article class="metric">
-          <span>PII Exposure</span>
-          <strong id="metric-pii">None</strong>
-        </article>
-        <article class="metric">
-          <span>Audit Log</span>
-          <strong id="metric-audit">Complete</strong>
+          <span>Passing Tests</span>
+          <strong>145+</strong>
         </article>
       </section>
 
       <p class="shell proof-strip-label">Judge Proof</p>
       <section class="shell evidence-strip" aria-label="Judge proof">
         <a class="evidence-item" href="#demo-workflow">
-          <span>Live Deployment</span>
-          <strong>Vercel production-ready</strong>
+          <span>Static Walkthrough</span>
+          <strong>Vercel hosts the judge walkthrough</strong>
         </a>
         <a
           class="evidence-item"
@@ -1574,13 +1569,42 @@
           <strong>2 focused tests passed</strong>
         </article>
         <article class="evidence-item">
-          <span>128 Tests Collected</span>
-          <strong>Clean regression discovery</strong>
+          <span>145+ Passing Tests</span>
+          <strong>Regression evidence</strong>
         </article>
-        <article class="evidence-item">
+        <a class="evidence-item" href="./docs/artifacts/xprize/judge_replay_latest.jsonl">
           <span>JSONL Audit Evidence</span>
           <strong>Replayable evaluation logs</strong>
-        </article>
+        </a>
+      </section>
+
+      <section class="shell prototype-section" aria-labelledby="deployment-disclosure-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Deployment disclosure</p>
+            <h2 id="deployment-disclosure-title">Static walkthrough, local/API proof</h2>
+          </div>
+          <p>
+            Vercel hosts the static judge-facing walkthrough. The FastAPI evaluation service is
+            represented through documented local/API proof artifacts, tests, JSONL logs, and
+            metrics.
+          </p>
+        </div>
+      </section>
+
+      <section class="shell prototype-section" aria-labelledby="benchmark-disclosure-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Controlled benchmark disclosure</p>
+            <h2 id="benchmark-disclosure-title">Controlled benchmark disclosure</h2>
+          </div>
+          <p>
+            The primary headline metrics are 87% eval pass rate, hallucination reduction from 18%
+            to 6%, 43 req/sec at ~99% success, and 145+ passing tests. The workflow below includes
+            a separate deterministic fixture with Agent Readiness Score 92 and JSONL audit output;
+            that fixture is supporting evidence, not a competing headline claim.
+          </p>
+        </div>
       </section>
 
       <section id="failure-case" class="shell catch-section" aria-labelledby="catches-title">
@@ -1611,7 +1635,7 @@
         <div class="section-heading">
           <div>
             <p class="eyebrow">Fastest path to the value</p>
-            <h2 id="judge-path-title">30-Second Judge Path</h2>
+            <h2 id="judge-path-title">Judge Workflow Summary</h2>
           </div>
           <p>
             Follow one answer from user request to governed release decision.
@@ -1640,7 +1664,7 @@
           <article class="path-card">
             <h3>Decision</h3>
             <p>
-              A readiness score of 92 clears the controlled-deployment gate with evidence.
+              The documented fixture clears the controlled-deployment gate with evidence.
             </p>
           </article>
         </div>
@@ -1674,7 +1698,7 @@
           <article class="rubric-card">
             <h3>UX &amp; Presentation</h3>
             <p>Decision-critical evidence is summarized for judges and inspectable in one view.</p>
-            <span class="proof-line">Proof: 10-second scorecard + 30-second demo path</span>
+            <span class="proof-line">Proof: headline metrics + documented workflow evidence</span>
           </article>
           <article class="rubric-card">
             <h3>Creativity</h3>
@@ -1794,6 +1818,22 @@
           <p class="prototype-line">
             Most hackathon agents show capability. AgentTrust IQ shows deployability.
           </p>
+        </section>
+
+        <section class="prototype-section" aria-labelledby="eval-tools-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Differentiation</p>
+              <h2 id="eval-tools-title">Why AgentTrust IQ vs existing eval tools</h2>
+            </div>
+            <p>
+              AgentTrust IQ is not trying to replace Ragas, TruLens, Arize Phoenix, Promptfoo, or
+              Azure AI Foundry evaluation tooling. It is a lightweight reliability gate for agent
+              workflows: deterministic checks, JSONL audit trails, citation support, PII redaction,
+              prompt-injection defense, latency tracking, and release/block/escalate decisions.
+              The goal is to make agent readiness reviewable before deployment.
+            </p>
+          </div>
         </section>
 
         <div class="microsoft-fit">
@@ -2016,13 +2056,6 @@
       function render(data, isLive) {
         document.getElementById("question").textContent = data.question;
         document.getElementById("agent-answer").textContent = data.agent_answer;
-        document.getElementById("metric-score").textContent = data.agent_readiness_score;
-        document.getElementById("metric-groundedness").textContent = titleCase(data.checks.groundedness);
-        document.getElementById("metric-citations").textContent = titleCase(data.checks.citation_support);
-        document.getElementById("metric-hallucination").textContent = titleCase(data.checks.hallucination_risk);
-        document.getElementById("metric-pii").textContent = titleCase(data.checks.pii_exposure);
-        document.getElementById("metric-audit").textContent =
-          data.checks.audit_log_complete === "pass" ? "Complete" : "Review";
 
         document.getElementById("evidence-grid").replaceChildren(
           ...data.retrieved_evidence.map((evidence) => {
@@ -2072,7 +2105,7 @@
         const status = document.getElementById("data-status");
         status.classList.toggle("is-live", isLive);
         document.getElementById("data-status-label").textContent = isLive
-          ? "Live deterministic endpoint"
+          ? "Local deterministic endpoint"
           : "Static deterministic fixture";
         replayWorkflow();
       }
@@ -2124,8 +2157,6 @@
         }
       }
 
-      document.getElementById("replay-button").addEventListener("click", replayAndFocusDemo);
-      document.getElementById("hero-replay-button").addEventListener("click", replayAndFocusDemo);
       loadDemo();
     </script>
   </body>

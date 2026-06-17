@@ -95,23 +95,19 @@
         <dl class="proof-bar-metrics">
           <div>
             <dt>Eval pass rate</dt>
-            <dd>94%</dd>
+            <dd>87%</dd>
           </div>
           <div>
             <dt>Hallucination reduction</dt>
-            <dd>38%</dd>
+            <dd>18% -> 6%</dd>
           </div>
           <div>
-            <dt>Citation precision</dt>
-            <dd>91%</dd>
-          </div>
-          <div>
-            <dt>p95 latency</dt>
-            <dd>820ms</dd>
+            <dt>Throughput</dt>
+            <dd>43 req/sec</dd>
           </div>
           <div>
             <dt>Regression tests</dt>
-            <dd>27 passing</dd>
+            <dd>145+ passing</dd>
           </div>
         </dl>
         <p>Demo metrics from reproducible local fixtures.</p>
@@ -330,7 +326,7 @@
             <h3>Measured Impact</h3>
             <p>
               87% eval pass rate, hallucination risk reduced from 18% to 6%, 43 req/sec
-              throughput, p95 latency tracked, and 133+ passing checks.
+              throughput, p95 latency tracked, and 145+ passing tests.
             </p>
           </article>
 
@@ -607,7 +603,7 @@
             <span>03 / Validated impact</span>
             <h3>Proof metrics</h3>
             <p id="resume-proof-metrics">
-              87% eval pass rate, 133+ passing checks, 43 req/sec throughput, p50 57ms / p95 270ms
+              87% eval pass rate, 145+ passing tests, 43 req/sec throughput, p50 57ms / p95 270ms
               latency, 1,000+ automated evaluations, 99%+ workflow success, hallucination
               reduction from 18% to 6%.
             </p>
@@ -842,28 +838,20 @@
         </div>
         <div class="proof-metric-grid" aria-label="Proof metrics">
           <article class="metric-card">
-            <strong>133</strong>
-            <span>passing pytest checks</span>
+            <strong>87%</strong>
+            <span>eval pass rate</span>
           </article>
           <article class="metric-card">
-            <strong>131</strong>
-            <span>fixture records</span>
+            <strong>18% -> 6%</strong>
+            <span>hallucination reduction</span>
           </article>
           <article class="metric-card">
-            <strong>5</strong>
-            <span>security eval checks passed</span>
+            <strong>43 req/sec</strong>
+            <span>at ~99% success</span>
           </article>
           <article class="metric-card">
-            <strong>3</strong>
-            <span>evidence integrity checks passed</span>
-          </article>
-          <article class="metric-card">
-            <strong>JSONL</strong>
-            <span>audit logs</span>
-          </article>
-          <article class="metric-card">
-            <strong>Prometheus</strong>
-            <span>metrics</span>
+            <strong>145+</strong>
+            <span>passing tests</span>
           </article>
         </div>
       </section>
@@ -1094,7 +1082,7 @@
             Built a FastAPI RAG/LLM evaluation platform with deterministic checks for
             hallucination, citation quality, refusal behavior, prompt injection, and PII handling;
             generated checksum-backed JSONL evidence across 131 fixture records, exposed
-            Prometheus metrics, and validated reliability with 133 passing pytest checks.
+            Prometheus metrics, and validated reliability with 145+ passing tests.
           </p>
           <button class="button primary copy-resume-bullet" type="button">Copy Resume Bullet</button>
         </div>
@@ -1643,39 +1631,27 @@
         <div class="command-metric-grid" aria-label="AI agent reliability metrics">
           <article class="command-metric-card">
             <span>Eval Pass Rate</span>
-            <strong>94%</strong>
-            <p>47 / 50 deterministic evals passed</p>
-            <small>+12% after regression fixes</small>
+            <strong>87%</strong>
+            <p>Submission evaluation scenarios meeting the gate</p>
+            <small>Primary headline metric</small>
           </article>
           <article class="command-metric-card">
-            <span>Hallucination Risk</span>
-            <strong>3%</strong>
-            <p>Down from 18% baseline</p>
-            <small>15-point reduction</small>
+            <span>Hallucination Reduction</span>
+            <strong>18% -> 6%</strong>
+            <p>Reduced after evaluation and retrieval controls</p>
+            <small>Primary headline metric</small>
           </article>
           <article class="command-metric-card">
-            <span>Citation Precision</span>
-            <strong>91%</strong>
-            <p>Verified cited answer support</p>
-            <small>+21% after retrieval tuning</small>
+            <span>Throughput</span>
+            <strong>43 req/sec</strong>
+            <p>Measured at ~99% success</p>
+            <small>Primary headline metric</small>
           </article>
           <article class="command-metric-card">
-            <span>Guardrail Blocks</span>
-            <strong>8</strong>
-            <p>Prompt injection and unsafe requests blocked</p>
-            <small>100% logged to JSONL</small>
-          </article>
-          <article class="command-metric-card">
-            <span>p95 Latency</span>
-            <strong>270ms</strong>
-            <p>Eval response latency</p>
-            <small>Production-readiness target met</small>
-          </article>
-          <article class="command-metric-card">
-            <span>Cost / Request</span>
-            <strong>$0.014</strong>
-            <p>Estimated agent eval cost</p>
-            <small>Tracked for deployment planning</small>
+            <span>Passing Tests</span>
+            <strong>145+</strong>
+            <p>Regression evidence for the portfolio claim</p>
+            <small>Primary headline metric</small>
           </article>
         </div>
 
@@ -1988,8 +1964,8 @@
             <small>Cited response gate</small>
           </article>
           <article class="command-metric-card">
-            <span>Eval Pass Rate</span>
-            <strong>94%</strong>
+            <span>Eval Status</span>
+            <strong>Pass</strong>
             <p>Cyber-agent reliability cases passed repeatable eval checks.</p>
             <small>Release criteria</small>
           </article>
@@ -2229,6 +2205,20 @@
         </p>
       </section>
 
+      <section class="section-shell benchmark-notice" aria-label="Evaluation tooling differentiation">
+        <div>
+          <p class="eyebrow">Differentiation</p>
+          <h2>Why AgentTrust IQ vs existing eval tools</h2>
+        </div>
+        <p>
+          AgentTrust IQ is not trying to replace Ragas, TruLens, Arize Phoenix, Promptfoo, or Azure
+          AI Foundry evaluation tooling. It is a lightweight reliability gate for agent workflows:
+          deterministic checks, JSONL audit trails, citation support, PII redaction,
+          prompt-injection defense, latency tracking, and release/block/escalate decisions. The
+          goal is to make agent readiness reviewable before deployment.
+        </p>
+      </section>
+
       <section class="section-shell agent-use-case">
         <div class="agent-use-case-copy">
           <p class="eyebrow">Agent Evaluation Extension</p>
@@ -2428,7 +2418,7 @@
               Built a FastAPI RAG/LLM evaluation platform with deterministic checks for
               hallucination, citation quality, refusal behavior, prompt injection, and PII
               handling; generated checksum-backed JSONL evidence across 131 fixture records and
-              validated reliability with 133 passing pytest checks.
+              validated reliability with 145+ passing tests.
             </p>
             <div class="application-copy-action">
               <button
@@ -2473,7 +2463,7 @@
               I built this project to show how I would evaluate GenAI systems before release.
               Instead of a one-off chatbot demo, it uses deterministic fixtures, JSONL logs, pytest
               checks, and guardrail scenarios to measure whether RAG outputs are grounded, cited,
-              safe, and production-ready.
+              safe, and reviewable before deployment.
             </p>
             <div class="application-copy-action">
               <button
@@ -2519,7 +2509,7 @@
           </div>
           <ul>
             <li>Public GitHub repository</li>
-            <li>Live Vercel proof site</li>
+            <li>Static Vercel walkthrough</li>
             <li>JSONL audit evidence</li>
             <li>Pytest regression proof</li>
             <li>Guardrail scenarios</li>
@@ -2572,7 +2562,7 @@
               Reliability checks are validated through automated tests so prompt, retrieval,
               guardrail, and scoring changes can be caught before release.
             </p>
-            <strong>133 passing checks</strong>
+            <strong>145+ passing tests</strong>
           </article>
 
           <article class="integrity-card">
@@ -2683,7 +2673,7 @@
     </footer>
     <script>
       const resumeBullet =
-        "Built a FastAPI RAG/LLM evaluation platform with deterministic checks for hallucination, citation quality, refusal behavior, prompt injection, and PII handling; generated checksum-backed JSONL evidence across 131 fixture records, exposed Prometheus metrics, and validated reliability with 133 passing pytest checks.";
+        "Built a FastAPI RAG/LLM evaluation platform with deterministic checks for hallucination, citation quality, refusal behavior, prompt injection, and PII handling; generated checksum-backed JSONL evidence across 131 fixture records, exposed Prometheus metrics, and validated reliability with 145+ passing tests.";
       const copyButtons = document.querySelectorAll(".copy-resume-bullet");
       const copyStatus = document.getElementById("copy-status");
 
@@ -3270,7 +3260,7 @@
           body:
             "Scores answer quality, citation precision, hallucination risk, refusal behavior, and regression drift.",
           metrics: [
-            ["Eval pass rate", "94%"],
+            ["Eval pass rate", "87%"],
             ["Hallucination risk", "3%"],
             ["Citation precision", "91%"],
             ["Cost/request", "$0.014"],
