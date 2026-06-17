@@ -124,13 +124,15 @@
           <p class="eyebrow">Microsoft Agents League / Reasoning Agents</p>
           <h1>AgentTrust IQ Command Center</h1>
           <p class="subtitle">
-            Reliability layer for Microsoft Reasoning Agents.
+            AgentTrust IQ tests whether AI agents are safe enough to ship by measuring
+            groundedness, citation support, PII safety, prompt-injection resistance, latency, and
+            regression quality.
           </p>
           <div class="hero-pitch">
             <strong>Production trust, not just fluent output</strong>
             <p>
-              Most agent demos show what an agent can do. AgentTrust IQ shows whether an agent
-              should be trusted.
+              Most demos show that an agent can respond. AgentTrust IQ shows whether it can be
+              trusted before deployment.
             </p>
             <p>
               Evaluate groundedness, citation support, hallucination risk, prompt-injection
@@ -206,6 +208,88 @@
   "hallucination_risk": "low"
 }</code></pre>
         </aside>
+      </section>
+
+      <section
+        id="agenttrust-pipeline"
+        class="section-shell agenttrust-pipeline"
+        aria-labelledby="agenttrust-pipeline-title"
+      >
+        <div class="pipeline-heading">
+          <div>
+            <p class="eyebrow">Reliability Gate</p>
+            <h2 id="agenttrust-pipeline-title">AgentTrust IQ Pipeline</h2>
+          </div>
+          <p class="section-note">A five-stage reliability gate for AI agents before deployment.</p>
+        </div>
+
+        <div class="pipeline-layout">
+          <div class="pipeline-stage-list" aria-label="AgentTrust IQ five-stage pipeline">
+            <article class="pipeline-stage-card">
+              <span>01</span>
+              <h3>EVAL_AGENT</h3>
+              <p>Measures groundedness, hallucination risk, and response quality.</p>
+            </article>
+            <article class="pipeline-stage-card">
+              <span>02</span>
+              <h3>CITATION_AGENT</h3>
+              <p>Checks whether answers are supported by source evidence.</p>
+            </article>
+            <article class="pipeline-stage-card">
+              <span>03</span>
+              <h3>GUARDRAIL_AGENT</h3>
+              <p>Tests PII redaction, prompt-injection defense, and unsafe-output blocking.</p>
+            </article>
+            <article class="pipeline-stage-card">
+              <span>04</span>
+              <h3>REGRESSION_AGENT</h3>
+              <p>Replays deterministic eval fixtures to catch quality regressions.</p>
+            </article>
+            <article class="pipeline-stage-card">
+              <span>05</span>
+              <h3>RELEASE_AGENT</h3>
+              <p>Converts eval results into release / block / escalate decisions.</p>
+            </article>
+          </div>
+
+          <aside class="deployment-readiness-card" aria-label="Deployment Readiness Score">
+            <span class="readiness-kicker">Deployment Readiness Score: 87/100</span>
+            <dl class="readiness-metrics">
+              <div>
+                <dt>Eval pass rate</dt>
+                <dd>87%</dd>
+              </div>
+              <div>
+                <dt>Regression tests</dt>
+                <dd>145+ passing</dd>
+              </div>
+              <div>
+                <dt>Hallucination rate</dt>
+                <dd>18% &rarr; 6%</dd>
+              </div>
+              <div>
+                <dt>Evidence</dt>
+                <dd>JSONL audit logs</dd>
+              </div>
+              <div>
+                <dt>Decision model</dt>
+                <dd>release / block / escalate</dd>
+              </div>
+            </dl>
+          </aside>
+        </div>
+
+        <div class="pipeline-callout" aria-label="Microsoft hackathon alignment">
+          <p>
+            Built for Microsoft Agents League-style agent evaluation workflows: reliability gates,
+            grounded outputs, guardrails, audit evidence, and deployment-readiness scoring.
+          </p>
+        </div>
+
+        <p class="pipeline-footer">
+          Each stage feeds the final deployment decision, turning agent responses into measurable
+          release, block, or escalate outcomes.
+        </p>
       </section>
 
       <section
