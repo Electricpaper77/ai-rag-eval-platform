@@ -43,6 +43,13 @@ def test_agenttrust_iq_demo_returns_full_deterministic_flow(tmp_path, monkeypatc
         "latency_ms": 12.0,
         "audit_log_complete": "pass",
     }
+    assert [item["tool_tier"] for item in payload["tool_tier_examples"]] == [
+        "read-only / recon",
+        "read-only / recon",
+        "destructive / irreversible",
+    ]
+    assert payload["tool_tier_examples"][0]["human_approval_gate"] == "not_required"
+    assert payload["tool_tier_examples"][2]["human_approval_gate"] == "required"
 
     returned_record = json.loads(payload["jsonl_audit_record"])
     written_record = json.loads(audit_path.read_text(encoding="utf-8").strip())

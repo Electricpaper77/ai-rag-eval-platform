@@ -2001,13 +2001,27 @@
               <li><span>01</span><p>Security task request</p></li>
               <li><span>02</span><p>Threat-intel retrieval</p></li>
               <li><span>03</span><p>Guardrail scan</p></li>
-              <li><span>04</span><p>Tool-use plan</p></li>
-              <li><span>05</span><p>Human approval gate</p></li>
-              <li><span>06</span><p>Cited response</p></li>
+              <li><span>04</span><p>Tool-use tier classification<small>Tier 1 continues to the next reliability check; Tier 2 routes to approval.</small></p></li>
+              <li><span>05</span><p>Human approval gate<small>Required only for destructive / irreversible actions.</small></p></li>
+              <li><span>06</span><p>Cited response or approved action summary</p></li>
               <li><span>07</span><p>Eval scorecard</p></li>
               <li><span>08</span><p>JSONL trace replay</p></li>
               <li><span>09</span><p>Release/block/escalate</p></li>
             </ol>
+            <div class="cyber-agent-tier-grid" aria-label="Tool-use boundary tiers">
+              <article class="command-metric-card cyber-agent-tier-card">
+                <span>Tier 1</span>
+                <strong>read-only / recon</strong>
+                <p>Check a log, look up a CVE, or query a record.</p>
+                <small>No human approval gate</small>
+              </article>
+              <article class="command-metric-card cyber-agent-tier-card">
+                <span>Tier 2</span>
+                <strong>destructive / irreversible</strong>
+                <p>Isolate a host, revoke access, or delete a file.</p>
+                <small>Routes to human approval</small>
+              </article>
+            </div>
           </section>
 
           <aside class="cyber-agent-evidence" aria-labelledby="cyber-agent-json-title">
@@ -2016,7 +2030,7 @@
                 <h3 id="cyber-agent-json-title">Cyber-agent JSONL sample</h3>
                 <span>STATIC FIXTURE</span>
               </div>
-              <pre><code>{"trace_id":"cyber_agent_008","workflow":"simulated_threat_intel_triage","mode":"controlled_demo","fixtures":"deterministic","request":"assess suspicious login pattern and cite evidence","guardrails":{"prompt_injection":"blocked","unsafe_action":"blocked","pii_redaction_accuracy":0.97},"metrics":{"citation_support":0.91,"eval_pass_rate":0.94,"p95_eval_latency_ms":270},"human_approval_gate":"required","decision":"escalate_for_review"}</code></pre>
+              <pre><code>{"trace_id":"cyber_agent_008","workflow":"simulated_threat_intel_triage","mode":"controlled_demo","fixtures":"deterministic","request":"assess suspicious login pattern and cite evidence","tool_tier":"read-only / recon","proposed_action":"check suspicious login log","guardrails":{"prompt_injection":"blocked","unsafe_action":"not_requested","pii_redaction_accuracy":0.97},"metrics":{"citation_support":0.91,"eval_pass_rate":0.94,"p95_eval_latency_ms":270},"human_approval_gate":"not_required","next_check":"cited_response_gate","decision":"continue_to_reliability_checks"}</code></pre>
             </div>
             <div class="cyber-agent-resume">
               <div>
