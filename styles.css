@@ -3755,6 +3755,80 @@ code {
   font-size: 1.05rem;
 }
 
+.cyber-agent-injection-widget {
+  display: grid;
+  max-width: 880px;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.cyber-agent-widget-heading span,
+.cyber-agent-input-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.cyber-agent-widget-heading h3 {
+  margin: 7px 0 0;
+  color: var(--ink);
+  font-size: 1.08rem;
+}
+
+.cyber-agent-injection-widget textarea {
+  width: 100%;
+  min-height: 92px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.cyber-agent-injection-widget textarea:focus-visible {
+  outline: 3px solid rgba(15, 139, 141, 0.2);
+  outline-offset: 2px;
+}
+
+.cyber-agent-widget-actions {
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.cyber-agent-widget-actions .security-taxonomy-label {
+  max-width: 260px;
+}
+
+.cyber-agent-detector-result {
+  padding: 14px;
+  border: 1px solid rgba(15, 139, 141, 0.24);
+  border-radius: 8px;
+  background: var(--teal-soft);
+}
+
+.cyber-agent-detector-result.is-flagged {
+  border-color: rgba(181, 72, 72, 0.28);
+  background: var(--danger-soft);
+}
+
+.cyber-agent-detector-result strong {
+  display: block;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.cyber-agent-detector-result p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
 .cyber-agent-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(380px, 0.95fr);
