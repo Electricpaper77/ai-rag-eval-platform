@@ -1732,19 +1732,28 @@
         <div class="command-metric-grid cyber-agent-metrics" aria-label="AI cyber agent reliability metrics">
           <article class="command-metric-card">
             <span>Unsafe Action Blocks</span>
-            <strong>8/8</strong>
+            <div class="guardrail-result-row">
+              <strong>8/8</strong>
+              <span class="security-taxonomy-label">unauthorized action risk</span>
+            </div>
             <p>Simulated cyber-agent actions stopped before tool execution.</p>
             <small>Deterministic fixtures</small>
           </article>
           <article class="command-metric-card">
             <span>Prompt Injection Defense</span>
-            <strong>100%</strong>
+            <div class="guardrail-result-row">
+              <strong>100%</strong>
+              <span class="security-taxonomy-label">LLM analog of command injection</span>
+            </div>
             <p>Instruction override attempts blocked in controlled demo runs.</p>
             <small>Guardrail scan</small>
           </article>
           <article class="command-metric-card">
             <span>PII Redaction Accuracy</span>
-            <strong>97%</strong>
+            <div class="guardrail-result-row">
+              <strong>97%</strong>
+              <span class="security-taxonomy-label">data exfiltration risk</span>
+            </div>
             <p>Sensitive fields redacted across fixture-based security traces.</p>
             <small>Privacy check</small>
           </article>
