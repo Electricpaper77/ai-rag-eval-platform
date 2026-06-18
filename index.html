@@ -1923,6 +1923,22 @@
         </div>
       </section>
 
+      <section class="section-shell benchmark-notice trust-layer-differentiation" aria-label="Trust layer differentiation">
+        <div>
+          <p class="eyebrow">Complementary Eval Layer</p>
+          <h2>
+            Why a separate trust layer instead of Ragas, TruLens, Arize Phoenix, Promptfoo, or
+            Azure AI Foundry evals?
+          </h2>
+        </div>
+        <p>
+          Those tools are useful for scoring chatbot and RAG answers. AgentTrust IQ is
+          complementary: this demo also gates agent actions before a tool runs. The proof point is
+          the tool-tier boundary: read-only / recon actions continue to the next reliability check,
+          while destructive / irreversible actions route to human approval.
+        </p>
+      </section>
+
       <section
         id="ai-cyber-agent-reliability"
         class="section-shell cyber-agent-layer"
