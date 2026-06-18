@@ -3716,6 +3716,17 @@ code {
   line-height: 1.6;
 }
 
+.cyber-agent-threat-model {
+  max-width: 880px;
+  margin-top: 18px;
+}
+
+.cyber-agent-threat-model h3 {
+  margin: 8px 0 0;
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+
 .cyber-agent-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(380px, 0.95fr);
