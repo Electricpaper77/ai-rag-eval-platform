@@ -76,6 +76,22 @@ These are controlled project proof points, not claims of live customer traffic o
 audited production telemetry. The deterministic local evaluator remains the reproducible baseline;
 optional Gemini evaluation can be enabled when `GEMINI_API_KEY` is configured.
 
+## Cyber Tool-Use Firewall
+
+AgentTrust IQ includes a simulated cyber tool-use firewall for AI agents. Before an agent executes a tool call, the policy layer evaluates the requested tool, user instruction, prompt-injection risk, PII exposure, approval requirements, and auditability.
+
+Decisions:
+- Release: safe to execute
+- Block: violates policy
+- Escalate: human approval required
+
+Demo proof:
+- 40 cyber-agent eval cases
+- 100% critical unsafe-action block rate
+- 92% escalation accuracy
+- 270ms p95 policy latency
+- JSONL trace replay
+
 ## JSONL Audit Evidence
 
 Every evaluated run is represented as a structured audit record. The JSONL trail captures the
@@ -86,6 +102,7 @@ non-technical stakeholders.
 Key evidence locations:
 
 - `artifacts/agenttrust_iq/demo_runs.jsonl`
+- `artifacts/agenttrust_iq/cyber_tool_firewall_eval.jsonl`
 - `docs/artifacts/xprize/judge_replay_latest.jsonl`
 - `docs/artifacts/eval_runs/hiring_eval.jsonl`
 
