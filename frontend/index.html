@@ -1328,7 +1328,7 @@
               <span class="security-taxonomy-label">unauthorized action risk</span>
             </div>
             <p>Simulated cyber-agent actions stopped before tool execution.</p>
-            <small>Deterministic fixtures</small>
+            <small>Deterministic fixtures; controlled fixture cases</small>
           </article>
           <article class="command-metric-card">
             <span>Prompt Injection Defense</span>
@@ -1366,6 +1366,16 @@
             <p>Evaluation latency for deterministic fixture scoring.</p>
             <small>Reviewer-facing metric</small>
           </article>
+          <article class="command-metric-card">
+            <span>Infrastructure Readiness Signal</span>
+            <strong>Review</strong>
+            <p>
+              Shows how an AI infrastructure team could review agent actions before execution:
+              classify tool tier, run guardrails, preserve JSONL evidence, track p95 eval latency,
+              and route destructive actions to human approval.
+            </p>
+            <small>Controlled demo workflow</small>
+          </article>
         </div>
 
         <div class="cyber-agent-layout">
@@ -1381,7 +1391,7 @@
               <li><span>01</span><p>Security task request</p></li>
               <li><span>02</span><p>Threat-intel retrieval</p></li>
               <li><span>03</span><p>Guardrail scan</p></li>
-              <li><span>04</span><p>Tool-use tier classification<small>Tier 1 continues to the next reliability check; Tier 2 routes to approval.</small></p></li>
+              <li><span>04</span><p>Tool-use tier classification<small>Tier 1 read-only / recon: continue to reliability checks. Tier 2 destructive / irreversible: route to human approval.</small></p></li>
               <li><span>05</span><p>Human approval gate<small>Required only for destructive / irreversible actions.</small></p></li>
               <li><span>06</span><p>Cited response or approved action summary</p></li>
               <li><span>07</span><p>Eval scorecard</p></li>
@@ -1417,10 +1427,10 @@
                 <p class="eyebrow">APPLICATION ASSET</p>
                 <h3>Copy-ready resume bullet</h3>
                 <p id="cyber-agent-resume-bullet">
-                  Extended AgentTrust IQ with a controlled demo reliability layer for simulated
-                  cyber-agent workflows, using deterministic fixtures to block unsafe actions,
-                  defend against prompt injection, redact PII, validate cited threat-intel
-                  responses, score eval readiness, and replay JSONL traces for human review.
+                  Extended AgentTrust IQ with controlled demo fixtures for simulated cyber-agent
+                  workflows, adding tool-tier classification, prompt-injection checks, PII
+                  redaction, cited threat-intel review, JSONL trace replay, and human approval
+                  gates for destructive actions.
                 </p>
               </div>
               <div class="command-copy-action">
