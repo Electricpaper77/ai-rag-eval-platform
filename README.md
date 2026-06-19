@@ -89,7 +89,7 @@ Demo proof:
 - 40 cyber-agent eval cases
 - 100% critical unsafe-action block rate
 - 92% escalation accuracy
-- 270ms p95 policy latency
+- Policy eval p95 latency: 270ms
 - JSONL trace replay
 
 ## JSONL Audit Evidence
