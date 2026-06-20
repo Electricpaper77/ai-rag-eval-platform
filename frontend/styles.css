@@ -1382,6 +1382,59 @@ code {
   font-weight: 800;
 }
 
+.proof-artifact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.proof-artifact-row span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.proof-artifact-row a,
+.proof-artifact-copy {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-height: 30px;
+  padding: 7px 11px;
+  border: 1px solid rgba(15, 139, 141, 0.2);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px rgba(16, 35, 63, 0.06);
+  cursor: pointer;
+}
+
+.proof-artifact-copy.command-center-copy-button {
+  width: auto;
+}
+
+.proof-artifact-row a:hover,
+.proof-artifact-copy:hover {
+  border-color: rgba(15, 139, 141, 0.42);
+  color: var(--teal);
+}
+
 .recruiter-proof-strip {
   display: grid;
   grid-template-columns: minmax(280px, 1.2fr) auto auto;
