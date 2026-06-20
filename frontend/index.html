@@ -157,6 +157,167 @@
       </section>
 
       <section
+        id="ai-reliability-algorithms"
+        class="section-shell reliability-algorithms"
+        aria-labelledby="ai-reliability-algorithms-title"
+      >
+        <div class="section-heading reliability-algorithms-heading">
+          <div>
+            <p class="eyebrow">AI Reliability Algorithms</p>
+            <h2 id="ai-reliability-algorithms-title">Production-style checks for RAG and agent outputs</h2>
+          </div>
+          <p class="section-note">
+            AgentTrust IQ runs production-style AI reliability algorithms to evaluate RAG and agent
+            outputs before deployment. Each check writes structured JSONL traces, powers dashboard
+            metrics, and supports release/block/escalate decisions.
+          </p>
+        </div>
+
+        <div class="algorithm-card-grid" aria-label="AI reliability algorithm cards">
+          <article class="algorithm-card">
+            <span>Groundedness</span>
+            <h3>Hallucination Risk Scorer</h3>
+            <p>Compares generated answers against retrieved context and flags unsupported claims before release.</p>
+            <dl>
+              <div>
+                <dt>Input</dt>
+                <dd>AI answer + retrieved context</dd>
+              </div>
+              <div>
+                <dt>Output</dt>
+                <dd>unsupported-claim risk %</dd>
+              </div>
+              <div>
+                <dt>Hiring signal</dt>
+                <dd>LLM evaluation / groundedness</dd>
+              </div>
+            </dl>
+          </article>
+
+          <article class="algorithm-card">
+            <span>RAG Quality</span>
+            <h3>Citation Precision Checker</h3>
+            <p>Checks whether generated claims are actually supported by cited source chunks.</p>
+            <dl>
+              <div>
+                <dt>Input</dt>
+                <dd>generated claims + cited chunks</dd>
+              </div>
+              <div>
+                <dt>Output</dt>
+                <dd>citation support %</dd>
+              </div>
+              <div>
+                <dt>Hiring signal</dt>
+                <dd>RAG quality</dd>
+              </div>
+            </dl>
+          </article>
+
+          <article class="algorithm-card">
+            <span>Guardrails</span>
+            <h3>Prompt Injection Detector</h3>
+            <p>Detects jailbreaks, unsafe tool-use requests, and system-prompt extraction attempts.</p>
+            <dl>
+              <div>
+                <dt>Input</dt>
+                <dd>user prompt / tool instruction</dd>
+              </div>
+              <div>
+                <dt>Output</dt>
+                <dd>allow / block / escalate</dd>
+              </div>
+              <div>
+                <dt>Hiring signal</dt>
+                <dd>AI security / guardrails</dd>
+              </div>
+            </dl>
+          </article>
+
+          <article class="algorithm-card">
+            <span>Trust & Safety</span>
+            <h3>PII Redaction Guardrail</h3>
+            <p>Detects and redacts emails, phone numbers, and sensitive identifiers before logs are stored.</p>
+            <dl>
+              <div>
+                <dt>Input</dt>
+                <dd>LLM response + logs</dd>
+              </div>
+              <div>
+                <dt>Output</dt>
+                <dd>redacted safe trace</dd>
+              </div>
+              <div>
+                <dt>Hiring signal</dt>
+                <dd>trust &amp; safety</dd>
+              </div>
+            </dl>
+          </article>
+
+          <article class="algorithm-card algorithm-card-primary">
+            <span>Release Gate</span>
+            <h3>Regression Eval Gate</h3>
+            <p>Combines hallucination, citation, latency, PII, and injection checks into release/block/escalate decisions.</p>
+            <dl>
+              <div>
+                <dt>Input</dt>
+                <dd>eval metrics JSON</dd>
+              </div>
+              <div>
+                <dt>Output</dt>
+                <dd>PASS / FAIL / ESCALATE</dd>
+              </div>
+              <div>
+                <dt>Hiring signal</dt>
+                <dd>production readiness</dd>
+              </div>
+            </dl>
+          </article>
+        </div>
+
+        <div class="algorithm-proof-grid">
+          <aside class="algorithm-json-card" aria-label="Example AgentTrust IQ decision JSON">
+            <div class="algorithm-json-heading">
+              <span>JSONL decision example</span>
+              <strong>release gate trace</strong>
+            </div>
+            <pre><code>{
+  "status": "PASS",
+  "eval_pass_rate": "87%",
+  "hallucination_risk": "6%",
+  "citation_precision": "92%",
+  "pii_guardrail": "active",
+  "prompt_injection": "blocked",
+  "decision": "release"
+}</code></pre>
+          </aside>
+
+          <aside class="algorithm-resume-card" aria-labelledby="algorithm-resume-title">
+            <div>
+              <p class="eyebrow">Copy-ready resume bullet</p>
+              <h3 id="algorithm-resume-title">AI reliability algorithms proof</h3>
+              <p id="ai-reliability-algorithms-resume-bullet">
+                Built production-style LLM evaluation algorithms for hallucination risk, citation
+                precision, PII redaction, prompt-injection defense, and regression pass/fail gates,
+                achieving 87% eval pass rate across JSONL test runs.
+              </p>
+            </div>
+            <div class="command-copy-action">
+              <button
+                class="button secondary command-center-copy-button"
+                type="button"
+                data-copy-target="ai-reliability-algorithms-resume-bullet"
+                data-status-target="ai-reliability-algorithms-copy-status"
+              >
+                Copy bullet
+              </button>
+              <span id="ai-reliability-algorithms-copy-status" role="status" aria-live="polite"></span>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section
         id="hiring-manager-summary"
         class="section-shell hiring-decision-panel"
         aria-labelledby="hiring-manager-summary-title"
@@ -275,6 +436,8 @@
           </article>
         </div>
       </section>
+
+
 
       <aside class="section-shell recruiter-proof-strip" aria-label="Recruiter proof summary">
         <p>
