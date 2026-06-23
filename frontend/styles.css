@@ -347,6 +347,20 @@ button.button {
   max-width: 740px;
 }
 
+.hero-role-badge {
+  display: inline-flex;
+  max-width: 680px;
+  margin: 0 0 14px;
+  padding: 7px 11px;
+  border: 1px solid rgba(15, 139, 141, 0.28);
+  border-radius: 999px;
+  background: var(--teal-soft);
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
 .eyebrow {
   margin: 0 0 12px;
   color: var(--teal);
@@ -484,6 +498,82 @@ h2 {
 .hero-review-path a:focus-visible {
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.interview-walkthrough {
+  padding: 22px 0 0;
+}
+
+.interview-walkthrough-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: var(--surface);
+}
+
+.interview-walkthrough-heading h2 {
+  font-size: clamp(1.55rem, 2.8vw, 2.25rem);
+}
+
+.interview-walkthrough-heading > p {
+  max-width: 470px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.interview-walkthrough-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 0 0 8px 8px;
+  background: var(--surface);
+  box-shadow: 0 14px 34px rgba(16, 35, 63, 0.07);
+}
+
+.interview-walkthrough-grid > div {
+  min-width: 0;
+  padding: 18px;
+  border-left: 1px solid var(--line);
+}
+
+.interview-walkthrough-grid > div:first-child {
+  border-left: 0;
+}
+
+.interview-walkthrough-grid dt,
+.interview-walkthrough-grid dd {
+  margin: 0;
+}
+
+.interview-walkthrough-grid dt {
+  margin-bottom: 7px;
+  color: var(--teal);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.interview-walkthrough-grid dd {
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.interview-walkthrough-grid a {
+  color: var(--teal);
+  font-weight: 850;
+  text-underline-offset: 2px;
 }
 
 .employer-proof-path {
@@ -3966,6 +4056,24 @@ blockquote {
 }
 
 @media (max-width: 1080px) {
+  .interview-walkthrough-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .interview-walkthrough-grid > div,
+  .interview-walkthrough-grid > div:first-child {
+    border-top: 1px solid var(--line);
+    border-left: 1px solid var(--line);
+  }
+
+  .interview-walkthrough-grid > div:nth-child(-n + 2) {
+    border-top: 0;
+  }
+
+  .interview-walkthrough-grid > div:nth-child(odd) {
+    border-left: 0;
+  }
+
   .hiring-decision-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4034,6 +4142,15 @@ blockquote {
 }
 
 @media (max-width: 920px) {
+  .interview-walkthrough-heading {
+    display: block;
+  }
+
+  .interview-walkthrough-heading > p {
+    max-width: none;
+    margin-top: 10px;
+  }
+
   .hiring-decision-heading {
     display: block;
   }
@@ -4471,6 +4588,31 @@ blockquote {
     width: 100%;
   }
 
+  .interview-walkthrough {
+    padding-top: 14px;
+  }
+
+  .interview-walkthrough-heading {
+    padding: 18px;
+  }
+
+  .interview-walkthrough-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .interview-walkthrough-grid > div,
+  .interview-walkthrough-grid > div:first-child,
+  .interview-walkthrough-grid > div:nth-child(-n + 2),
+  .interview-walkthrough-grid > div:nth-child(odd) {
+    padding: 15px 18px;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .interview-walkthrough-grid > div:first-child {
+    border-top: 0;
+  }
+
   .hero-proof-summary {
     padding: 15px;
     font-size: 0.8rem;
@@ -4602,6 +4744,12 @@ blockquote {
 
   .hero {
     padding-top: 30px;
+  }
+
+  .hero-role-badge {
+    margin-bottom: 11px;
+    border-radius: 12px;
+    font-size: 0.7rem;
   }
 
   .hero-pitch {
