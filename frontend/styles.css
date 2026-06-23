@@ -534,7 +534,7 @@ h2 {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   margin: 0;
   border: 1px solid var(--line);
-  border-radius: 0 0 8px 8px;
+  border-radius: 0;
   background: var(--surface);
   box-shadow: 0 14px 34px rgba(16, 35, 63, 0.07);
 }
@@ -574,6 +574,23 @@ h2 {
   color: var(--teal);
   font-weight: 850;
   text-underline-offset: 2px;
+}
+
+.interview-cloud-proof {
+  margin: 0;
+  padding: 12px 18px;
+  border: 1px solid var(--line);
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  background: var(--teal-soft);
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.interview-cloud-proof strong {
+  color: var(--teal);
 }
 
 .employer-proof-path {
