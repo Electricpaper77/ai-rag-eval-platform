@@ -64,11 +64,14 @@ def test_agenttrust_iq_command_center_renders_judge_workflow():
     response = client.get("/demo/agenttrust-iq/command-center")
 
     assert response.status_code == 200
-    assert "Microsoft Agents League Submission" in response.text
-    assert "AgentTrust IQ: Reliability Gate for Microsoft Reasoning Agents" in response.text
+    assert "Controlled reliability demo" in response.text
+    assert "AgentTrust IQ: AI Agent Reliability and Evaluation" in response.text
+    assert "model-agnostic AI agent reliability and evaluation platform" in response.text
+    assert "Optional Gemini integration" in response.text
     assert "View GitHub Proof" in response.text
-    assert "AgentTrust IQ Fits the Microsoft Foundry Production Pipeline" in response.text
-    assert "Microsoft shows how to ship agents like real software." in response.text
+    assert "AgentTrust IQ Fits a Model-Agnostic Release Pipeline" in response.text
+    assert "customer-production telemetry" in response.text
+    assert "Microsoft" not in response.text
     assert "Not Another Agent. The Trust Layer for Agents." in response.text
     assert "Produces replayable JSONL audit logs" in response.text
     assert "Deployment Decision: APPROVE WITH AUDIT EVIDENCE" in response.text

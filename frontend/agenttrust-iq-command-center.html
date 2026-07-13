@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="AgentTrust IQ Command Center: deterministic reliability evidence for Microsoft Reasoning Agents."
+      content="AgentTrust IQ is a model-agnostic AI agent reliability and evaluation platform that tests groundedness, citation support, prompt-injection resistance, PII handling, unsafe tool actions, latency, and auditability before release."
     />
     <title>AgentTrust IQ Command Center</title>
     <style>
@@ -1474,13 +1474,14 @@
           <div>
             <div class="hero-badges">
               <span class="judge-mode-label">Judge Mode</span>
-              <span class="submission-badge">Microsoft Agents League Submission</span>
-              <span class="foundry-alignment">Microsoft Foundry aligned</span>
+              <span class="submission-badge">Controlled reliability demo</span>
+              <span class="foundry-alignment">Model-agnostic baseline</span>
             </div>
-            <h1>AgentTrust IQ: Reliability Gate for Microsoft Reasoning Agents</h1>
+            <h1>AgentTrust IQ: AI Agent Reliability and Evaluation</h1>
             <p class="subtitle">
-              Reliability gate for Microsoft Foundry-style agents: grounded, cited, safe,
-              auditable.
+              AgentTrust IQ is a model-agnostic AI agent reliability and evaluation platform that
+              tests groundedness, citation support, prompt-injection resistance, PII handling,
+              unsafe tool actions, latency, and auditability before release.
             </p>
             <p class="subtitle">
               This demo is a static walkthrough of the reliability workflow. It shows documented
@@ -1494,7 +1495,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                View GitHub
+                View GitHub Proof
                 <svg viewBox="0 0 20 20" aria-hidden="true">
                   <path
                     d="M6 14 14 6m-6 0h6v6"
@@ -1512,9 +1513,9 @@
             </div>
           </div>
           <aside class="hero-note">
-            <span class="hero-score-label">Eval Pass Rate</span>
-            <strong>87%</strong>
-            <p>Primary submission metric with documented evidence</p>
+            <span class="hero-score-label">Controlled Eval Pass Rate</span>
+            <strong>100.0%</strong>
+            <p>6 / 6 deterministic fixtures; canonical summary evidence</p>
             <div class="hero-decision">
               Deployment Decision: APPROVE WITH AUDIT EVIDENCE
             </div>
@@ -1525,27 +1526,27 @@
       <nav class="shell video-nav" aria-label="Video demo path">
         <span>Video Demo Path</span>
         <a href="#score">Score</a>
-        <a href="#foundry-pipeline">Foundry Pipeline</a>
+        <a href="#foundry-pipeline">Release Pipeline</a>
         <a href="#failure-case">Failure Case</a>
         <a href="#audit-proof">Audit Proof</a>
       </nav>
 
       <section id="score" class="shell metrics" aria-label="AgentTrust IQ headline metrics">
         <article class="metric">
-          <span>Eval Pass Rate</span>
-          <strong>87%</strong>
+          <span>Controlled Cases Passed</span>
+          <strong>6 / 6</strong>
         </article>
         <article class="metric">
-          <span>Hallucination Reduction</span>
-          <strong>18% -> 6%</strong>
+          <span>Hallucination Rate</span>
+          <strong>0.0%</strong>
         </article>
         <article class="metric">
-          <span>Throughput</span>
-          <strong>43 req/sec</strong>
+          <span>Citation Precision</span>
+          <strong>100.0%</strong>
         </article>
         <article class="metric">
-          <span>Passing Tests</span>
-          <strong>145+</strong>
+          <span>Evaluator p95</span>
+          <strong>0.159 ms</strong>
         </article>
       </section>
 
@@ -1568,10 +1569,10 @@
           <span>Passing Demo Tests</span>
           <strong>2 focused tests passed</strong>
         </article>
-        <article class="evidence-item">
-          <span>145+ Passing Tests</span>
-          <strong>Regression evidence</strong>
-        </article>
+        <a class="evidence-item" href="./docs/artifacts/eval_runs/hiring_eval_summary.json">
+          <span>Canonical Metric Source</span>
+          <strong>Six-case controlled summary</strong>
+        </a>
         <a class="evidence-item" href="./docs/artifacts/xprize/judge_replay_latest.jsonl">
           <span>JSONL Audit Evidence</span>
           <strong>Replayable evaluation logs</strong>
@@ -1599,10 +1600,13 @@
             <h2 id="benchmark-disclosure-title">Controlled benchmark disclosure</h2>
           </div>
           <p>
-            The primary headline metrics are 87% eval pass rate, hallucination reduction from 18%
-            to 6%, 43 req/sec at ~99% success, and 145+ passing tests. The workflow below includes
-            a separate deterministic fixture with Agent Readiness Score 92 and JSONL audit output;
-            that fixture is supporting evidence, not a competing headline claim.
+            Canonical source: <code>docs/artifacts/eval_runs/hiring_eval_summary.json</code>,
+            generated by <code>app.eval_harness.run_eval_harness</code> from the checked-in JSONL
+            cases. Sample size: 6 deterministic fixture cases. The 0.159 ms value is local
+            deterministic evaluator runtime, not LLM, API, RAG, or end-to-end latency. These are
+            controlled demo/test results, not customer-production telemetry. The pytest suite was
+            not executed in this environment. The separate readiness score of 92 is one fixed
+            deterministic fixture result, not an aggregate benchmark.
           </p>
         </div>
       </section>
@@ -1716,7 +1720,7 @@
             <div>
               <p class="eyebrow">Production-agent positioning</p>
               <h2 id="foundry-pipeline-title">
-                AgentTrust IQ Fits the Microsoft Foundry Production Pipeline
+                AgentTrust IQ Fits a Model-Agnostic Release Pipeline
               </h2>
             </div>
             <p>
@@ -1725,7 +1729,7 @@
             </p>
           </div>
 
-          <div class="pipeline-flow" aria-label="Microsoft Foundry production pipeline">
+          <div class="pipeline-flow" aria-label="Model-agnostic release pipeline">
             <div class="pipeline-node">GitOps</div>
             <span class="pipeline-arrow" aria-hidden="true">&rarr;</span>
             <div class="pipeline-node">IaC / Terraform</div>
@@ -1738,8 +1742,8 @@
           </div>
 
           <p class="foundry-callout">
-            Microsoft shows how to ship agents like real software. AgentTrust IQ shows how to trust
-            them like real software.
+            AgentTrust IQ places inspectable reliability evidence between software delivery and
+            an agent release decision.
           </p>
         </section>
 
@@ -1828,7 +1832,7 @@
             </div>
             <p>
               AgentTrust IQ is not trying to replace Ragas, TruLens, Arize Phoenix, Promptfoo, or
-              Azure AI Foundry evaluation tooling. It is a lightweight reliability gate for agent
+              other evaluation tooling. It is a lightweight reliability gate for agent
               workflows: deterministic checks, JSONL audit trails, citation support, PII redaction,
               prompt-injection defense, latency tracking, and release/block/escalate decisions.
               The goal is to make agent readiness reviewable before deployment.
@@ -1838,8 +1842,8 @@
 
         <div class="microsoft-fit">
           <div>
-            <p class="eyebrow">Built for the Microsoft enterprise agent stack</p>
-            <h2>Microsoft Fit</h2>
+            <p class="eyebrow">Built for model-agnostic agent workflows</p>
+            <h2>Integration Fit</h2>
             <p>
               Enterprise agents need more than capable reasoning. They need governed grounding,
               citations, safety checks, audit logs, and repeatable release gates before answers
@@ -1852,7 +1856,7 @@
               inspect the evidence, score the answer, record the result, and make a deployment
               decision that teams can review and replay.
             </p>
-            <div class="fit-tags" aria-label="Microsoft enterprise agent requirements">
+            <div class="fit-tags" aria-label="Enterprise agent reliability requirements">
               <span>Governed grounding</span>
               <span>Verifiable citations</span>
               <span>Safety checks</span>
