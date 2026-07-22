@@ -10,5 +10,6 @@ psutil
 chromadb==0.4.24
 prometheus-client==0.20.0
 numpy==1.26.4
+PyYAML==6.0.2
 prometheus-client
 prometheus-client
