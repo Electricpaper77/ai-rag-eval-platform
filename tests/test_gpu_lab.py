@@ -62,7 +62,9 @@ def test_amd_permission_redaction(): assert sanitize_error((FIXTURES/"amd_smi_pe
 def test_cache_identity_includes_provider_model_prompt_and_parameters():
     assert len({cache_key("mock","m","p",{}),cache_key("nim","m","p",{}),cache_key("mock","m2","p",{}),cache_key("mock","m","p2",{}),cache_key("mock","m","p",{"temperature":0})})==5
 def test_cache_hit_is_not_new_provider_request(tmp_path,monkeypatch):
-    monkeypatch.setenv("AGENTTRUST_ARTIFACT_DIR",str(tmp_path)); run(args(max_requests=1)); root=run(args(max_requests=1)); summary=json.loads((root/"benchmark-summary.json").read_text()); assert summary["cache_hits"]==1 and summary["new_provider_requests"]==0
+    monkeypatch.setenv("AGENTTRUST_ARTIFACT_DIR",str(tmp_path)); run(args(max_requests=1)); root=run(args(max_requests=1,resume=True)); summary=json.loads((root/"benchmark-summary.json").read_text()); assert summary["cache_hits"]==1 and summary["new_provider_requests"]==0
+def test_cache_is_not_used_without_resume(tmp_path,monkeypatch):
+    monkeypatch.setenv("AGENTTRUST_ARTIFACT_DIR",str(tmp_path)); run(args(max_requests=1)); root=run(args(max_requests=1)); assert json.loads((root/"benchmark-summary.json").read_text())["cache_hits"]==0
 def test_malformed_cache_is_replaced_safely(tmp_path,monkeypatch):
     monkeypatch.setenv("AGENTTRUST_ARTIFACT_DIR",str(tmp_path)); cache=tmp_path/"gpu-lab"/"cache"; cache.mkdir(parents=True); (cache/(cache_key("mock","mock","deterministic GPU reliability fixture",{"temperature":0})+".json")).write_text("bad"); root=run(args(max_requests=1)); assert json.loads((root/"benchmark-summary.json").read_text())["successful_requests"]==1
 def test_concurrency_bound_and_deterministic_records(tmp_path,monkeypatch):

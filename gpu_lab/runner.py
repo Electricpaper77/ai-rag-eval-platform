@@ -37,7 +37,7 @@ def _estimate(result,prices):
 def _execute(seq,case,provider,args,cache_dir):
     prompt=str(case.get("prompt") or case.get("input") or ""); params={"temperature":0}; key=cache_key(args.provider,args.model or "mock",prompt,params); cached=cache_dir/(key+".json")
     record={"sequence":seq,"request_id":str(case.get("id",seq)),"completed":True,"success":False,"cache_hit":False,"retries":0,"warmup":False,"started_monotonic":time.monotonic()}
-    if cached.exists():
+    if cached.exists() and args.resume:
         try:
             payload=json.loads(cached.read_text(encoding="utf-8"));
             if not isinstance(payload,dict) or not payload.get("text"): raise ValueError("malformed cache entry")
@@ -55,10 +55,14 @@ def _execute(seq,case,provider,args,cache_dir):
     record["ended_monotonic"]=time.monotonic(); record["latency_seconds"]=record["ended_monotonic"]-record["started_monotonic"]; return record
 def run(args):
     args=validate(args); started_wall=time.time(); started_mono=time.monotonic(); run_id="gpu-lab-"+uuid.uuid4().hex[:12]; suite=Path(args.suite); cases=_cases(suite,args.max_requests); root_base=Path(os.getenv("AGENTTRUST_ARTIFACT_DIR","artifacts")); cache_dir=root_base/"gpu-lab"/"cache"; provider=_provider(args.provider); telemetry=AmdSmiTelemetry().capabilities() if args.telemetry=="amd_smi" else {"telemetry_status":"unavailable","reason":"not requested"}; prices=_prices(); projected=0.0; records=[]; stop_reason=None
-    with concurrent.futures.ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+    # A configured budget has no provider-supplied token estimate before the
+    # first completion. Serialize dispatch in that state so a batch cannot
+    # overspend before its first measured configured estimate is available.
+    dispatch_concurrency = 1 if prices[2] is not None else args.concurrency
+    with concurrent.futures.ThreadPoolExecutor(max_workers=dispatch_concurrency) as pool:
         pending={}; next_seq=0
         while next_seq<len(cases) or pending:
-            while next_seq<len(cases) and len(pending)<args.concurrency and stop_reason is None:
+            while next_seq<len(cases) and len(pending)<dispatch_concurrency and stop_reason is None:
                 future=pool.submit(_execute,next_seq,cases[next_seq],provider,args,cache_dir); pending[future]=next_seq; next_seq+=1
             if not pending: break
             done,_=concurrent.futures.wait(pending,return_when=concurrent.futures.FIRST_COMPLETED)
