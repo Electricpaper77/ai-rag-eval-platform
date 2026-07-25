@@ -63,6 +63,8 @@ python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 
 Then visit [http://127.0.0.1:8000/recruiter-evidence](http://127.0.0.1:8000/recruiter-evidence). Downloadable evidence is in `artifacts/latest/summary.json` and `artifacts/latest/results.jsonl` (or through the page links).
 
+Validation note (2026-07-24): the focused evidence tests passed (`8 passed`). The complete suite does **not** currently pass: the committed main baseline reproduces `104 passed, 28 failed, 1 xfailed`; those failures are legacy API, dashboard, GPU, routing, and observability contract mismatches, not evidence-pack coverage. Do not represent the full suite as green until those contracts are reconciled.
+
 Start the deterministic API:
 
 ```bash
