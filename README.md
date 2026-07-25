@@ -33,6 +33,36 @@ The Command Center also shows an **Agent Readiness Score of 92** for one fixed d
 
 ## Run Locally
 
+## Verify AgentTrust IQ in 5 Minutes
+
+Install the lightweight local dependencies:
+
+```bash
+python -m pip install -r requirements-lite.txt
+```
+
+Create the deterministic 50-case evidence pack (the requested `evaluations/` path is a stable alias for the checked-in NVIDIA-shaped fixture suite):
+
+```bash
+python -m app.eval.run --provider mock --suite evaluations/nvidia_eval_pack.jsonl --output artifacts/latest
+```
+
+The output is explicitly labeled **mock evidence**. It proves the deterministic evaluator and artifact contract, not NVIDIA/GPU, model, API, RAG, network, or production performance.
+
+Run the focused verification:
+
+```bash
+python -m pytest tests/test_recruiter_evidence.py tests/test_nvidia_eval_pack.py -q
+```
+
+Open the dashboard:
+
+```bash
+python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+```
+
+Then visit [http://127.0.0.1:8000/recruiter-evidence](http://127.0.0.1:8000/recruiter-evidence). Downloadable evidence is in `artifacts/latest/summary.json` and `artifacts/latest/results.jsonl` (or through the page links).
+
 Start the deterministic API:
 
 ```bash

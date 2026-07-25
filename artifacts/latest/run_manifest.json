@@ -1,0 +1,11 @@
+{
+  "benchmark_status": "mock",
+  "contains_secrets": false,
+  "git_commit_sha": "c129c8a116306127adeb5bbc22ffd7acb54dd4ee",
+  "model": "deterministic-mock",
+  "provider": "mock",
+  "run_timestamp": "2026-07-25T05:29:26.136737+00:00",
+  "schema_version": 1,
+  "suite": "C:\\Users\\zohai\\Documents\\Codex\\2026-07-14\\update-the-agenttrust-iq-recruiter-homepage\\ai-rag-eval-platform\\eval\\nvidia_nemotron_pack.jsonl",
+  "suite_sha256": "c653d76e4b3c8139800b2025645c61cbdccbc6eb75eb28d65e3c96d3fbd2ea82"
+}
