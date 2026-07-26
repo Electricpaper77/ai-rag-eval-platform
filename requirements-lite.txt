@@ -4,3 +4,4 @@ pydantic
 numpy
 requests
 pytest
+httpx2
