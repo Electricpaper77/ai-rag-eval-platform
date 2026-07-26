@@ -43,7 +43,12 @@ jobs:
       - name: Run focused recruiter evidence tests
         if: always()
         run: |
-          python -m pytest tests/test_recruiter_evidence.py tests/test_nvidia_eval_pack.py -q 2>&1 | tee artifacts/baseline/recruiter-evidence-tests.log
+          set -o pipefail
+          if [[ -f tests/test_recruiter_evidence.py && -f tests/test_nvidia_eval_pack.py ]]; then
+            python -m pytest tests/test_recruiter_evidence.py tests/test_nvidia_eval_pack.py -q 2>&1 | tee artifacts/baseline/recruiter-evidence-tests.log
+          else
+            echo "Skipped: recruiter evidence tests are introduced by PR #90 and are not present on this isolated main-based branch." | tee artifacts/baseline/recruiter-evidence-tests.log
+          fi
       - name: Upload baseline evidence
         if: always()
         uses: actions/upload-artifact@v4
