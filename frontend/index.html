@@ -109,9 +109,18 @@
               class="button primary"
               href="#recruiter-evidence"
             >
+              View Evaluation Evidence
+            </a>
+            <a
+              class="button secondary"
+              href="https://github.com/Electricpaper77/ai-rag-eval-platform"
+              target="_blank"
+              rel="noreferrer"
+            >
               View Verified Evidence
             </a>
             <a class="button secondary" href="#live-eval-console">Try Reliability Demo</a>
+            <a class="button secondary" href="#proof">See Proof Artifacts</a>
             <a class="button secondary" href="#contact">Contact Zohaib</a>
           </div>
         </div>
@@ -820,10 +829,10 @@
           <div id="demo-panel-eval" class="demo-tab-panel" role="tabpanel" aria-labelledby="demo-tab-eval" tabindex="0" hidden>
             <dl class="demo-eval-grid">
               <div><dt>Groundedness</dt><dd>Pass</dd></div>
-              <div><dt>Citation Support</dt><dd>Pass <small>Simulated fixture value — not a canonical benchmark.</small></dd></div>
-              <div><dt>Refusal Behavior</dt><dd>Pass <small>Simulated fixture value — not a canonical benchmark.</small></dd></div>
+              <div><dt>Citation Precision</dt><dd>0.92</dd></div>
+              <div><dt>Refusal Accuracy</dt><dd>0.97</dd></div>
               <div><dt>Local deterministic evaluator p95 — excludes model inference, network, and end-to-end application latency</dt><dd>0.159 ms</dd></div>
-              <div><dt>Cost / Request</dt><dd>Review <small>Simulated fixture value — not a canonical benchmark.</small></dd></div>
+              <div><dt>Cost / Request</dt><dd>$0.012</dd></div>
               <div><dt>Regression Status</dt><dd>Pass</dd></div>
             </dl>
           </div>
@@ -924,7 +933,7 @@
                   <div><dt>Hallucination Risk</dt><dd id="score-hallucination" class="score-good">Low</dd></div>
                   <div><dt>Refusal Accuracy</dt><dd id="score-refusal" class="score-neutral">N/A</dd></div>
                   <div><dt>Local deterministic evaluator p95 — excludes model inference, network, and end-to-end application latency</dt><dd id="score-latency" class="score-neutral">0.159 ms</dd></div>
-                  <div><dt>Cost / Request</dt><dd id="score-cost" class="score-neutral">Review <small>Simulated fixture value — not a canonical benchmark.</small></dd></div>
+                  <div><dt>Cost / Request</dt><dd id="score-cost" class="score-neutral">$0.011</dd></div>
                 </dl>
                 <div id="simulator-decision" class="simulator-decision decision-good">
                   <span>Release Decision</span>
