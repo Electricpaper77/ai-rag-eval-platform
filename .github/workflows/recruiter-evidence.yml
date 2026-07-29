@@ -1,0 +1,16 @@
+name: Recruiter Evidence Pack
+on: [push, pull_request]
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install -r requirements-lite.txt
+      - run: python -m app.eval.run --provider mock --suite evaluations/nvidia_eval_pack.jsonl --output artifacts/latest
+      - run: python -m pytest tests/test_recruiter_evidence.py tests/test_nvidia_eval_pack.py -q
+      - name: Validate evidence structure and secret redaction
+        run: python -c "import json,pathlib; d=pathlib.Path('artifacts/latest'); required=['run_manifest.json','results.jsonl','summary.json']; assert all((d/x).exists() for x in required); s=json.loads((d/'summary.json').read_text()); keys={'total_cases','passed_cases','failed_cases','evaluation_pass_rate','citation_precision','refusal_accuracy','prompt_injection_defense_rate','malformed_input_handling_rate','latency_p50_ms','latency_p95_ms','estimated_cost_per_request_usd','provider','model','git_commit_sha','suite_sha256','run_timestamp','benchmark_status'}; assert keys <= s.keys(); text=''.join(p.read_text() for p in d.iterdir()); assert 'NVIDIA_API_KEY=' not in text"
+      - uses: actions/upload-artifact@v4
+        with: { name: recruiter-evidence-pack, path: artifacts/latest }

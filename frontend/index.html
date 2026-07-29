@@ -5,9 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="AgentTrust IQ is a model-agnostic AI agent reliability and evaluation platform that tests groundedness, citation support, prompt-injection resistance, PII handling, unsafe tool actions, latency, and auditability before release."
+      content="Model-agnostic AI reliability platform for evaluating RAG and AI-agent systems across groundedness, citations, hallucinations, refusals, prompt injection, PII, latency, and release readiness."
     />
-    <title>AgentTrust IQ | AI Reliability Engineer Portfolio</title>
+    <meta property="og:title" content="AgentTrust IQ | AI Agent Reliability and LLM Evaluation" />
+    <meta property="og:description" content="Test, trace, and ship reliable AI agents with replayable JSONL evidence." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ai-agent-reliability-platform-rtcd.vercel.app/" />
+    <link rel="canonical" href="https://ai-agent-reliability-platform-rtcd.vercel.app/" />
+    <title>AgentTrust IQ | AI Agent Reliability and LLM Evaluation</title>
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -78,25 +83,21 @@
     <main id="top">
       <section class="hero section-shell">
         <div class="hero-copy">
-          <p class="hero-role-badge">
-            Flagship proof project for AI Solutions Engineer / LLM Evaluation / Applied GenAI / AI Cloud Engineering roles
-          </p>
-          <p class="eyebrow">AI Reliability Engineer / AI Solutions Engineer Portfolio</p>
-          <h1>AI Reliability Engineer / AI Solutions Engineer</h1>
+          <p class="hero-role-badge">AI Agent Reliability Platform</p>
+          <p class="eyebrow">Flagship portfolio project by Zohaib Ahmed</p>
+          <h1>Test, trace, and ship reliable AI agents.</h1>
           <p class="subtitle">
             AgentTrust IQ — LLM Evaluation · RAG Reliability · Agent Guardrails · JSONL Audit Logs
           </p>
           <div class="hero-pitch">
             <strong>Why this project maps to AI reliability roles</strong>
             <p>
-              AgentTrust IQ is a model-agnostic AI agent reliability and evaluation platform that
-              tests groundedness, citation support, prompt-injection resistance, PII handling,
-              unsafe tool actions, latency, and auditability before release.
+              AgentTrust IQ evaluates RAG and agentic workflows for groundedness, citation quality,
+              hallucinations, refusals, prompt injection, PII exposure, unsafe actions, and release readiness.
             </p>
             <p>
-              The proof is intentionally concrete: controlled demo/test/fixture results, JSONL
-              audit evidence, GitHub tests, prompt-injection defense, PII redaction, citation
-              checks, and release/block/escalate logic.
+              Built by Zohaib Ahmed — SJSU MIS graduate available immediately for AI Solutions Engineering,
+              LLM Evaluation, and Applied GenAI opportunities.
             </p>
           </div>
           <nav class="hero-review-path" aria-label="Recommended review path">
@@ -117,11 +118,9 @@
             </a>
             <a
               class="button primary"
-              href="assets/Zohaib_Ahmed_AI_Solutions_Engineer_GenAI_Resume.pdf"
-              target="_blank"
-              rel="noopener"
+              href="#recruiter-evidence"
             >
-              Download Resume
+              View Evaluation Evidence
             </a>
             <a
               class="button secondary"
@@ -132,7 +131,7 @@
               View GitHub
             </a>
             <a class="button secondary" href="#proof">See Proof Artifacts</a>
-            <a class="button secondary" href="#contact">Contact</a>
+            <a class="button secondary" href="#contact">Contact Zohaib</a>
           </div>
         </div>
 
@@ -197,7 +196,8 @@
             <dt>Proof</dt>
             <dd>
               Canonical controlled evidence: 6 / 6 passed, 0.0% hallucination rate, 100.0%
-              citation precision, and 0.159 ms local evaluator p95.
+              citation precision, and 0.159 ms local deterministic evaluator p95 (excluding model inference,
+              network, and end-to-end application latency).
             </dd>
           </div>
           <div>
@@ -278,7 +278,8 @@
           artifacts, Prometheus metrics, replay validation, governance workflows, and automated
           regression testing; the canonical six-case controlled summary reports 100.0% eval pass
           rate, 0.0% hallucination rate, 100.0% citation precision, 100.0% refusal accuracy, and
-          0.159 ms local evaluator p95. These are not customer-production telemetry.
+          0.159 ms local deterministic evaluator p95 (excluding model inference, network, and end-to-end
+          application latency). These are not customer-production telemetry.
         </p>
 
         <div class="hiring-decision-actions" aria-label="Reviewer path actions">
@@ -483,8 +484,8 @@
           <p class="section-note">
             Canonical source: <code>docs/artifacts/eval_runs/hiring_eval_summary.json</code>,
             generated by <code>app.eval_harness.run_eval_harness</code> from the checked-in JSONL
-            cases. Sample size: 6 deterministic fixture cases. The 0.159 ms value is local
-            deterministic evaluator runtime, not LLM, API, RAG, or end-to-end latency. These are
+            cases. Sample size: 6 deterministic fixture cases. Local deterministic evaluator p95 —
+            excludes model inference, network, and end-to-end application latency. These are
             controlled demo/test results, not customer-production telemetry. The pytest suite was
             not executed in this environment.
           </p>
@@ -504,7 +505,11 @@
           </article>
           <article class="metric-card">
             <strong>0.159 ms</strong>
-            <span>local evaluator p95</span>
+            <span>Local deterministic evaluator p95 — excludes model inference, network, and end-to-end application latency</span>
+          </article>
+          <article class="metric-card">
+            <strong>100.0%</strong>
+            <span>refusal accuracy</span>
           </article>
         </div>
       </section>
@@ -546,11 +551,11 @@
       </aside>
 
 
-      <section id="proof-path" class="section-shell proof-path">
+      <section id="recruiter-evidence" class="section-shell proof-path" aria-labelledby="recruiter-evidence-title">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Under 30 seconds</p>
-            <h2>Recruiter Proof Path</h2>
+            <h2 id="recruiter-evidence-title">Recruiter Evidence Pack</h2>
           </div>
           <p class="section-note">Four direct checks from project claim to inspectable evidence.</p>
         </div>
@@ -837,7 +842,7 @@
               <div><dt>Groundedness</dt><dd>Pass</dd></div>
               <div><dt>Citation Precision</dt><dd>0.92</dd></div>
               <div><dt>Refusal Accuracy</dt><dd>0.97</dd></div>
-              <div><dt>Canonical evaluator p95</dt><dd>0.159 ms</dd></div>
+              <div><dt>Local deterministic evaluator p95 — excludes model inference, network, and end-to-end application latency</dt><dd>0.159 ms</dd></div>
               <div><dt>Cost / Request</dt><dd>$0.012</dd></div>
               <div><dt>Regression Status</dt><dd>Pass</dd></div>
             </dl>
@@ -938,7 +943,7 @@
                   <div><dt>Citation Precision</dt><dd id="score-citation" class="score-good">0.94</dd></div>
                   <div><dt>Hallucination Risk</dt><dd id="score-hallucination" class="score-good">Low</dd></div>
                   <div><dt>Refusal Accuracy</dt><dd id="score-refusal" class="score-neutral">N/A</dd></div>
-                  <div><dt>Canonical evaluator p95</dt><dd id="score-latency" class="score-neutral">0.159 ms</dd></div>
+                  <div><dt>Local deterministic evaluator p95 — excludes model inference, network, and end-to-end application latency</dt><dd id="score-latency" class="score-neutral">0.159 ms</dd></div>
                   <div><dt>Cost / Request</dt><dd id="score-cost" class="score-neutral">$0.011</dd></div>
                 </dl>
                 <div id="simulator-decision" class="simulator-decision decision-good">
@@ -1221,9 +1226,9 @@
             <small>Canonical summary metric</small>
           </article>
           <article class="command-metric-card">
-            <span>Evaluator p95</span>
+            <span>Local deterministic evaluator p95 — excludes model inference, network, and end-to-end application latency</span>
             <strong>0.159 ms</strong>
-            <p>Local scoring time, not model latency</p>
+            <p>Excludes model inference, network, and end-to-end application latency.</p>
             <small>Canonical summary metric</small>
           </article>
         </div>
@@ -1890,11 +1895,11 @@
 
       <section id="contact" class="cta section-shell recruiter-contact" aria-label="Recruiter and hiring manager contact">
         <div>
-          <p class="eyebrow">Fast Contact</p>
-          <h2>Recruiter / Hiring Manager Fast Contact</h2>
+          <p class="eyebrow">Available immediately</p>
+          <h2>Building reliable AI systems that teams can test and trust.</h2>
           <p class="contact-note">
-            Review the static walkthrough and reproducible proof path, or contact me directly
-            about LLM evaluation, RAG reliability, and applied GenAI roles.
+            I am available immediately for AI Solutions Engineer, LLM Evaluation Engineer,
+            Applied GenAI Engineer, and AI Reliability opportunities in the Bay Area or remotely across the United States.
           </p>
         </div>
         <div class="button-row contact-links">
@@ -1908,8 +1913,8 @@
           </a>
           <a
             class="button primary"
-            href="https://www.linkedin.com/in/zohaib-a-1a8017174/"
-            aria-label="LinkedIn: https://www.linkedin.com/in/zohaib-a-1a8017174/"
+            href="https://www.linkedin.com/in/zohaibahmedaisolutions/"
+            aria-label="View Zohaib Ahmed's LinkedIn profile"
           >
             LinkedIn
           </a>
@@ -2333,7 +2338,7 @@
             ["Eval pass rate", "100.0%"],
             ["Hallucination rate", "0.0%"],
             ["Citation precision", "100.0%"],
-            ["Evaluator p95", "0.159 ms"],
+            ["Local deterministic evaluator p95 — excludes model inference, network, and end-to-end application latency", "0.159 ms"],
           ],
           proof: {
             run_id: "agent_eval_042",

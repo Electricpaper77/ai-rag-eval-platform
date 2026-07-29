@@ -1211,6 +1211,7 @@ dt,
 }
 
 pre {
+  max-width: 100%;
   margin: 0;
   padding: clamp(18px, 3vw, 28px);
   overflow-x: auto;
@@ -1223,6 +1224,8 @@ pre {
 
 code {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .proof-metrics,
@@ -1945,6 +1948,8 @@ code {
 }
 
 .demo-console {
+  min-width: 0;
+  max-width: 100%;
   min-height: 300px;
   margin-top: 26px;
   overflow: hidden;
@@ -1955,6 +1960,8 @@ code {
 }
 
 .demo-tabs {
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   gap: 8px;
   padding: 12px;
@@ -1995,6 +2002,8 @@ code {
 }
 
 .demo-tab-panel {
+  min-width: 0;
+  max-width: 100%;
   min-height: 236px;
   padding: clamp(26px, 5vw, 54px);
 }

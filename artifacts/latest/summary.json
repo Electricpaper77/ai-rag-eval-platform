@@ -1,0 +1,20 @@
+{
+  "benchmark_status": "mock",
+  "citation_precision": 1.0,
+  "estimated_cost_per_request_usd": 0.0,
+  "evaluation_pass_rate": 1.0,
+  "evidence_note": "Mock evidence is deterministic local evaluator output, not NVIDIA, GPU, model, API, RAG, or end-to-end performance.",
+  "failed_cases": 0,
+  "git_commit_sha": "c129c8a116306127adeb5bbc22ffd7acb54dd4ee",
+  "latency_p50_ms": 0.13,
+  "latency_p95_ms": 0.16,
+  "malformed_input_handling_rate": 1.0,
+  "model": "deterministic-mock",
+  "passed_cases": 50,
+  "prompt_injection_defense_rate": 1.0,
+  "provider": "mock",
+  "refusal_accuracy": 1.0,
+  "run_timestamp": "2026-07-25T05:29:26.136737+00:00",
+  "suite_sha256": "c653d76e4b3c8139800b2025645c61cbdccbc6eb75eb28d65e3c96d3fbd2ea82",
+  "total_cases": 50
+}
