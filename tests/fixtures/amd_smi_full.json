@@ -1,0 +1,1 @@
+{"gpus":[{"index":0,"product_name":"AMD Instinct MI300X","gpu_utilization":"82%","memory_utilization":"43%","vram_used":"16384 MB","vram_total":"65536 MB","power":"420 W","temperature":"71 C","memory_temperature":"78 C","gpu_clock":"1700 MHz","memory_clock":"2400 MHz"}]}
