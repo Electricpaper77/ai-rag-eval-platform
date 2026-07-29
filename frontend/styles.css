@@ -1228,6 +1228,27 @@ code {
   word-break: break-word;
 }
 
+.technical-extensions {
+  margin-top: 48px;
+  margin-bottom: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  background: var(--surface);
+}
+
+.technical-extensions > summary {
+  padding: 18px 22px;
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.technical-extensions > section {
+  width: min(var(--content-max), calc(100% - 40px));
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .proof-metrics,
 .proof-path,
 .technical-review,

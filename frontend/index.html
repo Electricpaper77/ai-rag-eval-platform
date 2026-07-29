@@ -156,7 +156,6 @@
             </div>
           </dl>
           <pre><code>{
-  "agent_readiness_score": 92,
   "groundedness": "pass",
   "citation_support": "pass",
   "hallucination_risk": "low"
@@ -840,10 +839,10 @@
           <div id="demo-panel-eval" class="demo-tab-panel" role="tabpanel" aria-labelledby="demo-tab-eval" tabindex="0" hidden>
             <dl class="demo-eval-grid">
               <div><dt>Groundedness</dt><dd>Pass</dd></div>
-              <div><dt>Citation Precision</dt><dd>0.92</dd></div>
-              <div><dt>Refusal Accuracy</dt><dd>0.97</dd></div>
+              <div><dt>Citation Support</dt><dd>Pass <small>Simulated fixture value — not a canonical benchmark.</small></dd></div>
+              <div><dt>Refusal Behavior</dt><dd>Pass <small>Simulated fixture value — not a canonical benchmark.</small></dd></div>
               <div><dt>Local deterministic evaluator p95 — excludes model inference, network, and end-to-end application latency</dt><dd>0.159 ms</dd></div>
-              <div><dt>Cost / Request</dt><dd>$0.012</dd></div>
+              <div><dt>Cost / Request</dt><dd>Review <small>Simulated fixture value — not a canonical benchmark.</small></dd></div>
               <div><dt>Regression Status</dt><dd>Pass</dd></div>
             </dl>
           </div>
@@ -940,11 +939,11 @@
                 </div>
                 <dl class="simulator-scores">
                   <div><dt>Groundedness</dt><dd id="score-groundedness" class="score-good">Pass</dd></div>
-                  <div><dt>Citation Precision</dt><dd id="score-citation" class="score-good">0.94</dd></div>
+                  <div><dt>Citation Support</dt><dd id="score-citation" class="score-good">Pass <small>Simulated fixture value — not a canonical benchmark.</small></dd></div>
                   <div><dt>Hallucination Risk</dt><dd id="score-hallucination" class="score-good">Low</dd></div>
                   <div><dt>Refusal Accuracy</dt><dd id="score-refusal" class="score-neutral">N/A</dd></div>
                   <div><dt>Local deterministic evaluator p95 — excludes model inference, network, and end-to-end application latency</dt><dd id="score-latency" class="score-neutral">0.159 ms</dd></div>
-                  <div><dt>Cost / Request</dt><dd id="score-cost" class="score-neutral">$0.011</dd></div>
+                  <div><dt>Cost / Request</dt><dd id="score-cost" class="score-neutral">Review <small>Simulated fixture value — not a canonical benchmark.</small></dd></div>
                 </dl>
                 <div id="simulator-decision" class="simulator-decision decision-good">
                   <span>Release Decision</span>
@@ -987,6 +986,8 @@
 
       </section>
 
+      <details class="technical-extensions section-shell">
+        <summary>Explore Technical Extensions</summary>
       <section
         id="agent-flow"
         class="section-shell agent-flow"
@@ -1290,7 +1291,7 @@
           <aside class="command-readiness" aria-labelledby="command-readiness-title">
             <div class="command-readiness-copy">
               <p class="eyebrow">RELEASE SIGNAL</p>
-              <h3 id="command-readiness-title">Production readiness summary</h3>
+              <h3 id="command-readiness-title">Release-readiness demo summary</h3>
               <ul>
                 <li>Regression suite validates repeatable agent behavior before release.</li>
                 <li>JSONL logs preserve every eval run for audit and reviewer debugging.</li>
@@ -1810,14 +1811,16 @@
           </div>
         </div>
         <ul class="production-list">
-          <li>Connect real model/provider outputs</li>
-          <li>Add larger adversarial eval dataset</li>
-          <li>Expand agent trace evaluation coverage</li>
-          <li>Add CI regression gate</li>
-          <li>Add human review queue</li>
+          <li>Connect authenticated model-provider outputs</li>
+          <li>Expand adversarial evaluation coverage</li>
+          <li>Add a persistent multi-reviewer workflow</li>
+          <li>Automate provider-backed evaluation runs in CI</li>
+          <li>Compare model or prompt versions against fixed regression datasets</li>
         </ul>
       </section>
 
+
+      </details>
 
       <section id="case-study" class="section-shell case-study">
         <div class="section-heading">
