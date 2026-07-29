@@ -1243,6 +1243,16 @@ code {
   font-weight: 800;
 }
 
+.fixture-disclosure {
+  margin: 0;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--amber-soft);
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
 .technical-extensions > section {
   width: min(var(--content-max), calc(100% - 40px));
   margin-left: auto;

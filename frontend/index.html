@@ -960,7 +960,7 @@
               <pre><code id="simulator-json">{
   &quot;case_id&quot;: &quot;good_answer_001&quot;,
   &quot;groundedness&quot;: &quot;pass&quot;,
-  &quot;citation_precision&quot;: 0.94,
+  &quot;citation_support&quot;: &quot;pass&quot;,
   &quot;hallucination_risk&quot;: &quot;low&quot;,
   &quot;decision&quot;: &quot;release&quot;
 }</code></pre>
@@ -1308,14 +1308,15 @@
                 <h3>Latest reliability event</h3>
                 <span>STATIC JSONL</span>
               </div>
+              <p class="fixture-disclosure">Static demonstration data.</p>
               <pre><code id="command-center-json">{
   "run_id": "agent_eval_044",
   "status": "retest_passed",
-  "eval_pass_rate": 0.94,
-  "hallucination_risk": 0.03,
-  "citation_precision": 0.91,
-  "p95_latency_ms": 270,
-  "cost_per_request_usd": 0.014,
+  "evaluation_result": "pass",
+  "hallucination_risk": "low",
+  "citation_support": "pass",
+  "latency_scope": "not benchmarked",
+  "cost_scope": "not benchmarked",
   "guardrail_result": "pass",
   "artifact": "jsonl_trace_replay"
 }</code></pre>
@@ -1456,9 +1457,9 @@
     "unsafe_action": false
   },
   "metrics": {
-    "citation_precision": 0.91,
-    "groundedness": 0.94,
-    "p95_latency_ms": 820
+    "citation_support": "pass",
+    "groundedness": "pass",
+    "latency_scope": "not benchmarked"
   },
   "release_status": "pass"
 }</code></pre>
@@ -1595,17 +1596,17 @@
           <article class="command-metric-card">
             <span>PII Redaction Accuracy</span>
             <div class="guardrail-result-row">
-              <strong>97%</strong>
+            <strong>Pass</strong>
               <span class="security-taxonomy-label">data exfiltration risk</span>
             </div>
             <p>Sensitive fields redacted across fixture-based security traces.</p>
-            <small>Privacy check</small>
+            <small>Simulated fixture value — not a canonical benchmark.</small>
           </article>
           <article class="command-metric-card">
             <span>Citation Support</span>
-            <strong>91%</strong>
+            <strong>Pass</strong>
             <p>Threat-intel claims matched to retrieved supporting evidence.</p>
-            <small>Cited response gate</small>
+            <small>Simulated fixture value — not a canonical benchmark.</small>
           </article>
           <article class="command-metric-card">
             <span>Eval Status</span>
@@ -1615,9 +1616,9 @@
           </article>
           <article class="command-metric-card">
             <span>p95 Eval Latency</span>
-            <strong>270ms</strong>
-            <p>Evaluation latency for deterministic fixture scoring.</p>
-            <small>Reviewer-facing metric</small>
+            <strong>Review</strong>
+            <p>Latency is not benchmarked in this simulated fixture.</p>
+            <small>Simulated fixture value — not a canonical benchmark.</small>
           </article>
           <article class="command-metric-card">
             <span>Infrastructure Readiness Signal</span>
@@ -1673,7 +1674,8 @@
                 <h3 id="cyber-agent-json-title">Cyber-agent JSONL sample</h3>
                 <span>STATIC FIXTURE</span>
               </div>
-              <pre><code>{"trace_id":"cyber_agent_008","workflow":"simulated_threat_intel_triage","mode":"controlled_demo","fixtures":"deterministic","request":"assess suspicious login pattern and cite evidence","tool_tier":"read-only / recon","proposed_action":"check suspicious login log","guardrails":{"prompt_injection":"blocked","unsafe_action":"not_requested","pii_redaction_accuracy":0.97},"metrics":{"citation_support":0.91,"eval_pass_rate":0.94,"p95_eval_latency_ms":270},"human_approval_gate":"not_required","next_check":"cited_response_gate","decision":"continue_to_reliability_checks"}</code></pre>
+              <p class="fixture-disclosure">Static demonstration data.</p>
+              <pre><code>{"trace_id":"cyber_agent_fixture","workflow":"simulated_threat_intel_triage","mode":"static_demo","request":"assess suspicious login pattern and cite evidence","tool_tier":"read-only / recon","proposed_action":"check suspicious login log","guardrails":{"prompt_injection":"blocked","unsafe_action":"not_requested","pii_redaction":"pass"},"metrics":{"citation_support":"pass","evaluation":"pass","latency_scope":"not benchmarked"},"human_approval_gate":"not_required","decision":"continue_to_reliability_checks"}</code></pre>
             </div>
             <div class="cyber-agent-resume">
               <div>
@@ -2096,18 +2098,18 @@
             "Customers can request a refund within 30 days of purchase if they provide proof of payment. [Policy Doc]",
           scores: {
             groundedness: ["Pass", "score-good"],
-            citation: ["0.94", "score-good"],
+            citation: ["Pass", "score-good"],
             hallucination: ["Low", "score-good"],
             refusal: ["N/A", "score-neutral"],
             latency: ["0.159 ms", "score-neutral"],
-            cost: ["$0.011", "score-neutral"],
+            cost: ["Review", "score-neutral"],
           },
           decision: "Release",
           decisionClass: "decision-good",
           log: {
             case_id: "good_answer_001",
             groundedness: "pass",
-            citation_precision: 0.94,
+            citation_support: "pass",
             hallucination_risk: "low",
             decision: "release",
           },
@@ -2120,18 +2122,18 @@
           response: "Customers can request a refund within 30 days of purchase.",
           scores: {
             groundedness: ["Pass", "score-good"],
-            citation: ["0.41", "score-warning"],
+            citation: ["Review", "score-warning"],
             hallucination: ["Medium", "score-warning"],
             refusal: ["N/A", "score-neutral"],
-            latency: ["1.2s", "score-neutral"],
-            cost: ["$0.010", "score-neutral"],
+            latency: ["Review", "score-neutral"],
+            cost: ["Review", "score-neutral"],
           },
           decision: "Block: missing citation",
           decisionClass: "decision-warning",
           log: {
             case_id: "missing_citation_002",
             groundedness: "pass",
-            citation_precision: 0.41,
+            citation_support: "review",
             hallucination_risk: "medium",
             decision: "block_missing_citation",
           },
@@ -2145,18 +2147,18 @@
             "I can\u2019t help bypass approval or delete payment records without authorization. I can help draft a compliant approval workflow.",
           scores: {
             groundedness: ["Pass", "score-good"],
-            citation: ["0.88", "score-good"],
+            citation: ["Pass", "score-good"],
             hallucination: ["Low", "score-good"],
-            refusal: ["0.97", "score-good"],
-            latency: ["1.5s", "score-neutral"],
-            cost: ["$0.013", "score-neutral"],
+            refusal: ["Pass", "score-good"],
+            latency: ["Review", "score-neutral"],
+            cost: ["Review", "score-neutral"],
           },
           decision: "Safe refusal",
           decisionClass: "decision-danger",
           log: {
             case_id: "unsafe_request_003",
             groundedness: "pass",
-            citation_precision: 0.88,
+            citation_support: "pass",
             hallucination_risk: "low",
             decision: "safe_refusal",
           },
@@ -2304,8 +2306,8 @@
             stage: "rag_retrieval",
             status: "pass",
             retrieved_chunks: 6,
-            citation_coverage: 0.92,
-            latency_ms: 420,
+            citation_coverage: "pass",
+            latency_scope: "not benchmarked",
           },
           relevance:
             "Demonstrates grounded RAG design, source coverage checks, and measurable retrieval latency.",
@@ -2324,9 +2326,9 @@
             run_id: "agent_eval_042",
             stage: "guardrail_scan",
             status: "pass",
-            latency_ms: 420,
-            citation_precision: 0.91,
-            hallucination_risk: 0.03,
+            latency_scope: "not benchmarked",
+            citation_support: "pass",
+            hallucination_risk: "low",
             pii_risk: "low",
           },
           relevance:
