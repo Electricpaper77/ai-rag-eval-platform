@@ -1,6 +1,6 @@
 # AgentTrust IQ Judge Review
 
-AgentTrust IQ is a reliability gate for Microsoft Foundry-style reasoning agents. It evaluates
+AgentTrust IQ is a model-agnostic reliability gate for reasoning agents. It evaluates
 whether an answer is supported, cited, safe, and auditable before deployment.
 
 **AgentTrust IQ is not another chatbot. It is a deployment-readiness gate for reasoning agents.**
@@ -14,7 +14,7 @@ whether an answer is supported, cited, safe, and auditable before deployment.
 3. Review the retrieved evidence.
 4. Review the cited answer.
 5. Review the reliability checks.
-6. Review the Agent Readiness Score.
+6. Review the release decision.
 7. Review the deployment decision.
 8. Review the JSONL audit evidence.
 
@@ -39,15 +39,14 @@ The demo failure case is intentionally concrete: an agent must not claim that re
 approved within 24 hours when the policy only promises review within two business days and makes
 approval conditional.
 
-## Microsoft Foundry Deployment Fit
+## Model-agnostic deployment fit
 
 ```text
 GitOps -> IaC / Terraform -> DevOps
   -> AgentTrust IQ Reliability Gate -> Deploy or Block
 ```
 
-Microsoft Foundry-style engineering explains how to package and ship agents through governed
-software delivery. AgentTrust IQ supplies the missing evaluation gate: inspect retrieved evidence,
+AgentTrust IQ supplies an evaluation gate for governed software delivery: inspect retrieved evidence,
 score the output, approve or block deployment, and preserve the decision for audit and regression
 testing.
 
