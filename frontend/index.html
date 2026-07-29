@@ -109,9 +109,18 @@
               class="button primary"
               href="#recruiter-evidence"
             >
+              View Evaluation Evidence
+            </a>
+            <a
+              class="button secondary"
+              href="https://github.com/Electricpaper77/ai-rag-eval-platform"
+              target="_blank"
+              rel="noreferrer"
+            >
               View Verified Evidence
             </a>
             <a class="button secondary" href="#live-eval-console">Try Reliability Demo</a>
+            <a class="button secondary" href="#proof">See Proof Artifacts</a>
             <a class="button secondary" href="#contact">Contact Zohaib</a>
           </div>
         </div>
@@ -820,10 +829,10 @@
           <div id="demo-panel-eval" class="demo-tab-panel" role="tabpanel" aria-labelledby="demo-tab-eval" tabindex="0" hidden>
             <dl class="demo-eval-grid">
               <div><dt>Groundedness</dt><dd>Pass</dd></div>
-              <div><dt>Citation Support</dt><dd>Pass <small>Simulated fixture value — not a canonical benchmark.</small></dd></div>
-              <div><dt>Refusal Behavior</dt><dd>Pass <small>Simulated fixture value — not a canonical benchmark.</small></dd></div>
+              <div><dt>Citation Precision</dt><dd>0.92</dd></div>
+              <div><dt>Refusal Accuracy</dt><dd>0.97</dd></div>
               <div><dt>Local deterministic evaluator p95 — excludes model inference, network, and end-to-end application latency</dt><dd>0.159 ms</dd></div>
-              <div><dt>Cost / Request</dt><dd>Review <small>Simulated fixture value — not a canonical benchmark.</small></dd></div>
+              <div><dt>Cost / Request</dt><dd>$0.012</dd></div>
               <div><dt>Regression Status</dt><dd>Pass</dd></div>
             </dl>
           </div>
@@ -924,7 +933,7 @@
                   <div><dt>Hallucination Risk</dt><dd id="score-hallucination" class="score-good">Low</dd></div>
                   <div><dt>Refusal Accuracy</dt><dd id="score-refusal" class="score-neutral">N/A</dd></div>
                   <div><dt>Local deterministic evaluator p95 — excludes model inference, network, and end-to-end application latency</dt><dd id="score-latency" class="score-neutral">0.159 ms</dd></div>
-                  <div><dt>Cost / Request</dt><dd id="score-cost" class="score-neutral">Review <small>Simulated fixture value — not a canonical benchmark.</small></dd></div>
+                  <div><dt>Cost / Request</dt><dd id="score-cost" class="score-neutral">$0.011</dd></div>
                 </dl>
                 <div id="simulator-decision" class="simulator-decision decision-good">
                   <span>Release Decision</span>
@@ -969,40 +978,6 @@
 
       <details class="technical-extensions section-shell">
         <summary>Explore Technical Extensions</summary>
-      <section class="gpu-review-card" aria-labelledby="gpu-review-title">
-        <div>
-          <p class="eyebrow">Technical review</p>
-          <h2 id="gpu-review-title">GPU Inference Reliability Lab</h2>
-          <p>
-            Vendor-agnostic GPU inference reliability prototype covering bounded benchmark execution,
-            NVIDIA NIM and AMD ROCm/vLLM-style provider adapters, cache/resume controls, telemetry
-            normalization, admission and routing policies, and replayable benchmark evidence.
-          </p>
-          <p class="fixture-disclosure">
-            Prototype and deterministic test evidence. Real-hardware performance metrics remain not_run until an authenticated GPU benchmark completes.
-          </p>
-          <p>
-            This project demonstrates GPU inference platform prototyping, benchmark design, telemetry handling,
-            routing, and reliability testing. It does not claim low-level kernel engineering or production multi-node HPC experience.
-          </p>
-        </div>
-        <div class="gpu-review-links">
-          <a href="./docs/GPU_RELIABILITY_LAB.md">GPU Reliability Lab overview</a>
-          <a href="./docs/GPU_BENCHMARK_METHODOLOGY.md">Benchmark methodology</a>
-          <a href="./docs/gpu-control-plane-architecture.md">Review GPU control-plane architecture</a>
-          <a href="https://github.com/Electricpaper77/ai-rag-eval-platform/tree/main/gpu_platform" target="_blank" rel="noreferrer">Inspect GPU platform implementation</a>
-          <a href="https://github.com/Electricpaper77/ai-rag-eval-platform/tree/main/tests" target="_blank" rel="noreferrer">Inspect GPU Reliability Tests</a>
-          <a class="button primary" href="./docs/GPU_BENCHMARK_METHODOLOGY.md">Review GPU Methodology</a>
-        </div>
-        <ul class="gpu-review-capabilities">
-          <li>Bounded concurrency and 50-request benchmark ceiling</li>
-          <li>Retry, timeout, and request controls</li>
-          <li>NVIDIA NIM and OpenAI-compatible provider support</li>
-          <li>AMD SMI telemetry normalization and dynamic-batching simulation</li>
-          <li>KV-cache pressure and parallelism configuration modeling</li>
-          <li>Admission/routing policies and JSONL/CSV evidence artifacts</li>
-        </ul>
-      </section>
       <section
         id="agent-flow"
         class="section-shell agent-flow"

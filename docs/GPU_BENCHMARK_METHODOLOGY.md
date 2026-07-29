@@ -1,7 +1,14 @@
 # GPU Benchmark Methodology
 
-The repository's GPU benchmark scripts bound request execution and record structured artifacts. [`scripts/run_real_gpu_benchmark.py`](../scripts/run_real_gpu_benchmark.py) defaults to 50 requests; [`scripts/run_gpu_benchmark.py`](../scripts/run_gpu_benchmark.py) emits benchmark JSONL/summary artifacts; provider calls use explicit timeouts.
+Moderate is the default profile: one model, concurrency 1, at most 10 new requests, two retries, 60-second provider timeout, and 1-second telemetry cadence. Authenticated smoke runs should use five requests. Performance is opt-in and requires both `--allow-network` and `--confirm-performance-run`; it has a 50-request hard ceiling, concurrency no greater than 8, up to three warm-ups, and a 500 ms telemetry target.
 
-Fixture and mock comparisons are static demonstration data, not hardware benchmarks. A real-hardware result requires an authenticated endpoint and benchmark run; until then, hardware performance is `not_run`.
+Latency uses monotonic time. Percentiles exclude warm-ups and cache hits. TTFT is null unless a real streaming timestamp is captured. Token costs are null unless returned usage and user-configured price inputs are both available. Pricing is a configured estimate, never an invoice. A run stops after five consecutive provider failures and authentication/invalid requests are not retried.
 
-Relevant tests: [`tests/test_real_gpu_benchmark.py`](../tests/test_real_gpu_benchmark.py), [`tests/test_gpu_benchmark_runner.py`](../tests/test_gpu_benchmark_runner.py), and [`tests/test_gpu_optimization.py`](../tests/test_gpu_optimization.py).
+```mermaid
+flowchart LR
+  Suite --> Runner
+  Runner --> Provider
+  Runner --> Artifacts
+  Runner --> Telemetry
+  Artifacts --> ReadOnlyDashboard
+```
