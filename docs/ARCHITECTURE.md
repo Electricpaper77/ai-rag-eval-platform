@@ -16,7 +16,7 @@ flowchart LR
     D --> E4[PII Exposure Check]
     D --> E5[Latency Check]
     D --> E6[Audit Log Completeness Check]
-    E1 --> F[Agent Readiness Score: 92]
+    E1 --> F[Release / Block / Escalate Decision]
     E2 --> F
     E3 --> F
     E4 --> F
@@ -28,7 +28,7 @@ flowchart LR
     I --> J[Regression / CI Proof]
 ```
 
-## Microsoft Foundry Production Pipeline
+## Model-agnostic deployment pipeline
 
 ```text
 GitOps -> IaC / Terraform -> DevOps -> AgentTrust IQ Reliability Gate -> Deploy or Block
