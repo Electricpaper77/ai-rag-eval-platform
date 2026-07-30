@@ -31,7 +31,7 @@
       ],
       "generating_command": "python -m app.eval_harness.run_eval_harness",
       "source_commit": null,
-      "sha256": "4a34e01640177bcba91238cdde6efced15a184edb2cb3d03a1e29cc94691744d",
+      "sha256": "582b62734b143ede409b363623e3ff9173350f35e552f98df6059401bff7fbeb",
       "last_generated_at": null,
       "production_claim_allowed": false
     },
@@ -53,7 +53,7 @@
       ],
       "generating_command": "checked-in deterministic fixture artifact",
       "source_commit": null,
-      "sha256": "fdc8b2fb6026698928e63f967cd2cd8dbf80a74a4740626d37e4f53905166fd2",
+      "sha256": "01cd6a8730c0dea20517c746f63e7c4ca28b229d068700a9fe7f3899d7fe497f",
       "last_generated_at": null,
       "production_claim_allowed": false
     },
@@ -73,7 +73,7 @@
       ],
       "generating_command": "python -m app.eval.run --provider mock --suite eval/nvidia_nemotron_pack.jsonl --output artifacts/latest",
       "source_commit": null,
-      "sha256": "d655db8fa3b5db4a3d0579e8c127087e415b110148f41fc9afc6c68156e2d291",
+      "sha256": "c653d76e4b3c8139800b2025645c61cbdccbc6eb75eb28d65e3c96d3fbd2ea82",
       "last_generated_at": null,
       "production_claim_allowed": false
     },
@@ -96,7 +96,7 @@
       ],
       "generating_command": "python scripts/summarize_eval.py",
       "source_commit": null,
-      "sha256": "340c15ad3c1dc695707094da86ed0b0ea4d7a5be467783c9628f069a3203599c",
+      "sha256": "48d4f66f2b796c1fe8948b387b48d735945aedc62e41332c6768aa7ab9edb3ec",
       "last_generated_at": "2026-06-03T23:11:01+00:00",
       "production_claim_allowed": false
     }

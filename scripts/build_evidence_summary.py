@@ -14,6 +14,10 @@ def records(path: Path) -> int:
     case_rows = [row for row in rows if row.get("record_type") == "case"]
     return len(case_rows) if case_rows else len(rows)
 
+def checksum(path: Path) -> str:
+    """Hash text artifacts consistently across Git's CRLF/LF checkout modes."""
+    return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
 def validate(data: dict) -> None:
     required = {"suite_id", "display_name", "purpose", "evidence_type", "case_count", "passed_count", "failed_count", "metrics", "latency_scope", "provider_scope", "artifact_paths", "generating_command", "production_claim_allowed"}
     for suite in data["suites"]:
@@ -25,7 +29,7 @@ def validate(data: dict) -> None:
             path = ROOT / artifact
             if not path.exists(): raise ValueError(f"{suite['suite_id']}: missing artifact {artifact}")
         primary = ROOT / suite["artifact_paths"][0]
-        if suite.get("sha256") and hashlib.sha256(primary.read_bytes()).hexdigest() != suite["sha256"]: raise ValueError(f"{suite['suite_id']}: checksum mismatch")
+        if suite.get("sha256") and checksum(primary) != suite["sha256"]: raise ValueError(f"{suite['suite_id']}: checksum mismatch")
         if primary.suffix == ".jsonl" and records(primary) != suite["case_count"]: raise ValueError(f"{suite['suite_id']}: JSONL case count mismatch")
 
 def build(data: dict) -> tuple[dict, str]:

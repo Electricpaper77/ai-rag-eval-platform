@@ -1,7 +1,6 @@
-import hashlib
 import json
 from pathlib import Path
-from scripts.build_evidence_summary import ROOT, build, validate
+from scripts.build_evidence_summary import ROOT, build, checksum, validate
 
 def test_manifest_and_generated_summary_are_current():
     data = json.loads((ROOT / "docs/artifacts/evidence_manifest.json").read_text())
@@ -29,7 +28,7 @@ def test_claim_policy_integrity_and_artifact_contracts():
             assert path.exists()
         primary = ROOT / suite["artifact_paths"][0]
         if suite.get("sha256"):
-            assert hashlib.sha256(primary.read_bytes()).hexdigest() == suite["sha256"]
+            assert checksum(primary) == suite["sha256"]
         if primary.suffix == ".jsonl":
             rows = [json.loads(line) for line in primary.read_text().splitlines() if line.strip()]
             cases = [row for row in rows if row.get("record_type") == "case"] or rows
