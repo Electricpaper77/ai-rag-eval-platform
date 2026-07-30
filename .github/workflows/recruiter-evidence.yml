@@ -7,7 +7,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - run: python -m pip install -r requirements-lite.txt pytest
+      - run: python -m pip install -r requirements-lite.txt pytest httpx2
       - run: python -m app.eval.run --provider mock --suite evaluations/nvidia_eval_pack.jsonl --output artifacts/latest
       - run: python scripts/build_evidence_summary.py --check
       - run: >-
