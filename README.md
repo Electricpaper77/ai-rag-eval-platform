@@ -31,6 +31,16 @@ Canonical source: `docs/artifacts/eval_runs/hiring_eval_summary.json`, generated
 
 See [validation status](docs/validation_status.md) for the focused evidence result, full-suite baseline, and known baseline failures.
 
+## Evidence Map
+
+The checked-in [evidence manifest](docs/artifacts/evidence_manifest.json) is the source of truth for scope, checksums, commands, and claim eligibility. Read the generated [recruiter evidence summary](docs/artifacts/EVIDENCE_SUMMARY.md), or verify it with:
+
+```bash
+python scripts/build_evidence_summary.py --check
+```
+
+Only `hiring_eval` supplies homepage aggregates. Cyber coverage is simulated, the NVIDIA-shaped pack is mock/offline, and the combined historical summary is supplemental—not a benchmark.
+
 ## Run Locally
 
 ## Verify AgentTrust IQ in 5 Minutes

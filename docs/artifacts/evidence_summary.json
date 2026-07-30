@@ -1,0 +1,104 @@
+{
+  "canonical_suite_id": "hiring_eval",
+  "canonical_metrics": {
+    "eval_pass_rate": 1.0,
+    "hallucination_rate": 0.0,
+    "citation_precision": 1.0,
+    "refusal_accuracy": 1.0,
+    "latency_p95_ms": 0.159
+  },
+  "suites": [
+    {
+      "suite_id": "hiring_eval",
+      "display_name": "Canonical controlled hiring run",
+      "purpose": "Recruiter-facing deterministic reliability evaluation.",
+      "evidence_type": "canonical",
+      "case_count": 6,
+      "passed_count": 6,
+      "failed_count": 0,
+      "metrics": {
+        "eval_pass_rate": 1.0,
+        "hallucination_rate": 0.0,
+        "citation_precision": 1.0,
+        "refusal_accuracy": 1.0,
+        "latency_p95_ms": 0.159
+      },
+      "latency_scope": "local deterministic evaluator runtime; not model, API, RAG, or end-to-end latency",
+      "provider_scope": "no external provider; deterministic fixture harness",
+      "artifact_paths": [
+        "docs/artifacts/eval_runs/hiring_eval.jsonl",
+        "docs/artifacts/eval_runs/hiring_eval_summary.json"
+      ],
+      "generating_command": "python -m app.eval_harness.run_eval_harness",
+      "source_commit": null,
+      "sha256": "4a34e01640177bcba91238cdde6efced15a184edb2cb3d03a1e29cc94691744d",
+      "last_generated_at": null,
+      "production_claim_allowed": false
+    },
+    {
+      "suite_id": "cyber_tool_firewall",
+      "display_name": "Supplemental deterministic security coverage",
+      "purpose": "Simulated tool-use firewall policy coverage.",
+      "evidence_type": "simulated",
+      "case_count": 40,
+      "passed_count": 40,
+      "failed_count": 0,
+      "metrics": {
+        "policy_decisions": "Release / Block / Escalate"
+      },
+      "latency_scope": "fixture replay latency only; not production performance",
+      "provider_scope": "deterministic simulated tool requests",
+      "artifact_paths": [
+        "artifacts/agenttrust_iq/cyber_tool_firewall_eval.jsonl"
+      ],
+      "generating_command": "checked-in deterministic fixture artifact",
+      "source_commit": null,
+      "sha256": "fdc8b2fb6026698928e63f967cd2cd8dbf80a74a4740626d37e4f53905166fd2",
+      "last_generated_at": null,
+      "production_claim_allowed": false
+    },
+    {
+      "suite_id": "nvidia_mock_eval",
+      "display_name": "Mock provider evaluation",
+      "purpose": "Offline contract validation for the NVIDIA-shaped evaluation pack.",
+      "evidence_type": "mock",
+      "case_count": 50,
+      "passed_count": null,
+      "failed_count": null,
+      "metrics": {},
+      "latency_scope": "no provider or hardware latency recorded",
+      "provider_scope": "mock/offline fixture; no authenticated NVIDIA request",
+      "artifact_paths": [
+        "eval/nvidia_nemotron_pack.jsonl"
+      ],
+      "generating_command": "python -m app.eval.run --provider mock --suite eval/nvidia_nemotron_pack.jsonl --output artifacts/latest",
+      "source_commit": null,
+      "sha256": "d655db8fa3b5db4a3d0579e8c127087e415b110148f41fc9afc6c68156e2d291",
+      "last_generated_at": null,
+      "production_claim_allowed": false
+    },
+    {
+      "suite_id": "combined_integrity_summary",
+      "display_name": "Combined integrity/evidence records",
+      "purpose": "Historical integrity summary; never a combined benchmark headline.",
+      "evidence_type": "supplemental",
+      "case_count": 131,
+      "passed_count": 127,
+      "failed_count": 4,
+      "metrics": {
+        "pass_rate": 0.9695,
+        "citation_precision": 0.8333
+      },
+      "latency_scope": "mixed historical artifacts; not comparable to canonical run",
+      "provider_scope": "mixed historical fixture records",
+      "artifact_paths": [
+        "docs/artifacts/eval_summary.json"
+      ],
+      "generating_command": "python scripts/summarize_eval.py",
+      "source_commit": null,
+      "sha256": "340c15ad3c1dc695707094da86ed0b0ea4d7a5be467783c9628f069a3203599c",
+      "last_generated_at": "2026-06-03T23:11:01+00:00",
+      "production_claim_allowed": false
+    }
+  ]
+}
