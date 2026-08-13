@@ -17,6 +17,7 @@ from .routes.dashboard import router as dashboard_router
 from .routes.agenttrust_demo import router as agenttrust_demo_router
 from .routes.nvidia_evaluation import router as nvidia_evaluation_router
 from .routes.recruiter_golden_path import router as recruiter_golden_path_router
+from .routes.recruiter_compare import router as recruiter_compare_router
 from .routes.gpu_lab import router as gpu_lab_router
 from .inference import handle_chat_completions
 from gpu_platform.api import router as platform_router
@@ -121,6 +122,7 @@ app.include_router(dashboard_router)
 app.include_router(agenttrust_demo_router)
 app.include_router(nvidia_evaluation_router)
 app.include_router(recruiter_golden_path_router)
+app.include_router(recruiter_compare_router)
 app.include_router(gpu_lab_router)
 app.include_router(platform_router)
 app.include_router(shadow_eval_router)
