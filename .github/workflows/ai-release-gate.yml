@@ -7,12 +7,21 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.11'}
+      - run: python -m pip install -r requirements-lite.txt pytest httpx2 prometheus-client PyYAML
       - name: Verify deterministic fixture contracts
         run: |
+          set +e
           python scripts/ci_release_gate.py --scenario ship --output artifacts/ship.json
-          python scripts/ci_release_gate.py --scenario block --output artifacts/block.json; test $? -eq 2
-          python scripts/ci_release_gate.py --scenario escalate --output artifacts/escalate.json; test $? -eq 2
+          SHIP_STATUS=$?
+          python scripts/ci_release_gate.py --scenario block --output artifacts/block.json
+          BLOCK_STATUS=$?
+          python scripts/ci_release_gate.py --scenario escalate --output artifacts/escalate.json
+          ESCALATE_STATUS=$?
+          set -e
+          test "$SHIP_STATUS" -eq 0
+          test "$BLOCK_STATUS" -eq 2
+          test "$ESCALATE_STATUS" -eq 2
       - name: AI Release Gate — current checkout
-        run: python scripts/ci_release_gate.py --output artifacts/ci_release_proof.json
+        run: python scripts/ci_release_gate.py --base-sha '${{ github.event.pull_request.base.sha }}' --output artifacts/ci_release_proof.json
       - uses: actions/upload-artifact@v4
         with: {name: agenttrust-release-proof, path: artifacts/ci_release_proof.json}
