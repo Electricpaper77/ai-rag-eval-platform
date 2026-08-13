@@ -1,0 +1,13 @@
+name: AI Release Gate
+on: [pull_request, workflow_dispatch]
+jobs:
+  release-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: AI Release Gate — SHIP
+        run: python scripts/ci_release_gate.py --scenario ship --output artifacts/ci_release_proof.json
+      - uses: actions/upload-artifact@v4
+        with: {name: agenttrust-release-proof, path: artifacts/ci_release_proof.json}
