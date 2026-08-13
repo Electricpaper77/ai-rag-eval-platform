@@ -31,5 +31,6 @@ jobs:
           git cat-file -e "${BASE_SHA}:docs/artifacts/eval_runs/hiring_eval.jsonl"
           git cat-file -e "${BASE_SHA}:docs/artifacts/eval_runs/hiring_eval_summary.json"
           python scripts/ci_release_gate.py --base-sha "$BASE_SHA" --output artifacts/ci_release_proof.json
+          python -c "from pathlib import Path; from scripts.ci_release_gate import readback; readback(Path('artifacts/ci_release_proof.json'))"
       - uses: actions/upload-artifact@v4
         with: {name: agenttrust-release-proof, path: artifacts/ci_release_proof.json}

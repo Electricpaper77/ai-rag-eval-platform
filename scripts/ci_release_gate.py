@@ -26,10 +26,14 @@ def checkout_runs(base_sha=None):
  return baseline,candidate
 def validate(r):
  p=r['proof'];assert p['baseline_run_id']==r['baseline']['run_id'] and p['candidate_run_id']==r['candidate']['run_id'];assert p['evidence']=={'baseline':r['baseline']['checksum'],'candidate':r['candidate']['checksum']};assert p['fixed_count']==r['counts']['FIXED'] and p['regression_count']==r['counts']['REGRESSED'] and p['decision']==r['decision']['value'];assert p['checksum']==hashlib.sha256(json.dumps({k:v for k,v in p.items() if k!='checksum'},sort_keys=True).encode()).hexdigest()
+def seal(p):
+ p.pop('checksum',None);p['checksum']=hashlib.sha256(json.dumps(p,sort_keys=True).encode()).hexdigest()
+def readback(path):
+ p=json.loads(path.read_text());assert p['checksum']==hashlib.sha256(json.dumps({k:v for k,v in p.items() if k!='checksum'},sort_keys=True).encode()).hexdigest()
 def main(argv=None):
  a=argparse.ArgumentParser();a.add_argument('--scenario',choices=('ship','block','escalate'));a.add_argument('--base-sha');a.add_argument('--output',type=Path,default=Path('artifacts/ci_release_proof.json'));x=a.parse_args(argv)
  try:
-  r=compare(*(fixtures(x.scenario) if x.scenario else checkout_runs(x.base_sha)));validate(r);r['proof'].update(baseline_sha=r['baseline'].get('source_sha'),candidate_sha=r['candidate'].get('candidate_sha'));x.output.parent.mkdir(parents=True,exist_ok=True);x.output.write_text(json.dumps(r['proof'],indent=2,sort_keys=True)+'\n');m=r['metrics']['eval_pass_rate'];text=f"AGENTTRUST IQ RELEASE GATE\nBaseline: {r['baseline']['run_id']}\nCandidate: {r['candidate']['run_id']}\nPass rate: {m['baseline']:.1%} -> {m['candidate']:.1%} ({m['delta']*100:+.1f} pp)\nFixed: {r['counts']['FIXED']}\nRegressed: {r['counts']['REGRESSED']}\nDecision: {r['decision']['value']}\nChecksum: {r['proof']['checksum']}";print(text)
+  r=compare(*(fixtures(x.scenario) if x.scenario else checkout_runs(x.base_sha)));r['proof'].update(baseline_sha=r['baseline'].get('source_sha'),candidate_sha=r['candidate'].get('candidate_sha'));seal(r['proof']);validate(r);x.output.parent.mkdir(parents=True,exist_ok=True);x.output.write_text(json.dumps(r['proof'],indent=2,sort_keys=True)+'\n');readback(x.output);m=r['metrics']['eval_pass_rate'];text=f"AGENTTRUST IQ RELEASE GATE\nBaseline: {r['baseline']['run_id']}\nCandidate: {r['candidate']['run_id']}\nPass rate: {m['baseline']:.1%} -> {m['candidate']:.1%} ({m['delta']*100:+.1f} pp)\nFixed: {r['counts']['FIXED']}\nRegressed: {r['counts']['REGRESSED']}\nDecision: {r['decision']['value']}\nChecksum: {r['proof']['checksum']}";print(text)
   if os.getenv('GITHUB_STEP_SUMMARY'):Path(os.environ['GITHUB_STEP_SUMMARY']).write_text('## '+text.replace('\n','\n\n'),encoding='utf-8')
   return 0 if r['decision']['value']=='SHIP' else 2
  except Exception as e: print(f'RELEASE GATE ERROR: {type(e).__name__}');return 3
