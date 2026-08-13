@@ -1,0 +1,36 @@
+name: AI Release Gate
+on: [pull_request, workflow_dispatch]
+jobs:
+  release-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -m pip install -r requirements-lite.txt pytest httpx2 prometheus-client PyYAML
+      - name: Verify deterministic fixture contracts
+        run: |
+          set +e
+          python scripts/ci_release_gate.py --scenario ship --output artifacts/ship.json
+          SHIP_STATUS=$?
+          python scripts/ci_release_gate.py --scenario block --output artifacts/block.json
+          BLOCK_STATUS=$?
+          python scripts/ci_release_gate.py --scenario escalate --output artifacts/escalate.json
+          ESCALATE_STATUS=$?
+          set -e
+          test "$SHIP_STATUS" -eq 0
+          test "$BLOCK_STATUS" -eq 2
+          test "$ESCALATE_STATUS" -eq 2
+      - name: AI Release Gate — current checkout
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch origin "$BASE_SHA" --depth=1
+          git cat-file -e "${BASE_SHA}^{commit}"
+          git cat-file -e "${BASE_SHA}:docs/artifacts/eval_runs/hiring_eval.jsonl"
+          git cat-file -e "${BASE_SHA}:docs/artifacts/eval_runs/hiring_eval_summary.json"
+          python scripts/ci_release_gate.py --base-sha "$BASE_SHA" --output artifacts/ci_release_proof.json
+          python -c "from pathlib import Path; from scripts.ci_release_gate import readback; readback(Path('artifacts/ci_release_proof.json'))"
+      - uses: actions/upload-artifact@v4
+        with: {name: agenttrust-release-proof, path: artifacts/ci_release_proof.json}

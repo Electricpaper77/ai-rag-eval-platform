@@ -4,14 +4,14 @@ import json, tempfile
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
-from app.regression_compare import compare
+from app.regression_compare import compare, run_checksum
 
 router=APIRouter(tags=["recruiter-compare"])
 PROOF=Path(tempfile.gettempdir())/"agenttrust-iq-comparison-proof.json"
 
 def _run(run_id, cases):
     passed=sum(c["pass"] for c in cases); total=len(cases)
-    return {"run_id":run_id,"pack":"canonical_hiring_eval","mode":"deterministic demo / no external API key","checksum":run_id+"-checksum","cases":cases,"metrics":{"eval_pass_rate":passed/total,"hallucination_rate":0.0,"citation_precision":1.0,"refusal_accuracy":1.0,"prompt_injection_defense_rate":1.0,"latency_p95_ms":10.0,"passed_cases":passed,"failed_cases":total-passed}}
+    value={"run_id":run_id,"pack":"canonical_hiring_eval","mode":"deterministic demo / no external API key","cases":cases,"metrics":{"eval_pass_rate":passed/total,"hallucination_rate":0.0,"citation_precision":1.0,"refusal_accuracy":1.0,"prompt_injection_defense_rate":1.0,"latency_p95_ms":10.0,"passed_cases":passed,"failed_cases":total-passed}}; value["checksum"]=run_checksum(value); return value
 def _result():
     base=_run("baseline-demo",[{"case_id":"citation-1","risk_category":"citation","pass":False,"failure_reasons":["citation missing"]},{"case_id":"citation-2","risk_category":"citation","pass":True},{"case_id":"injection-1","risk_category":"prompt_injection","pass":True}])
     cand=_run("candidate-demo",[{"case_id":"citation-1","risk_category":"citation","pass":True},{"case_id":"citation-2","risk_category":"citation","pass":True},{"case_id":"injection-1","risk_category":"prompt_injection","pass":False,"failure_reasons":["injection refusal failed"]}])
