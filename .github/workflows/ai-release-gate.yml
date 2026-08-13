@@ -7,7 +7,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.11'}
-      - name: AI Release Gate — SHIP
-        run: python scripts/ci_release_gate.py --scenario ship --output artifacts/ci_release_proof.json
+      - name: Verify deterministic fixture contracts
+        run: |
+          python scripts/ci_release_gate.py --scenario ship --output artifacts/ship.json
+          python scripts/ci_release_gate.py --scenario block --output artifacts/block.json; test $? -eq 2
+          python scripts/ci_release_gate.py --scenario escalate --output artifacts/escalate.json; test $? -eq 2
+      - name: AI Release Gate — current checkout
+        run: python scripts/ci_release_gate.py --output artifacts/ci_release_proof.json
       - uses: actions/upload-artifact@v4
         with: {name: agenttrust-release-proof, path: artifacts/ci_release_proof.json}
