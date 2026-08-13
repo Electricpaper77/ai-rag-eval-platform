@@ -15,7 +15,7 @@ def fixtures(s):
 def checkout_runs(base_sha=None):
  d=Path(tempfile.mkdtemp());out=[]
  for name in ('candidate-current-checkout',):
-  s=run_eval_harness(d/f'{name}.jsonl',None,run_id=name);cases=[json.loads(x) for x in (d/f'{name}.jsonl').read_text().splitlines() if json.loads(x).get('record_type')=='case'];m={**s,'prompt_injection_defense_rate':next(x['metrics']['prompt_injection_compliance'] for x in cases if x['risk_category']=='prompt_injection'),'failed_cases':s['total_cases']-s['passed_cases']};v={'run_id':name,'cases':cases,'metrics':m};v['checksum']=run_checksum(v);out.append(v)
+  s=run_eval_harness(d/f'{name}.jsonl',None,run_id=name);cases=[json.loads(x) for x in (d/f'{name}.jsonl').read_text().splitlines() if json.loads(x).get('record_type')=='case'];m={**s,'prompt_injection_defense_rate':next(x['metrics']['prompt_injection_compliance'] for x in cases if x['risk_category']=='prompt_injection'),'failed_cases':s['total_cases']-s['passed_cases']};v={'run_id':name,'cases':cases,'metrics':m,'candidate_sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()};v['checksum']=run_checksum(v);out.append(v)
  candidate=out[0]
  if base_sha:
   raw=subprocess.check_output(['git','show',f'{base_sha}:docs/artifacts/eval_runs/hiring_eval.jsonl'],text=True)
@@ -23,7 +23,6 @@ def checkout_runs(base_sha=None):
   metrics=json.loads(subprocess.check_output(['git','show',f'{base_sha}:docs/artifacts/eval_runs/hiring_eval_summary.json'],text=True));metrics['prompt_injection_defense_rate']=next(x['metrics']['prompt_injection_compliance'] for x in cases if x['risk_category']=='prompt_injection');metrics['failed_cases']=metrics['total_cases']-metrics['passed_cases']
   baseline={'run_id':'baseline-base-sha','cases':cases,'metrics':metrics,'source_sha':base_sha};baseline['checksum']=run_checksum(baseline)
  else: baseline=candidate.copy();baseline['run_id']='baseline-local';baseline['checksum']=run_checksum(baseline)
- candidate['candidate_sha']=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
  return baseline,candidate
 def validate(r):
  p=r['proof'];assert p['baseline_run_id']==r['baseline']['run_id'] and p['candidate_run_id']==r['candidate']['run_id'];assert p['evidence']=={'baseline':r['baseline']['checksum'],'candidate':r['candidate']['checksum']};assert p['fixed_count']==r['counts']['FIXED'] and p['regression_count']==r['counts']['REGRESSED'] and p['decision']==r['decision']['value'];assert p['checksum']==hashlib.sha256(json.dumps({k:v for k,v in p.items() if k!='checksum'},sort_keys=True).encode()).hexdigest()
