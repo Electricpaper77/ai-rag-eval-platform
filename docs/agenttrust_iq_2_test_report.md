@@ -45,6 +45,15 @@ Verified result:
 6 of 6 regression cases passed; threshold decision PASS.
 ```
 
+Latest Gate 11 local CI-equivalent run:
+
+```text
+Regression harness: 6 of 6 passed; p95 latency 0.292ms.
+Release gate: PASS.
+Full suite: 148 passed, 1 xfailed in 98.60s.
+Workflow YAML: parsed successfully.
+```
+
 ## Local Build Verification
 
 Commands:

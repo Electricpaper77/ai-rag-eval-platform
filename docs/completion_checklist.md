@@ -15,6 +15,7 @@ Last updated: local working tree, pre-commit.
 | Gate 6: production readiness | Complete locally | Health, metrics, OpenAPI, bad-request behavior, env-var docs, Docker, Cloud Build, Procfile, and static Vercel config are covered by tests. Public API deployment still needs independent verification after deployment. |
 | Gate 7: recruiter evidence | Complete locally | Refreshed architecture diagram, reproducible benchmark report, test report, 90-second demo script, and technical README aligned to verified local facts. |
 | Gate 8: local build verification | Complete with Docker daemon caveat | Production-style local API smoke, Python compile, dependency sanity, deployment-config parsing, and Docker context hygiene passed. Docker image build was attempted but blocked because the Docker Desktop Linux engine was not running locally. |
+| Gate 11: GitHub Actions | Implemented locally, pending push verification | Production CI workflow now installs dependencies, runs `pip check`, compiles Python, runs regression release gates, executes the full pytest suite, builds the Docker image, and uploads evidence artifacts. GitHub Actions run URL requires explicit push approval. |
 
 ## Current Verified Commands
 
@@ -36,6 +37,13 @@ Last updated: local working tree, pre-commit.
 - `python -m pytest tests/test_production_readiness.py -q --basetemp .pytest_tmp` -> 6 passed.
 - `docker build -t agenttrust-iq-local:verify .` -> blocked locally because Docker Desktop Linux engine was unavailable: `dockerDesktopLinuxEngine` pipe not found.
 - `python -m gunicorn backend.app.main:app --bind 127.0.0.1:8011 --workers 1 --timeout 120 --worker-class uvicorn.workers.UvicornWorker` -> blocked on native Windows because Gunicorn imports `fcntl`; verify this runtime command in Linux/Docker or CI.
+- `python -c "import pathlib, yaml; [yaml.safe_load(path.read_text()) for path in pathlib.Path('.github/workflows').glob('*.yml')]; print('WORKFLOW_YAML_OK')"` -> `WORKFLOW_YAML_OK`.
+- Local CI-equivalent checks after Gate 11 workflow repair:
+  - `python -m pip check` -> no broken requirements found.
+  - `python -m compileall -q app backend gpu_platform scripts tests` -> passed.
+  - `python scripts/run_regression_tests.py` -> 6 passed, p95 0.292ms.
+  - `python scripts/check_eval_thresholds.py --artifact runs/agenttrust_regression_eval.jsonl` -> PASS.
+  - `python -m pytest -q --basetemp .pytest_tmp` -> 148 passed, 1 expected xfail.
 
 ## Remaining Before Completion
 

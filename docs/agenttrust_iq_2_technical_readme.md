@@ -59,4 +59,4 @@ Current verified local results:
 
 - Static Vercel walkthrough: deployed and separately verified earlier.
 - FastAPI API: verified locally; public API deployment still needs independent verification.
-- GitHub Actions: workflow configured; remote run must be verified after push.
+- GitHub Actions: production CI workflow configured for dependency install, `pip check`, compile, regression release gate, full pytest suite, Docker image build, and evidence artifact upload. Remote run must be verified after explicit push approval.
