@@ -41,6 +41,6 @@ deployment.
 
 - [Live Command Center](https://ai-agent-reliability-platform-rtcd.vercel.app/agenttrust-iq-command-center.html)
 - JSONL audit evidence
-- Focused demo tests: **2 passed**
-- Pytest collection: **128 tests collected**
+- Full local suite: **148 passed, 1 expected xfail**
+- Pytest collection: **149 tests collected**
 - `git diff --check`: **passed**

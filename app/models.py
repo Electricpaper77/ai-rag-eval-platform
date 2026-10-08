@@ -76,6 +76,7 @@ class EvaluationRequest(BaseModel):
     model_response: str = Field(min_length=1)
     expected_behavior: str = Field(min_length=1)
     risk_category: Literal["hallucination", "pii", "prompt_injection", "citation", "refusal"]
+    retrieved_evidence: list[dict[str, Any]] | None = None
     metadata: dict[str, Any] | None = None
 
 

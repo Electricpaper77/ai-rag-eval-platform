@@ -24,8 +24,8 @@ Teams need a repeatable way to prove that GenAI systems are safe, observable, an
 | Check | Result |
 |---|---:|
 | Focused AgentTrust demo tests | 2 passed |
-| Repository collection | 128 tests collected |
-| Full legacy/shared fixture suite | Not the official judge validation path |
+| Full local suite | 148 passed, 1 expected xfail |
+| Repository collection | 149 tests collected |
 
 ## Security Eval Layer Summary
 
@@ -63,6 +63,14 @@ python -m pytest tests/test_agenttrust_demo.py -q
 python -m pytest --collect-only -q
 git diff --check
 ```
+
+Current AgentTrust IQ 2.0 evidence docs:
+
+- [Architecture diagram](agenttrust_iq_2_architecture.md)
+- [Benchmark report](agenttrust_iq_2_benchmark_report.md)
+- [Test report](agenttrust_iq_2_test_report.md)
+- [90-second demo script](agenttrust_iq_2_demo_script.md)
+- [Technical README](agenttrust_iq_2_technical_readme.md)
 
 ## Resume-Ready Bullets
 

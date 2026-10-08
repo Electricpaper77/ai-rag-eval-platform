@@ -7,7 +7,8 @@ from statistics import mean
 from typing import Any
 
 from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
+from fastapi import HTTPException
+from fastapi.responses import FileResponse, HTMLResponse
 
 router = APIRouter(tags=["dashboard"])
 
@@ -68,6 +69,25 @@ def _iter_jsonl_rows() -> list[dict[str, Any]]:
                     record["_source_file"] = path.name
                     rows.append(record)
     return rows
+
+
+def _evidence_files() -> list[Path]:
+    files: list[Path] = []
+    for folder in (EVALS_DIR, ROUTING_DIR, BENCHMARKS_DIR):
+        if not folder.exists():
+            continue
+        files.extend(path for path in sorted(folder.glob("*.jsonl")) if path.is_file())
+    if RUN_METADATA_PATH.exists() and RUN_METADATA_PATH.is_file():
+        files.append(RUN_METADATA_PATH)
+    return files
+
+
+def _evidence_id(path: Path) -> str:
+    try:
+        relative = path.relative_to(ARTIFACTS_ROOT)
+    except ValueError:
+        relative = path
+    return relative.as_posix()
 
 
 def _load_metadata() -> dict[str, dict[str, Any]]:
@@ -214,6 +234,31 @@ def dashboard_summary() -> dict[str, float]:
     }
 
 
+@router.get("/dashboard/evidence")
+def dashboard_evidence() -> list[dict[str, Any]]:
+    evidence: list[dict[str, Any]] = []
+    for path in _evidence_files():
+        evidence.append(
+            {
+                "id": _evidence_id(path),
+                "filename": path.name,
+                "bytes": path.stat().st_size,
+                "download_url": f"/dashboard/evidence/{_evidence_id(path)}",
+            }
+        )
+    return evidence
+
+
+@router.get("/dashboard/evidence/{evidence_path:path}")
+def download_dashboard_evidence(evidence_path: str) -> FileResponse:
+    allowed = {_evidence_id(path): path for path in _evidence_files()}
+    path = allowed.get(evidence_path)
+    if path is None:
+        raise HTTPException(status_code=404, detail="Evidence artifact not found")
+    media_type = "application/jsonl" if path.suffix == ".jsonl" else "application/json"
+    return FileResponse(path, media_type=media_type, filename=path.name)
+
+
 @router.get("/dashboard/runs")
 def dashboard_runs() -> list[dict[str, Any]]:
     rows = _iter_jsonl_rows()
@@ -292,6 +337,7 @@ def dashboard_leaderboard() -> str:
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard_page() -> str:
     runs = dashboard_runs()
+    evidence = dashboard_evidence()
     table_rows = "\n".join(
         (
             "<tr>"
@@ -304,6 +350,10 @@ def dashboard_page() -> str:
             "</tr>"
         )
         for run in runs
+    )
+    evidence_links = "\n".join(
+        f'<li><a href="{item["download_url"]}">{item["id"]}</a> ({item["bytes"]} bytes)</li>'
+        for item in evidence
     )
 
     return f"""
@@ -319,6 +369,7 @@ def dashboard_page() -> str:
       </head>
       <body>
         <h1>Evaluation Dashboard</h1>
+        <p>All metrics below are computed from downloadable JSONL/JSON evidence artifacts.</p>
         <table>
           <thead>
             <tr>
@@ -334,6 +385,10 @@ def dashboard_page() -> str:
             {table_rows}
           </tbody>
         </table>
+        <h2>Download Evidence</h2>
+        <ul>
+          {evidence_links}
+        </ul>
       </body>
     </html>
     """

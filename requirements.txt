@@ -9,8 +9,6 @@ google-genai>=1.0.0,<2.0.0
 psutil
 chromadb==0.4.24
 prometheus-client==0.20.0
+PyYAML
+httpx
 numpy==1.26.4
-PyYAML==6.0.2
-httpx==0.28.1
-prometheus-client
-prometheus-client

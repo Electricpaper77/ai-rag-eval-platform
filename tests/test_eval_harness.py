@@ -63,9 +63,12 @@ def test_run_eval_harness_case_rows_include_evaluate_metrics(tmp_path: Path) -> 
     assert first_case["pass"] is True
     assert first_case["cost_estimate_label"] == COST_ESTIMATE_LABEL
     assert first_case["cost_per_request_usd"] > 0
+    assert first_case["evaluator_run_id"].startswith("eval-")
     assert set(first_case["metrics"]) == {
         "hallucination_risk",
         "citation_coverage",
+        "citation_precision",
+        "groundedness",
         "refusal_accuracy",
         "pii_leakage",
         "prompt_injection_compliance",

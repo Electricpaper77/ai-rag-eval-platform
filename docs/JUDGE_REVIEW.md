@@ -80,17 +80,14 @@ python -m pytest --collect-only
 git diff --check
 ```
 
-Current discovery proof is documented in the repository. The full legacy suite currently includes
-shared-fixture conflicts and is not the official judge validation path. Portfolio materials
-reference **145+ passing tests**; today's reproducible hackathon proof is the focused two-test
-path above.
+Current discovery proof is documented in the repository. The full local suite now passes with one
+expected xfail, while the focused judge path above remains the fastest reproducible review command.
 
 ## Known Limitations
 
 - The demo uses a static deterministic fixture to make the judge flow repeatable.
 - The focused judge tests validate the AgentTrust workflow and Command Center contract.
-- The full legacy test suite requires fixture and application-entrypoint alignment before it can be
-  represented as fully green.
+- Remote CI and public FastAPI deployment still require independent verification after push/deploy.
 
 ## Judge Takeaway
 

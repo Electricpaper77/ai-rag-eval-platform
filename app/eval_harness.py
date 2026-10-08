@@ -98,6 +98,7 @@ def run_eval_harness(
             case["expected_behavior"],
         )
         estimated_cost = (token_count / 1000.0) * cost_per_1k_tokens_usd
+        latency_seconds = max(payload["latency_ms"] / 1000.0, 1e-9)
         row = {
             "record_type": "case",
             "harness_run_id": harness_run_id,
@@ -109,6 +110,7 @@ def run_eval_harness(
             "metrics": result.response["metrics"],
             "latency_ms": payload["latency_ms"],
             "estimated_tokens": token_count,
+            "tokens_per_second": round(token_count / latency_seconds, 3),
             "cost_per_request_usd": round(estimated_cost, 8),
             "cost_estimate_label": COST_ESTIMATE_LABEL,
             "evaluator_run_id": result.run_id,

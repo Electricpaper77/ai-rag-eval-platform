@@ -1,30 +1,29 @@
+#!/usr/bin/env python3
+"""Run deterministic reliability regression cases and write CI gate evidence."""
+
+from __future__ import annotations
+
 import json
-import requests
+import sys
+from pathlib import Path
 
-DATASET="eval/regression_dataset.jsonl"
-ENDPOINT="http://localhost:8000/evaluate"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
 
-passes=0
-total=0
+from app.eval_harness import run_eval_harness
 
-with open(DATASET) as f:
-    for line in f:
-        item=json.loads(line)
-        prompt=item["prompt"]
-        expected=item["expected"]
 
-        r=requests.post(ENDPOINT,json={"prompt":prompt})
-        answer=r.json().get("answer","")
+def main() -> int:
+    output_path = Path("runs") / "agenttrust_regression_eval.jsonl"
+    summary_path = Path("runs") / "agenttrust_regression_summary.json"
+    summary = run_eval_harness(
+        output_path=output_path,
+        summary_path=summary_path,
+        run_id="agenttrust-regression-ci",
+    )
+    print(json.dumps(summary, sort_keys=True))
+    return 0
 
-        if expected.lower() in answer.lower():
-            passes+=1
 
-        total+=1
-
-pass_rate=passes/total if total else 0
-
-print({
-    "tests": total,
-    "passes": passes,
-    "pass_rate": pass_rate
-})
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -133,7 +133,9 @@ def _route_chat_request(
     model_registry = load_model_registry()
     policy_name = quality_tier if quality_tier in {"fast", "balanced", "high_quality"} else None
 
-    if policy_name and model_registry:
+    canary_active = bool(CANARY_CONTROLLER.status().get("active", False))
+
+    if policy_name and model_registry and not canary_active and not force_shadow and request_id is None:
         candidates = [
             model
             for model in model_registry

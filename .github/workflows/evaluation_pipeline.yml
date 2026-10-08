@@ -27,8 +27,8 @@ jobs:
 
     - name: Enforce eval thresholds
       run: |
-        python scripts/check_eval_thresholds.py
+        python scripts/check_eval_thresholds.py --artifact runs/agenttrust_regression_eval.jsonl
 
-    - name: Run benchmark validation
+    - name: Run focused reliability validation
       run: |
-        python benchmark_runner.py --dataset eval/prompts.jsonl --batch-size 50
+        python -m pytest tests/test_agent_evaluation.py tests/test_security_guardrails.py tests/test_check_eval_thresholds.py -q

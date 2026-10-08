@@ -130,3 +130,21 @@ def test_dashboard_summary_and_runs(tmp_path: Path, monkeypatch) -> None:
     assert html_resp.status_code == 200
     assert "Evaluation Dashboard" in html_resp.text
     assert "run-a" in html_resp.text
+    assert "Download Evidence" in html_resp.text
+    assert "evals/eval1.jsonl" in html_resp.text
+
+    evidence_resp = client.get("/dashboard/evidence")
+    assert evidence_resp.status_code == 200
+    evidence = evidence_resp.json()
+    evidence_ids = {item["id"] for item in evidence}
+    assert "evals/eval1.jsonl" in evidence_ids
+    assert "routing/route1.jsonl" in evidence_ids
+    assert "benchmarks/bench1.jsonl" in evidence_ids
+    assert "run_metadata.json" in evidence_ids
+
+    download_resp = client.get("/dashboard/evidence/evals/eval1.jsonl")
+    assert download_resp.status_code == 200
+    assert "run-a" in download_resp.text
+
+    missing_resp = client.get("/dashboard/evidence/../README.md")
+    assert missing_resp.status_code == 404

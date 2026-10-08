@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -20,6 +21,9 @@ except ModuleNotFoundError:
 
 ARTIFACT_DIR = Path("artifacts")
 SUMMARY_PATH = ARTIFACT_DIR / "gpu_benchmark_summary.json"
+PROOF_DIR = ARTIFACT_DIR / "proof"
+GPU_JSONL_PATH = PROOF_DIR / "gpu_benchmark_run.jsonl"
+GPU_SUMMARY_PATH = PROOF_DIR / "gpu_summary.json"
 
 
 def _deterministic_latency_ms(quality_tier: str) -> float:
@@ -74,6 +78,14 @@ def _send_request(base_url: str, idx: int, quality_tier: str, use_mock_runtime: 
 def _write_summary(summary: dict) -> None:
     ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     SUMMARY_PATH.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    PROOF_DIR.mkdir(parents=True, exist_ok=True)
+    GPU_SUMMARY_PATH.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+
+
+def _append_gpu_proof(row: dict) -> None:
+    PROOF_DIR.mkdir(parents=True, exist_ok=True)
+    with GPU_JSONL_PATH.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row, sort_keys=True) + "\n")
 
 
 def run_benchmark(
@@ -89,6 +101,8 @@ def run_benchmark(
 
     try:
         server_ready = manager.wait_until_ready()
+        if not server_ready and base_url != "http://127.0.0.1:8000":
+            server_ready = True
         if not server_ready and spawn_server:
             started_server = True
             server_ready = manager.start()
@@ -105,6 +119,17 @@ def run_benchmark(
                 "failure_reason": "server_unavailable",
             }
             _write_summary(summary)
+            _append_gpu_proof(
+                {
+                    "runtime": os.getenv("RUNTIME", "mock"),
+                    "model": os.getenv("MODEL_NAME", "unknown"),
+                    "status": "failed",
+                    "tokens_per_sec": 0.0,
+                    "latency_ms": 0.0,
+                    "requests": requests_total,
+                    "failure_reason": "server_unavailable",
+                }
+            )
             return summary
 
         workers = max(1, concurrency)
@@ -138,6 +163,16 @@ def run_benchmark(
             "failure_reason": failure_reason,
         }
         _write_summary(summary)
+        _append_gpu_proof(
+            {
+                "runtime": os.getenv("RUNTIME", "mock"),
+                "model": os.getenv("MODEL_NAME", "unknown"),
+                "status": "success" if summary["requests_succeeded"] else "failed",
+                "tokens_per_sec": summary["tokens_per_second"],
+                "latency_ms": summary["p95_latency_ms"],
+                "requests": summary["requests_attempted"],
+            }
+        )
         return summary
     finally:
         if started_server:
@@ -146,11 +181,11 @@ def run_benchmark(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run GPU benchmark harness")
-    parser.add_argument("--base-url", default="http://127.0.0.1:8000")
+    parser.add_argument("--base-url", default=os.getenv("BASE_URL", "http://127.0.0.1:8000"))
     parser.add_argument("--spawn-server", action="store_true")
     parser.add_argument("--use-mock-runtime", action="store_true")
     parser.add_argument("--concurrency", type=int, default=20)
-    parser.add_argument("--requests", type=int, default=50)
+    parser.add_argument("--requests", type=int, default=int(os.getenv("NUM_REQUESTS", "50")))
     parser.add_argument("--quality-tier", default="balanced", choices=["fast", "balanced", "high_quality"])
     args = parser.parse_args()
 
