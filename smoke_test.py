@@ -1,7 +1,7 @@
 import requests
 
 URL = "https://ai-agent-reliability-platform-rtcd.vercel.app/agenttrust-iq-command-center.html"
-EXPECTED_MARKERS = ("AgentTrust IQ", "Agent Readiness Score")
+EXPECTED_MARKERS = ("AgentTrust IQ", "Controlled Eval Pass Rate")
 
 
 def run_smoke_test() -> None:

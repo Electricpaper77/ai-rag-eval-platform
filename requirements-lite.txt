@@ -6,3 +6,4 @@ requests
 prometheus-client
 PyYAML
 httpx
+pytest>=8,<10
