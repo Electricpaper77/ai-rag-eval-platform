@@ -47,7 +47,16 @@ def _send_request(base_url: str, idx: int, quality_tier: str, use_mock_runtime: 
     if use_mock_runtime:
         latency_ms = _deterministic_latency_ms(quality_tier)
         time.sleep(latency_ms / 1000.0)
-        return {"ok": True, "latency_ms": latency_ms, "tokens": 40, "failure": ""}
+        prompt_tokens = 12
+        completion_tokens = 28
+        return {
+            "ok": True,
+            "latency_ms": latency_ms,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens,
+            "failure": "",
+        }
 
     payload = {
         "messages": [{"role": "user", "content": f"ping {idx}"}],
@@ -59,18 +68,25 @@ def _send_request(base_url: str, idx: int, quality_tier: str, use_mock_runtime: 
         response = requests.post(f"{base_url}/v1/chat/completions", json=payload, timeout=30)
         elapsed_ms = (time.perf_counter() - started) * 1000.0
         body = response.json() if response.headers.get("content-type", "").startswith("application/json") else {}
-        total_tokens = int(body.get("usage", {}).get("total_tokens", 0))
+        usage = body.get("usage", {})
+        prompt_tokens = int(usage.get("prompt_tokens", 0) or 0)
+        completion_tokens = int(usage.get("completion_tokens", 0) or 0)
+        total_tokens = int(usage.get("total_tokens", prompt_tokens + completion_tokens) or 0)
         return {
             "ok": response.status_code == 200,
             "latency_ms": elapsed_ms,
-            "tokens": total_tokens,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens,
             "failure": "" if response.status_code == 200 else f"http_{response.status_code}",
         }
     except requests.RequestException as exc:
         return {
             "ok": False,
             "latency_ms": (time.perf_counter() - started) * 1000.0,
-            "tokens": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
             "failure": str(exc),
         }
 
@@ -127,6 +143,10 @@ def run_benchmark(
                     "tokens_per_sec": 0.0,
                     "latency_ms": 0.0,
                     "requests": requests_total,
+                    "requests_per_sec": 0.0,
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0,
                     "failure_reason": "server_unavailable",
                 }
             )
@@ -146,7 +166,10 @@ def run_benchmark(
 
         successes = [r for r in results if r["ok"]]
         latencies = [r["latency_ms"] for r in successes]
-        total_tokens = sum(int(r["tokens"]) for r in successes)
+        prompt_tokens = sum(int(r["prompt_tokens"]) for r in successes)
+        completion_tokens = sum(int(r["completion_tokens"]) for r in successes)
+        total_tokens = sum(int(r["total_tokens"]) for r in successes)
+        requests_per_sec = len(successes) / elapsed_total_s
         failure_reason = ""
         if not successes:
             failures = [r.get("failure", "") for r in results if not r["ok"]]
@@ -158,6 +181,10 @@ def run_benchmark(
             "p50_latency_ms": round(_percentile(latencies, 50), 3),
             "p95_latency_ms": round(_percentile(latencies, 95), 3),
             "tokens_per_second": round(total_tokens / elapsed_total_s, 3),
+            "requests_per_second": round(requests_per_sec, 3),
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens,
             "requests_attempted": requests_total,
             "requests_succeeded": len(successes),
             "failure_reason": failure_reason,
@@ -171,6 +198,10 @@ def run_benchmark(
                 "tokens_per_sec": summary["tokens_per_second"],
                 "latency_ms": summary["p95_latency_ms"],
                 "requests": summary["requests_attempted"],
+                "requests_per_sec": summary["requests_per_second"],
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": total_tokens,
             }
         )
         return summary
