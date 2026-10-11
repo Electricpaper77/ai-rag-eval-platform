@@ -3,37 +3,101 @@ param(
   [string]$BaseUrl,
 
   [Parameter(Mandatory = $true)]
-  [string]$ApiKey
+  [string]$ApiKey,
+
+  [string]$IdentityToken = $env:CLOUD_RUN_IDENTITY_TOKEN
 )
 
 $ErrorActionPreference = "Stop"
 $base = $BaseUrl.TrimEnd("/")
 
+function Get-StatusCode {
+  param(
+    [Parameter(Mandatory = $true)]
+    [scriptblock]$Request
+  )
+
+  try {
+    $response = & $Request
+    return [int]$response.StatusCode
+  } catch {
+    if ($_.Exception.Response) {
+      return [int]$_.Exception.Response.StatusCode
+    }
+    throw
+  }
+}
+
+function Assert-StatusCode {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Name,
+
+    [Parameter(Mandatory = $true)]
+    [int]$Expected,
+
+    [Parameter(Mandatory = $true)]
+    [scriptblock]$Request
+  )
+
+  $actual = Get-StatusCode -Request $Request
+  if ($actual -ne $Expected) {
+    throw "Expected $Name HTTP $Expected, got $actual"
+  }
+  Write-Host "$($Name)_status=$actual"
+}
+
+if (-not $IdentityToken) {
+  throw "Cloud Run IAM identity token is required. Set CLOUD_RUN_IDENTITY_TOKEN or pass -IdentityToken. Do not print the token."
+}
+
+$iamHeaders = @{ "Authorization" = "Bearer $IdentityToken" }
+$validHeaders = @{
+  "Authorization" = "Bearer $IdentityToken"
+  "X-AgentTrust-API-Key" = $ApiKey
+}
+$invalidHeaders = @{
+  "Authorization" = "Bearer $IdentityToken"
+  "X-AgentTrust-API-Key" = "invalid-api-key"
+}
+
 Write-Host "BASE=$base"
 
-$health = Invoke-WebRequest -UseBasicParsing "$base/health"
-if ($health.StatusCode -ne 200) {
-  throw "Expected /health HTTP 200, got $($health.StatusCode)"
+Assert-StatusCode -Name "iam_health" -Expected 200 -Request {
+  Invoke-WebRequest -UseBasicParsing "$base/health" -Headers $iamHeaders
 }
-Write-Host "health_status=$($health.StatusCode)"
 
-$unauthenticatedMetricsStatus = 0
-try {
-  Invoke-WebRequest -UseBasicParsing "$base/metrics" | Out-Null
-} catch {
-  $unauthenticatedMetricsStatus = [int]$_.Exception.Response.StatusCode
+$unauthenticatedHealthStatus = Get-StatusCode -Request {
+  Invoke-WebRequest -UseBasicParsing "$base/health"
 }
-if ($unauthenticatedMetricsStatus -ne 401) {
-  throw "Expected unauthenticated /metrics HTTP 401, got $unauthenticatedMetricsStatus"
+if ($unauthenticatedHealthStatus -ne 403) {
+  throw "Expected unauthenticated Cloud Run /health HTTP 403, got $unauthenticatedHealthStatus"
 }
-Write-Host "unauthenticated_metrics_status=$unauthenticatedMetricsStatus"
+Write-Host "unauthenticated_cloud_run_health_status=403"
 
-$headers = @{ "X-AgentTrust-API-Key" = $ApiKey }
-$metrics = Invoke-WebRequest -UseBasicParsing "$base/metrics" -Headers $headers
-if ($metrics.StatusCode -ne 200) {
-  throw "Expected authenticated /metrics HTTP 200, got $($metrics.StatusCode)"
+Assert-StatusCode -Name "unauthenticated_cloud_run_options_preflight" -Expected 403 -Request {
+  Invoke-WebRequest -UseBasicParsing "$base/evaluate" -Method Options
 }
-Write-Host "authenticated_metrics_status=$($metrics.StatusCode)"
+
+Assert-StatusCode -Name "iam_authorized_missing_api_key_metrics" -Expected 401 -Request {
+  Invoke-WebRequest -UseBasicParsing "$base/metrics" -Headers $iamHeaders
+}
+
+Assert-StatusCode -Name "iam_authorized_invalid_api_key_metrics" -Expected 401 -Request {
+  Invoke-WebRequest -UseBasicParsing "$base/metrics" -Headers $invalidHeaders
+}
+
+Assert-StatusCode -Name "iam_authorized_valid_api_key_metrics" -Expected 200 -Request {
+  Invoke-WebRequest -UseBasicParsing "$base/metrics" -Headers $validHeaders
+}
+
+$iamOptionsStatus = Get-StatusCode -Request {
+  Invoke-WebRequest -UseBasicParsing "$base/evaluate" -Method Options -Headers $iamHeaders
+}
+if ($iamOptionsStatus -eq 401) {
+  throw "IAM-authorized OPTIONS was blocked by application API-key auth; expected CORS policy handling instead"
+}
+Write-Host "iam_authorized_options_preflight_status=$iamOptionsStatus"
 
 $payload = @{
   prompt = "Summarize the deployment evidence."
@@ -51,7 +115,7 @@ $payload = @{
 $evaluation = Invoke-RestMethod `
   -Method Post `
   -Uri "$base/evaluate" `
-  -Headers $headers `
+  -Headers $validHeaders `
   -ContentType "application/json" `
   -Body $payload
 

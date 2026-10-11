@@ -59,16 +59,10 @@ Authenticated routes:
 - `/benchmark/*`
 - Any route that reads artifacts, writes evaluation records, returns traces, or starts control-plane behavior.
 
-The application enforces this with `AGENTTRUST_REQUIRE_API_KEY=true`. Requests must include either:
+The application enforces this with `AGENTTRUST_REQUIRE_API_KEY=true`. For Cloud Run deployments, send the application key separately from the Cloud Run IAM bearer token:
 
 ```bash
 X-AgentTrust-API-Key: $AGENTTRUST_API_KEY
-```
-
-or:
-
-```bash
-Authorization: Bearer $AGENTTRUST_API_KEY
 ```
 
 ## Cloud Run Commands
@@ -152,9 +146,22 @@ Do not grant `allUsers` the Cloud Run `roles/run.invoker` role without a separat
 
 ```bash
 export BASE_URL="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')"
-export IDENTITY_TOKEN="$(gcloud auth print-identity-token)"
+export CLOUD_RUN_IDENTITY_TOKEN="$(gcloud auth print-identity-token)"
+export IDENTITY_TOKEN="$CLOUD_RUN_IDENTITY_TOKEN"
+export AGENTTRUST_API_KEY="$(gcloud secrets versions access latest --secret=agenttrust-api-key)"
+pwsh ./scripts/smoke_gate13_cloudrun.ps1 -BaseUrl "$BASE_URL" -ApiKey "$AGENTTRUST_API_KEY"
+```
+
+The smoke script sends the Cloud Run IAM identity token as `Authorization: Bearer ...` and sends the application key separately as `X-AgentTrust-API-Key`. It does not print either credential.
+
+Manual equivalent checks:
+
+```bash
 curl -fsS -H "Authorization: Bearer $IDENTITY_TOKEN" "$BASE_URL/health"
+curl -i "$BASE_URL/health"
+curl -i -X OPTIONS "$BASE_URL/evaluate"
 curl -i -H "Authorization: Bearer $IDENTITY_TOKEN" "$BASE_URL/metrics"
+curl -i -H "Authorization: Bearer $IDENTITY_TOKEN" -H "X-AgentTrust-API-Key: invalid-api-key" "$BASE_URL/metrics"
 curl -fsS -H "Authorization: Bearer $IDENTITY_TOKEN" -H "X-AgentTrust-API-Key: $AGENTTRUST_API_KEY" "$BASE_URL/metrics" | head
 curl -fsS -H "Authorization: Bearer $IDENTITY_TOKEN" -H "X-AgentTrust-API-Key: $AGENTTRUST_API_KEY" \
   -H "Content-Type: application/json" \
@@ -165,9 +172,11 @@ curl -fsS -H "Authorization: Bearer $IDENTITY_TOKEN" -H "X-AgentTrust-API-Key: $
 Expected:
 
 - `/health` returns HTTP 200 for a caller authorized by Cloud Run IAM. If an API Gateway or load balancer exposes `/health`, that public frontend returns HTTP 200 without the application API key.
-- `/metrics` returns HTTP 401 when the caller is authorized by Cloud Run IAM but omits the application API key.
+- Unauthenticated direct Cloud Run requests return HTTP 403 at the Cloud Run IAM layer.
+- `/metrics` returns HTTP 401 when the caller is authorized by Cloud Run IAM but omits or sends an invalid application API key.
 - Authenticated `/metrics` returns Prometheus text.
 - Authenticated `/evaluate` returns HTTP 200 and an evaluation result.
+- Unauthenticated `OPTIONS` requests to direct Cloud Run return HTTP 403. IAM-authorized `OPTIONS` requests are allowed past application API-key middleware so the deployed CORS/routing policy can answer them.
 
 ## Rollback
 
