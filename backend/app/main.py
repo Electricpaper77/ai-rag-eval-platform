@@ -1,9 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from typing import Any, Dict, List
 import os
 import json
 import glob
+import secrets
 from pathlib import Path
 import time
 
@@ -186,6 +187,40 @@ app.include_router(benchmark_router)
 app.include_router(gpu_control_plane_router)
 
 
+PUBLIC_PRODUCTION_PATHS = {"/health"}
+
+
+def _api_key_auth_enabled() -> bool:
+    return os.getenv("AGENTTRUST_REQUIRE_API_KEY", "").strip().lower() in {"1", "true", "yes"}
+
+
+def _request_has_valid_api_key(headers: Dict[str, str]) -> bool:
+    expected = os.getenv("AGENTTRUST_API_KEY", "").strip()
+    if not expected:
+        return False
+    provided = headers.get("x-agenttrust-api-key", "").strip()
+    authorization = headers.get("authorization", "").strip()
+    if authorization.lower().startswith("bearer "):
+        provided = provided or authorization[7:].strip()
+    return secrets.compare_digest(provided, expected)
+
+
+def _should_require_api_key(method: str, path: str, headers: Dict[str, str]) -> bool:
+    return (
+        _api_key_auth_enabled()
+        and method.upper() != "OPTIONS"
+        and path not in PUBLIC_PRODUCTION_PATHS
+        and not _request_has_valid_api_key(headers)
+    )
+
+
+@app.middleware("http")
+async def require_api_key_for_production(request: Request, call_next):
+    if _should_require_api_key(request.method, request.url.path, dict(request.headers)):
+        return JSONResponse({"detail": "authentication required"}, status_code=401)
+    return await call_next(request)
+
+
 # ----------------------------
 # Request models
 # ----------------------------
@@ -279,7 +314,7 @@ def _append_graphrag_eval_log(payload: Dict[str, Any]) -> str:
     return str(path)
 # Prometheus metrics endpoint
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
-from starlette.responses import Response, StreamingResponse
+from starlette.responses import JSONResponse, Response, StreamingResponse
 
 
 @app.get("/metrics")
