@@ -51,7 +51,8 @@ jobs:
           mkdir -p gate12_container_artifacts
           docker ps -a > gate12_container_artifacts/docker_ps.txt || true
           docker logs agenttrust-iq-smoke > gate12_container_artifacts/container_stdout.log 2> gate12_container_artifacts/container_stderr.log || true
-          docker inspect agenttrust-iq-smoke > gate12_container_artifacts/container_inspect.json || true
+          docker inspect agenttrust-iq-smoke \
+            --format '{{json .State}}' > gate12_container_artifacts/container_state.json || true
 
       - name: Stop container
         if: always()
