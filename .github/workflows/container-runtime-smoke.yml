@@ -1,0 +1,66 @@
+name: AgentTrust Container Runtime Smoke
+
+on:
+  push:
+    branches:
+      - main
+      - gate12-container-runtime-smoke
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  container-runtime-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build Docker image
+        run: docker build -t agenttrust-iq-container-smoke:${{ github.sha }} .
+
+      - name: Start Docker container
+        run: |
+          mkdir -p gate12_container_artifacts/artifacts
+          docker run -d \
+            --name agenttrust-iq-smoke \
+            -p 8080:8080 \
+            -e PORT=8080 \
+            -e INFERENCE_BACKEND=mock \
+            -e SECRET_CANARY=agenttrust-secret-canary-do-not-leak \
+            -v "$PWD/gate12_container_artifacts/artifacts:/app/artifacts" \
+            agenttrust-iq-container-smoke:${{ github.sha }}
+
+      - name: Validate container runtime API
+        run: |
+          python scripts/container_runtime_smoke.py \
+            --base-url http://127.0.0.1:8080 \
+            --artifact-dir gate12_container_artifacts/artifacts
+
+      - name: Capture container diagnostics
+        if: always()
+        run: |
+          mkdir -p gate12_container_artifacts
+          docker ps -a > gate12_container_artifacts/docker_ps.txt || true
+          docker logs agenttrust-iq-smoke > gate12_container_artifacts/container_stdout.log 2> gate12_container_artifacts/container_stderr.log || true
+          docker inspect agenttrust-iq-smoke > gate12_container_artifacts/container_inspect.json || true
+
+      - name: Stop container
+        if: always()
+        run: docker rm -f agenttrust-iq-smoke || true
+
+      - name: Upload container runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agenttrust-container-runtime-smoke-${{ github.run_id }}
+          if-no-files-found: error
+          path: gate12_container_artifacts/
