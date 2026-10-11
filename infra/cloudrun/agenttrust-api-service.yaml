@@ -1,0 +1,54 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: agenttrust-iq-api
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/launch-stage: GA
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "2"
+        run.googleapis.com/cpu-throttling: "true"
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      containerConcurrency: 10
+      serviceAccountName: agenttrust-iq-api@PROJECT_ID.iam.gserviceaccount.com
+      timeoutSeconds: 120
+      containers:
+        - image: us-central1-docker.pkg.dev/PROJECT_ID/rag-eval-repo/agenttrust-iq-api:IMAGE_TAG
+          ports:
+            - name: http1
+              containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: INFERENCE_BACKEND
+              value: "mock"
+            - name: AGENTTRUST_REQUIRE_API_KEY
+              value: "true"
+            - name: AGENTTRUST_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: agenttrust-api-key
+                  key: latest
+            - name: ARTIFACT_DIR
+              value: "/tmp/agenttrust-artifacts"
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          startupProbe:
+            httpGet:
+              path: /health
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /health
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
