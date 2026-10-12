@@ -124,3 +124,10 @@ def test_recruiter_screenshot_assets_exist_for_vercel_rewrite() -> None:
         "prompt_injection_defense.png",
     ):
         assert (REPO_ROOT / "assets" / "proof" / filename).is_file()
+
+
+def test_recruiter_screenshot_links_use_public_source_urls() -> None:
+    html = (REPO_ROOT / 'frontend' / 'index.html').read_text(encoding='utf-8')
+    for filename in ('pytest_regression_pass.png', 'jsonl_audit_logs.png', 'eval_metrics_dashboard.png', 'rag_citations_demo.png', 'pii_redaction_guardrail.png', 'prompt_injection_defense.png'):
+        assert f'https://raw.githubusercontent.com/Electricpaper77/ai-rag-eval-platform/main/assets/proof/{filename}' in html
+        assert f'href="./assets/proof/{filename}"' not in html
