@@ -73,6 +73,7 @@ def test_vercel_config_is_static_frontend_only() -> None:
 
     assert "/frontend/index.html" in destinations
     assert "/frontend/agenttrust-iq-command-center.html" in destinations
+    assert "/assets/proof/:path*" in destinations
     assert not any(path.startswith("/docs") for path in destinations)
     assert all(not dest.startswith("/docs") for dest in destinations)
     assert all("backend.app.main" not in destination for destination in destinations)
@@ -111,3 +112,15 @@ def test_vercel_deployment_excludes_internal_docs() -> None:
     assert "docs/" in ignored
     vercel = json.loads((REPO_ROOT / "vercel.json").read_text(encoding="utf-8"))
     assert not any("/docs" in r["source"] or "/docs" in r["destination"] for r in vercel["rewrites"])
+
+
+def test_recruiter_screenshot_assets_exist_for_vercel_rewrite() -> None:
+    for filename in (
+        "pytest_regression_pass.png",
+        "jsonl_audit_logs.png",
+        "eval_metrics_dashboard.png",
+        "rag_citations_demo.png",
+        "pii_redaction_guardrail.png",
+        "prompt_injection_defense.png",
+    ):
+        assert (REPO_ROOT / "assets" / "proof" / filename).is_file()

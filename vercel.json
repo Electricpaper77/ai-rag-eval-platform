@@ -14,6 +14,10 @@
       "destination": "/frontend/agenttrust-iq-command-center.html"
     },
     {
+      "source": "/assets/proof/:path*",
+      "destination": "/assets/proof/:path*"
+    },
+    {
       "source": "/styles.css",
       "destination": "/frontend/styles.css"
     },
