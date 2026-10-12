@@ -73,7 +73,8 @@ def test_vercel_config_is_static_frontend_only() -> None:
 
     assert "/frontend/index.html" in destinations
     assert "/frontend/agenttrust-iq-command-center.html" in destinations
-    assert "/docs/:path*" in destinations
+    assert not any(path.startswith("/docs") for path in destinations)
+    assert all(not dest.startswith("/docs") for dest in destinations)
     assert all("backend.app.main" not in destination for destination in destinations)
 
 
@@ -100,6 +101,13 @@ def test_zero_cost_demo_doc_preserves_evidence_scope() -> None:
 def test_static_frontend_links_zero_cost_demo_and_ci_evidence() -> None:
     html = (REPO_ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
 
-    assert "./docs/deployment/gate14-zero-cost-recruiter-demo.md" in html
+    assert "https://github.com/Electricpaper77/ai-rag-eval-platform/blob/gate14-zero-cost-demo/docs/deployment/gate14-zero-cost-recruiter-demo.md" in html
     assert "https://github.com/Electricpaper77/ai-rag-eval-platform/actions/runs/38174175889" in html
     assert "not connected to a backend API" in html
+
+
+def test_vercel_deployment_excludes_internal_docs() -> None:
+    ignored = (REPO_ROOT / ".vercelignore").read_text(encoding="utf-8").splitlines()
+    assert "docs/" in ignored
+    vercel = json.loads((REPO_ROOT / "vercel.json").read_text(encoding="utf-8"))
+    assert not any("/docs" in r["source"] or "/docs" in r["destination"] for r in vercel["rewrites"])
