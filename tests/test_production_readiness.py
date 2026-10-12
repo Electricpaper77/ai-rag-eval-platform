@@ -73,4 +73,33 @@ def test_vercel_config_is_static_frontend_only() -> None:
 
     assert "/frontend/index.html" in destinations
     assert "/frontend/agenttrust-iq-command-center.html" in destinations
+    assert "/docs/:path*" in destinations
     assert all("backend.app.main" not in destination for destination in destinations)
+
+
+def test_streamlit_api_base_is_configurable() -> None:
+    source = (REPO_ROOT / "frontend" / "streamlit_app.py").read_text(encoding="utf-8")
+
+    assert 'os.getenv("AGENTTRUST_API_BASE"' in source
+    assert 'requests.post(f"{API_BASE}/query"' in source
+
+
+def test_zero_cost_demo_doc_preserves_evidence_scope() -> None:
+    doc = (REPO_ROOT / "docs" / "deployment" / "gate14-zero-cost-recruiter-demo.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "No Google Cloud billing" in doc
+    assert "not connected to a backend API" in doc
+    assert "not customer-production telemetry" in doc
+    assert "not real GPU throughput" in doc
+    assert "212 passed, 1 xfailed" in doc
+    assert "https://github.com/Electricpaper77/ai-rag-eval-platform/actions/runs/38174175889" in doc
+
+
+def test_static_frontend_links_zero_cost_demo_and_ci_evidence() -> None:
+    html = (REPO_ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
+
+    assert "./docs/deployment/gate14-zero-cost-recruiter-demo.md" in html
+    assert "https://github.com/Electricpaper77/ai-rag-eval-platform/actions/runs/38174175889" in html
+    assert "not connected to a backend API" in html
