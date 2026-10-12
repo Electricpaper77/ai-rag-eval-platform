@@ -1,0 +1,2 @@
+# Never package repository deployment and operational documentation into public Vercel artifacts.
+docs/
