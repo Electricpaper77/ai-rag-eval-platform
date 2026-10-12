@@ -20,10 +20,6 @@
     {
       "source": "/assets/:path*",
       "destination": "/frontend/assets/:path*"
-    },
-    {
-      "source": "/docs/:path*",
-      "destination": "/docs/:path*"
     }
   ]
 }
