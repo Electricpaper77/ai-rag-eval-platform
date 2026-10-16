@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agenttrust-gate1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: agenttrust-dev
+  namespace: agenttrust-gate1
+  labels: {app: agenttrust-dev}
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  securityContext: {runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, seccompProfile: {type: RuntimeDefault}}
+  containers:
+    - name: dev
+      image: agenttrust-iq:ci
+      imagePullPolicy: Never
+      command: ["sleep", "30"]
+      securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+      resources: {requests: {cpu: 100m, memory: 256Mi}, limits: {cpu: 500m, memory: 512Mi}}
+      volumeMounts: [{name: tmp, mountPath: /tmp}]
+  volumes: [{name: tmp, emptyDir: {}}]
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: agenttrust-ci
+  namespace: agenttrust-gate1
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 60
+  template:
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: ci
+          image: agenttrust-iq:ci
+          imagePullPolicy: Never
+          command: ["python", "-m", "pytest", "-q", "tests/test_workload_platform.py"]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 250m, memory: 512Mi}, limits: {cpu: 1, memory: 1Gi}}
+          volumeMounts: [{name: tmp, mountPath: /tmp}]
+      volumes: [{name: tmp, emptyDir: {}}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agenttrust-inference
+  namespace: agenttrust-gate1
+  labels: {app: agenttrust-inference}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: agenttrust-inference}}
+  template:
+    metadata: {labels: {app: agenttrust-inference}}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: inference
+          image: agenttrust-iq:ci
+          imagePullPolicy: Never
+          command: ["python", "-m", "http.server", "8080"]
+          ports: [{containerPort: 8080}]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 250m, memory: 512Mi}, limits: {cpu: 1, memory: 1Gi}}
+          readinessProbe: {httpGet: {path: /, port: 8080}, initialDelaySeconds: 2, periodSeconds: 2}
+          livenessProbe: {httpGet: {path: /, port: 8080}, initialDelaySeconds: 5, periodSeconds: 5}
+          volumeMounts: [{name: tmp, mountPath: /tmp}]
+      volumes: [{name: tmp, emptyDir: {}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: agenttrust-inference, namespace: agenttrust-gate1}
+spec:
+  selector: {app: agenttrust-inference}
+  ports: [{port: 8080, targetPort: 8080}]
+---
+apiVersion: batch/v1
+kind: Job
+metadata: {name: agenttrust-benchmark, namespace: agenttrust-gate1}
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 60
+  template:
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: benchmark
+          image: agenttrust-iq:ci
+          imagePullPolicy: Never
+          command: ["python", "-c", "from backend.app.eval.regression import run_regression_eval; r=run_regression_eval(lambda q,k: {'answer': q, 'citations': ['local'], 'usage': {'total_tokens': 1}}, run_id='k8s-gate1'); print(r['overall'])"]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 250m, memory: 512Mi}, limits: {cpu: 1, memory: 1Gi}}
+          volumeMounts: [{name: tmp, mountPath: /tmp}]
+      volumes: [{name: tmp, emptyDir: {}}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: agenttrust-default-deny, namespace: agenttrust-gate1}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: agenttrust-gate1}}}]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}}]
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: agenttrust-gate1}}}]

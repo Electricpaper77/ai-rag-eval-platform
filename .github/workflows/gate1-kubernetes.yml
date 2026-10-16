@@ -1,0 +1,92 @@
+name: Gate 1 Kubernetes Runtime
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate1-k8s:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python dependencies
+        uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - run: |
+          python -m pip install --upgrade pip
+          python -m pip install --no-cache-dir -r requirements-lite.txt
+
+      - name: Install pinned kind release
+        shell: bash
+        run: |
+          set -euo pipefail
+          KIND_VERSION=v0.27.0
+          curl -fsSLo kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+          curl -fsSLo kind.sha256 "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64.sha256"
+          sha256sum -c kind.sha256
+          install -m 0755 kind "$HOME/.local/bin/kind"
+          kind version
+
+      - name: Create isolated cluster
+        run: |
+          kind create cluster --name agenttrust-amd-g1 --wait 120s
+          kubectl cluster-info
+          kubectl get nodes -o wide
+
+      - name: Build and load AgentTrust IQ image
+        run: |
+          docker build -t agenttrust-iq:ci .
+          kind load docker-image agenttrust-iq:ci --name agenttrust-amd-g1
+
+      - name: Deploy Gate 1 workloads
+        run: kubectl apply -f k8s/gate1-ci.yaml
+
+      - name: Verify interactive pod
+        run: |
+          kubectl wait -n agenttrust-gate1 --for=condition=Ready pod/agenttrust-dev --timeout=120s
+          kubectl get pod -n agenttrust-gate1 agenttrust-dev -o yaml
+
+      - name: Verify CI and benchmark Jobs
+        run: |
+          kubectl wait -n agenttrust-gate1 --for=condition=complete job/agenttrust-ci --timeout=300s
+          kubectl wait -n agenttrust-gate1 --for=condition=complete job/agenttrust-benchmark --timeout=300s
+          kubectl logs -n agenttrust-gate1 job/agenttrust-ci
+          kubectl logs -n agenttrust-gate1 job/agenttrust-benchmark
+
+      - name: Verify inference service and limits
+        run: |
+          kubectl rollout status -n agenttrust-gate1 deployment/agenttrust-inference --timeout=180s
+          kubectl run -n agenttrust-gate1 curl --rm -i --restart=Never --image=curlimages/curl:8.10.1 --image-pull-policy=IfNotPresent -- curl -fsS http://agenttrust-inference:8080/
+          kubectl get deployment,pod,service,networkpolicy -n agenttrust-gate1 -o yaml
+
+      - name: Controlled failure and recovery
+        run: |
+          kubectl create job -n agenttrust-gate1 agenttrust-recovery --image=agenttrust-iq:ci --image-pull-policy=Never -- python -c 'raise SystemExit(1)'
+          if kubectl wait -n agenttrust-gate1 --for=condition=failed job/agenttrust-recovery --timeout=120s; then true; else kubectl describe job -n agenttrust-gate1 agenttrust-recovery; exit 1; fi
+          kubectl create job -n agenttrust-gate1 agenttrust-recovery-success --image=agenttrust-iq:ci --image-pull-policy=Never -- python -c 'print("recovered")'
+          kubectl wait -n agenttrust-gate1 --for=condition=complete job/agenttrust-recovery-success --timeout=120s
+
+      - name: Run regression safeguards
+        run: |
+          python -m pytest -q tests/test_workload_platform.py tests/test_platform_jobs.py
+
+      - name: Collect evidence on failure
+        if: always()
+        run: |
+          mkdir -p artifacts/gate1-k8s
+          kubectl get all,networkpolicy -n agenttrust-gate1 -o yaml > artifacts/gate1-k8s/resources.yaml || true
+          kubectl get events -n agenttrust-gate1 --sort-by=.lastTimestamp > artifacts/gate1-k8s/events.txt || true
+          kubectl logs -n agenttrust-gate1 job/agenttrust-ci > artifacts/gate1-k8s/ci.log 2>&1 || true
+          kubectl logs -n agenttrust-gate1 job/agenttrust-benchmark > artifacts/gate1-k8s/benchmark.log 2>&1 || true
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate1-kubernetes-evidence
+          path: artifacts/gate1-k8s
+
