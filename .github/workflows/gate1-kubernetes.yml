@@ -45,11 +45,11 @@ jobs:
         run: |
           set -euo pipefail
           KIND_VERSION=v0.27.0
-          curl -fsSLo kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+          curl -fsSLo kind-linux-amd64 "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
           curl -fsSLo kind.sha256sum "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64.sha256sum"
           sha256sum -c kind.sha256sum
           mkdir -p "$HOME/.local/bin"
-          install -m 0755 kind "$HOME/.local/bin/kind"
+          install -m 0755 kind-linux-amd64 "$HOME/.local/bin/kind"
           export PATH="$HOME/.local/bin:$PATH"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           command -v kind
