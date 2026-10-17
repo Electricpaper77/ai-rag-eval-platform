@@ -28,9 +28,11 @@ jobs:
           set -euo pipefail
           KIND_VERSION=v0.27.0
           curl -fsSLo kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
-          curl -fsSLo kind.sha256 "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64.sha256"
-          sha256sum -c kind.sha256
+          curl -fsSLo kind.sha256sum "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64.sha256sum"
+          sha256sum -c kind.sha256sum
+          mkdir -p "$HOME/.local/bin"
           install -m 0755 kind "$HOME/.local/bin/kind"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           kind version
 
       - name: Create isolated cluster
