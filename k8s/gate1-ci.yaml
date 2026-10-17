@@ -95,7 +95,7 @@ spec:
         - name: benchmark
           image: agenttrust-iq:ci
           imagePullPolicy: Never
-          command: ["python", "-c", "from backend.app.eval.regression import run_regression_eval; r=run_regression_eval(lambda q,k: {'answer': q, 'citations': ['local'], 'usage': {'total_tokens': 1}}, run_id='k8s-gate1'); print(r['overall'])"]
+          command: ["python", "-c", "from pathlib import Path; from backend.app.eval.regression import run_regression_eval; r=run_regression_eval(lambda q,k: {'answer': q, 'citations': ['local'], 'usage': {'total_tokens': 1}}, run_id='k8s-gate1', artifact_dir=Path('/tmp/eval_runs')); print(r['overall']); print(sorted(str(p) for p in Path('/tmp/eval_runs').glob('*.jsonl')))"]
           securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
           resources: {requests: {cpu: 250m, memory: 512Mi}, limits: {cpu: 1, memory: 1Gi}}
           volumeMounts: [{name: tmp, mountPath: /tmp}]
