@@ -50,7 +50,9 @@ jobs:
           sha256sum -c kind.sha256sum
           mkdir -p "$HOME/.local/bin"
           install -m 0755 kind "$HOME/.local/bin/kind"
+          export PATH="$HOME/.local/bin:$PATH"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          command -v kind
           kind version
 
       - name: Create isolated cluster
@@ -82,15 +84,77 @@ jobs:
       - name: Verify inference service and limits
         run: |
           kubectl rollout status -n agenttrust-gate1 deployment/agenttrust-inference --timeout=180s
-          kubectl run -n agenttrust-gate1 curl --rm -i --restart=Never --image=curlimages/curl:8.10.1 --image-pull-policy=IfNotPresent -- curl -fsS http://agenttrust-inference:8080/
+          kubectl run -n agenttrust-gate1 inference-client --rm -i --restart=Never --image=agenttrust-iq:ci --image-pull-policy=Never -- python -c "import urllib.request; response=urllib.request.urlopen('http://agenttrust-inference:8080/', timeout=10); print(response.status); print(response.read(200).decode())"
           kubectl get deployment,pod,service,networkpolicy -n agenttrust-gate1 -o yaml
 
       - name: Controlled failure and recovery
         run: |
-          kubectl create job -n agenttrust-gate1 agenttrust-recovery --image=agenttrust-iq:ci --image-pull-policy=Never -- python -c 'raise SystemExit(1)'
+          kubectl apply -f - <<'YAML'
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: agenttrust-recovery
+            namespace: agenttrust-gate1
+          spec:
+            backoffLimit: 0
+            ttlSecondsAfterFinished: 60
+            template:
+              spec:
+                restartPolicy: Never
+                automountServiceAccountToken: false
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 10001
+                  runAsGroup: 10001
+                  seccompProfile: {type: RuntimeDefault}
+                containers:
+                  - name: recovery
+                    image: agenttrust-iq:ci
+                    imagePullPolicy: Never
+                    command: ["python", "-c", "raise SystemExit(1)"]
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities: {drop: [ALL]}
+                    resources:
+                      requests: {cpu: 100m, memory: 128Mi}
+                      limits: {cpu: 250m, memory: 256Mi}
+          YAML
           kubectl wait -n agenttrust-gate1 --for=condition=failed job/agenttrust-recovery --timeout=120s
-          kubectl create job -n agenttrust-gate1 agenttrust-recovery-success --image=agenttrust-iq:ci --image-pull-policy=Never -- python -c 'print("recovered")'
+          kubectl apply -f - <<'YAML'
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: agenttrust-recovery-success
+            namespace: agenttrust-gate1
+          spec:
+            backoffLimit: 0
+            ttlSecondsAfterFinished: 60
+            template:
+              spec:
+                restartPolicy: Never
+                automountServiceAccountToken: false
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 10001
+                  runAsGroup: 10001
+                  seccompProfile: {type: RuntimeDefault}
+                containers:
+                  - name: recovery
+                    image: agenttrust-iq:ci
+                    imagePullPolicy: Never
+                    command: ["python", "-c", "print('recovered')"]
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities: {drop: [ALL]}
+                    resources:
+                      requests: {cpu: 100m, memory: 128Mi}
+                      limits: {cpu: 250m, memory: 256Mi}
+          YAML
           kubectl wait -n agenttrust-gate1 --for=condition=complete job/agenttrust-recovery-success --timeout=120s
+          kubectl logs -n agenttrust-gate1 job/agenttrust-recovery
+          kubectl logs -n agenttrust-gate1 job/agenttrust-recovery-success
 
       - name: Run regression safeguards
         run: python -m pytest -q tests/test_workload_platform.py tests/test_platform_jobs.py
