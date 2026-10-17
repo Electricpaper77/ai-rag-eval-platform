@@ -30,7 +30,7 @@ jobs:
           [[ "${{ inputs.feature_sha }}" =~ ^[0-9a-fA-F]{40}$ ]]
           git cat-file -e "${{ inputs.feature_sha }}^{commit}"
           test "$(git rev-parse HEAD)" = "${{ inputs.feature_sha }}"
-          test "$(git remote get-url origin)" = "https://github.com/Electricpaper77/ai-rag-eval-platform.git"
+          test "$(git remote get-url origin | sed 's#\.git$##')" = "https://github.com/Electricpaper77/ai-rag-eval-platform"
 
       - name: Install Python dependencies
         uses: actions/setup-python@v5
