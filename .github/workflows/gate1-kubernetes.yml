@@ -76,10 +76,32 @@ jobs:
 
       - name: Verify CI and benchmark Jobs
         run: |
-          kubectl wait -n agenttrust-gate1 --for=condition=complete job/agenttrust-ci --timeout=300s
-          kubectl wait -n agenttrust-gate1 --for=condition=complete job/agenttrust-benchmark --timeout=300s
-          kubectl logs -n agenttrust-gate1 job/agenttrust-ci
-          kubectl logs -n agenttrust-gate1 job/agenttrust-benchmark
+          set -euo pipefail
+          for job in agenttrust-ci agenttrust-benchmark; do
+            kubectl patch -n agenttrust-gate1 job "$job" --type=merge -p '{"spec":{"ttlSecondsAfterFinished":600}}'
+          done
+          wait_for_job() {
+            local job="$1"
+            for _ in $(seq 1 300); do
+              complete="$(kubectl get -n agenttrust-gate1 job "$job" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}')"
+              failed="$(kubectl get -n agenttrust-gate1 job "$job" -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}')"
+              if [[ "$complete" == "True" ]]; then
+                kubectl logs -n agenttrust-gate1 job/"$job"
+                return 0
+              fi
+              if [[ "$failed" == "True" ]]; then
+                kubectl describe -n agenttrust-gate1 job "$job"
+                kubectl logs -n agenttrust-gate1 job/"$job" --all-containers=true --prefix=true || true
+                return 1
+              fi
+              sleep 1
+            done
+            kubectl describe -n agenttrust-gate1 job "$job"
+            kubectl logs -n agenttrust-gate1 job/"$job" --all-containers=true --prefix=true || true
+            return 1
+          }
+          wait_for_job agenttrust-ci
+          wait_for_job agenttrust-benchmark
 
       - name: Verify inference service and limits
         run: |
