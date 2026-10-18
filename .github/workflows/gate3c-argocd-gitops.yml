@@ -1,0 +1,297 @@
+name: Gate 3C Argo CD GitOps
+
+on:
+  push:
+    branches:
+      - feature/gate3c-argocd-gitops
+    paths:
+      - ".github/workflows/gate3c-argocd-gitops.yml"
+      - "deploy/gitops/agenttrust-application.yaml"
+      - "deploy/helm/agenttrust/**"
+      - "backend/**"
+      - "scripts/**"
+      - "Dockerfile"
+      - "requirements.txt"
+  workflow_dispatch:
+    inputs:
+      feature_sha:
+        description: Full feature commit SHA to validate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  gate3c-argocd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      KIND_VERSION: v0.27.0
+      HELM_VERSION: v3.22.0
+      ARGOCD_VERSION: v3.5.5
+      CLUSTER_NAME: agenttrust-gate3c
+      NAMESPACE: agenttrust-gitops
+      IMAGE: agenttrust-iq:gate3c
+      RELEASE: agenttrust
+
+    steps:
+      - name: Checkout exact feature commit
+        uses: actions/checkout@v4
+        with:
+          repository: Electricpaper77/ai-rag-eval-platform
+          ref: ${{ inputs.feature_sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Validate checkout identity
+        run: |
+          set -euo pipefail
+          requested="${{ inputs.feature_sha }}"
+          if [[ -n "$requested" ]]; then
+            [[ "$requested" =~ ^[0-9a-fA-F]{40}$ ]]
+            test "$(git rev-parse HEAD)" = "$requested"
+          else
+            test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          fi
+          test "$(git remote get-url origin | sed 's#\.git$##')" = "https://github.com/Electricpaper77/ai-rag-eval-platform"
+          git rev-parse HEAD | tee artifacts-gate3c-feature-sha.txt
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pinned kind
+        run: |
+          set -euo pipefail
+          curl -fsSLo kind-linux-amd64 "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+          curl -fsSLo kind.sha256sum "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64.sha256sum"
+          sha256sum -c kind.sha256sum
+          mkdir -p "$HOME/.local/bin"
+          install -m 0755 kind-linux-amd64 "$HOME/.local/bin/kind"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/kind" version
+
+      - name: Install pinned Helm
+        run: |
+          set -euo pipefail
+          archive="helm-${HELM_VERSION}-linux-amd64.tar.gz"
+          curl -fsSLo "$archive" "https://get.helm.sh/$archive"
+          curl -fsSLo "$archive.sha256sum" "https://get.helm.sh/$archive.sha256sum"
+          sha256sum -c "$archive.sha256sum"
+          tar -xzf "$archive"
+          mkdir -p "$HOME/.local/bin"
+          install -m 0755 linux-amd64/helm "$HOME/.local/bin/helm"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/helm" version
+
+      - name: Create isolated kind cluster
+        run: |
+          set -euo pipefail
+          kind create cluster --name "$CLUSTER_NAME" --wait 120s
+          kubectl get nodes -o wide
+
+      - name: Build and load AgentTrust image
+        run: |
+          set -euo pipefail
+          docker build -t "$IMAGE" .
+          kind load docker-image "$IMAGE" --name "$CLUSTER_NAME"
+
+      - name: Install Argo CD
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/gate3c
+          docker pull redis:8.2.3-alpine
+          kind load docker-image redis:8.2.3-alpine --name "$CLUSTER_NAME"
+          docker image inspect redis:8.2.3-alpine \
+            --format='{{.Id}} {{json .RepoDigests}}' \
+            | tee artifacts/gate3c/redis-image-local.txt
+          kubectl create namespace argocd
+          kubectl apply --server-side --force-conflicts -n argocd \
+            -f "https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml"
+          kubectl patch deployment argocd-redis -n argocd --type=strategic \
+            -p '{"spec":{"template":{"spec":{"containers":[{"name":"redis","image":"redis:8.2.3-alpine","imagePullPolicy":"IfNotPresent"}]}}}}'
+          kubectl get deployment argocd-redis -n argocd \
+            -o jsonpath='{.spec.template.spec.containers[?(@.name=="redis")].image}{" "}{.spec.template.spec.containers[?(@.name=="redis")].imagePullPolicy}{"\n"}' \
+            | tee artifacts/gate3c/redis-deployment-image.txt
+          kubectl get pods -n argocd -o wide > artifacts/gate3c/argocd-pods-starting.txt
+          kubectl get deployment argocd-server -n argocd \
+            -o jsonpath='{.spec.template.spec.containers[0].image}' \
+            | tee artifacts/gate3c/argocd-version.txt
+          printf '\n' >> artifacts/gate3c/argocd-version.txt
+
+      - name: Wait for Argo CD components
+        run: |
+          set -euo pipefail
+          kubectl rollout status -n argocd deployment/argocd-server --timeout=300s
+          kubectl rollout status -n argocd deployment/argocd-repo-server --timeout=300s
+          kubectl rollout status -n argocd deployment/argocd-redis --timeout=300s
+          kubectl rollout status -n argocd statefulset/argocd-application-controller --timeout=300s
+          if kubectl get deployment argocd-applicationset-controller -n argocd >/dev/null 2>&1; then
+            kubectl rollout status -n argocd deployment/argocd-applicationset-controller --timeout=300s
+          fi
+          kubectl get pods -n argocd -o wide | tee artifacts/gate3c/argocd-pods-ready.txt
+          if kubectl get pods -n argocd --no-headers | awk '$3 ~ /ImagePullBackOff|ErrImagePull|Pending|CrashLoopBackOff/ {found=1} END {exit !found}'; then
+            echo "Unresolved Argo CD pod state detected" >&2
+            exit 1
+          fi
+
+      - name: Apply Argo CD Application
+        run: |
+          set -euo pipefail
+          kubectl apply -f deploy/gitops/agenttrust-application.yaml
+          kubectl get application agenttrust -n argocd -o yaml \
+            > artifacts/gate3c/application-before-sync.yaml
+
+      - name: Prove Synced and Healthy
+        run: |
+          set -euo pipefail
+          synced=false
+          for _ in $(seq 1 180); do
+            sync_status="$(kubectl get application agenttrust -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null || true)"
+            health_status="$(kubectl get application agenttrust -n argocd -o jsonpath='{.status.health.status}' 2>/dev/null || true)"
+            printf 'sync=%s health=%s\n' "$sync_status" "$health_status"
+            if [[ "$sync_status" == "Synced" && "$health_status" == "Healthy" ]]; then
+              synced=true
+              break
+            fi
+            sleep 2
+          done
+          kubectl get application agenttrust -n argocd -o yaml \
+            | tee artifacts/gate3c/application-synced-healthy.yaml
+          test "$synced" = true
+          test "$(kubectl get application agenttrust -n argocd -o jsonpath='{.status.sync.status}')" = Synced
+          test "$(kubectl get application agenttrust -n argocd -o jsonpath='{.status.health.status}')" = Healthy
+          kubectl logs -n argocd statefulset/argocd-application-controller --tail=300 \
+            > artifacts/gate3c/application-controller.log
+          kubectl logs -n argocd deployment/argocd-repo-server --tail=300 \
+            > artifacts/gate3c/repo-server.log
+
+      - name: Verify live AgentTrust inference
+        run: |
+          set -euo pipefail
+          kubectl wait -n "$NAMESPACE" --for=condition=Available \
+            deployment/"$RELEASE" --timeout=180s
+          kubectl get deployment,service,networkpolicy -n "$NAMESPACE" -o yaml \
+            > artifacts/gate3c/live-agenttrust-resources.yaml
+          kubectl run -n "$NAMESPACE" gate3c-client \
+            --labels=app.kubernetes.io/part-of=agenttrust-iq \
+            --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never \
+            -- python -c "import json,urllib.request; h=urllib.request.urlopen('http://agenttrust:8080/healthz',timeout=10); assert h.status==200; print('healthz',h.status); q=urllib.request.Request('http://agenttrust:8080/v1/chat/completions',data=json.dumps({'model':'mock','messages':[{'role':'user','content':'gate3c gitops'}]}).encode(),headers={'content-type':'application/json'}); b=json.loads(urllib.request.urlopen(q,timeout=15).read()); assert b['choices'][0]['message']['role']=='assistant'; print('chat',b)" \
+            | tee artifacts/gate3c/initial-inference.txt
+
+      - name: Introduce and observe real drift
+        run: |
+          set -euo pipefail
+          desired="$(kubectl get deployment "$RELEASE" -n "$NAMESPACE" -o jsonpath='{.spec.replicas}')"
+          test "$desired" = 1
+          printf 'desired_replicas_before=%s\n' "$desired" | tee artifacts/gate3c/drift.txt
+          drift_start="$(date +%s)"
+          kubectl scale deployment/"$RELEASE" -n "$NAMESPACE" --replicas=3 \
+            | tee -a artifacts/gate3c/drift.txt
+          live="$(kubectl get deployment "$RELEASE" -n "$NAMESPACE" -o jsonpath='{.spec.replicas}')"
+          printf 'live_replicas_after_mutation=%s\n' "$live" | tee -a artifacts/gate3c/drift.txt
+          test "$live" = 3
+          kubectl annotate application agenttrust -n argocd \
+            argocd.argoproj.io/refresh=hard --overwrite \
+            | tee -a artifacts/gate3c/drift.txt
+          out_of_sync=false
+          for _ in $(seq 1 120); do
+            sync_status="$(kubectl get application agenttrust -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null || true)"
+            health_status="$(kubectl get application agenttrust -n argocd -o jsonpath='{.status.health.status}' 2>/dev/null || true)"
+            printf 'observed_sync=%s observed_health=%s\n' "$sync_status" "$health_status" | tee -a artifacts/gate3c/drift.txt
+            if [[ "$sync_status" == "OutOfSync" ]]; then
+              out_of_sync=true
+              break
+            fi
+            sleep 1
+          done
+          test "$out_of_sync" = true
+          drift_end="$(date +%s)"
+          echo "out_of_sync_observed_after_seconds=$((drift_end-drift_start))" \
+            | tee -a artifacts/gate3c/drift.txt
+          kubectl get application agenttrust -n argocd -o yaml \
+            > artifacts/gate3c/application-outofsync.yaml
+
+      - name: Prove Argo CD self-heal reconciliation
+        run: |
+          set -euo pipefail
+          recovery_start="$(date +%s)"
+          reconciled=false
+          for _ in $(seq 1 180); do
+            sync_status="$(kubectl get application agenttrust -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null || true)"
+            health_status="$(kubectl get application agenttrust -n argocd -o jsonpath='{.status.health.status}' 2>/dev/null || true)"
+            replicas="$(kubectl get deployment "$RELEASE" -n "$NAMESPACE" -o jsonpath='{.spec.replicas}' 2>/dev/null || true)"
+            printf 'sync=%s health=%s replicas=%s\n' "$sync_status" "$health_status" "$replicas" \
+              | tee -a artifacts/gate3c/reconciliation.txt
+            if [[ "$sync_status" == "Synced" && "$health_status" == "Healthy" && "$replicas" == 1 ]]; then
+              reconciled=true
+              break
+            fi
+            sleep 2
+          done
+          test "$reconciled" = true
+          recovery_end="$(date +%s)"
+          echo "reconciliation_seconds=$((recovery_end-recovery_start))" \
+            | tee -a artifacts/gate3c/reconciliation.txt
+          kubectl get application agenttrust -n argocd -o yaml \
+            > artifacts/gate3c/application-reconciled.yaml
+          kubectl get deployment "$RELEASE" -n "$NAMESPACE" -o yaml \
+            > artifacts/gate3c/deployment-reconciled.yaml
+
+      - name: Verify post-reconciliation inference
+        run: |
+          set -euo pipefail
+          kubectl run -n "$NAMESPACE" gate3c-client-post-reconcile \
+            --labels=app.kubernetes.io/part-of=agenttrust-iq \
+            --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never \
+            -- python -c "import json,urllib.request; h=urllib.request.urlopen('http://agenttrust:8080/healthz',timeout=10); assert h.status==200; q=urllib.request.Request('http://agenttrust:8080/v1/chat/completions',data=json.dumps({'model':'mock','messages':[{'role':'user','content':'gate3c post reconcile'}]}).encode(),headers={'content-type':'application/json'}); b=json.loads(urllib.request.urlopen(q,timeout=15).read()); assert b['choices'][0]['message']['role']=='assistant'; print('healthz',h.status); print('chat',b)" \
+            | tee artifacts/gate3c/post-reconciliation-inference.txt
+
+      - name: Verify live security regression controls
+        run: |
+          set -euo pipefail
+          kubectl get deployment "$RELEASE" -n "$NAMESPACE" -o json \
+            > artifacts/gate3c/deployment-security.json
+          python - <<'PY' | tee artifacts/gate3c/security-check.txt
+          import json
+          deployment = json.load(open("artifacts/gate3c/deployment-security.json", encoding="utf-8"))
+          spec = deployment["spec"]["template"]["spec"]
+          container = spec["containers"][0]
+          assert spec["automountServiceAccountToken"] is False
+          assert spec["securityContext"]["runAsNonRoot"] is True
+          assert spec["securityContext"]["runAsUser"] == 10001
+          assert spec["securityContext"]["runAsGroup"] == 10001
+          assert spec["securityContext"]["seccompProfile"]["type"] == "RuntimeDefault"
+          assert container["securityContext"]["readOnlyRootFilesystem"] is True
+          assert container["securityContext"]["allowPrivilegeEscalation"] is False
+          assert container["securityContext"]["capabilities"]["drop"] == ["ALL"]
+          assert container["resources"]["requests"]
+          assert container["resources"]["limits"]
+          env = {item["name"]: item["value"] for item in container["env"]}
+          assert env["INFERENCE_ARTIFACTS_ROOT"].startswith("/tmp/")
+          assert env["INFERENCE_LOG_PATH"].startswith("/tmp/")
+          print("SECURITY_CONTROLS_PASS")
+          PY
+
+      - name: Collect Argo CD and Kubernetes evidence
+        if: always()
+        run: |
+          mkdir -p artifacts/gate3c
+          kubectl get applications.argoproj.io -n argocd -o yaml \
+            > artifacts/gate3c/applications-final.yaml 2>&1 || true
+          kubectl get all -n argocd -o yaml > artifacts/gate3c/argocd-resources.yaml 2>&1 || true
+          kubectl get all,networkpolicy -n "$NAMESPACE" -o yaml \
+            > artifacts/gate3c/agenttrust-final-resources.yaml 2>&1 || true
+          kubectl get events -A --sort-by=.lastTimestamp \
+            > artifacts/gate3c/events.txt 2>&1 || true
+          kubectl logs -n argocd statefulset/argocd-application-controller --tail=500 \
+            > artifacts/gate3c/application-controller-final.log 2>&1 || true
+          kubectl logs -n argocd deployment/argocd-repo-server --tail=500 \
+            > artifacts/gate3c/repo-server-final.log 2>&1 || true
+
+      - name: Upload Gate 3C evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate3c-argocd-gitops-evidence
+          path: artifacts/gate3c
