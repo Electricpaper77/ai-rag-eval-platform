@@ -22,7 +22,7 @@ from .performance_router import PerformanceAwareRouter
 from .observability.service import INFERENCE_OBSERVABILITY
 
 DEFAULT_MODEL = "mock-llm"
-INFERENCE_LOG_PATH = Path("artifacts/inference_runs.jsonl")
+INFERENCE_LOG_PATH = Path(os.getenv("INFERENCE_LOG_PATH", "artifacts/inference_runs.jsonl"))
 _ROUTER = PerformanceAwareRouter()
 _MOCK = MockRuntime()
 

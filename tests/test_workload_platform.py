@@ -87,6 +87,28 @@ def test_gate2_renderer_uses_kind_image_and_pull_policy():
     assert {container["imagePullPolicy"] for container in containers} == {"Never"}
 
 
+def test_gate2_inference_uses_writable_artifact_paths_only():
+    objects = render_objects()
+    containers = {}
+    for item in objects:
+        name = item.get("metadata", {}).get("name")
+        if name not in {"gate2-dev", "gate2-ci", "gate2-benchmark", "gate2-inference"}:
+            continue
+        spec = item["spec"]
+        pod_spec = spec["template"]["spec"] if "template" in spec else spec
+        if "containers" not in pod_spec:
+            continue
+        containers[name] = pod_spec["containers"][0]
+
+    assert dict((item["name"], item["value"]) for item in containers["gate2-inference"]["env"]) == {
+        "INFERENCE_ARTIFACTS_ROOT": "/tmp/inference_events",
+        "INFERENCE_LOG_PATH": "/tmp/inference_runs.jsonl",
+    }
+    assert containers["gate2-inference"]["securityContext"]["readOnlyRootFilesystem"] is True
+    for name in ("gate2-dev", "gate2-ci", "gate2-benchmark"):
+        assert containers[name].get("env", []) == []
+
+
 def test_benchmark_success_and_cleanup(tmp_path: Path):
     executor = LocalWorkloadExecutor(tmp_path, lambda q, k: {"answer": q, "citations": ["local"], "usage": {"total_tokens": 1}})
     result = executor.run_benchmark("success")

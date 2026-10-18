@@ -18,7 +18,15 @@ def render_objects() -> list[dict]:
         WorkloadRequest(name="gate2-dev", workload_type="dev-pod", image="agenttrust-iq:gate2"),
         WorkloadRequest(name="gate2-ci", workload_type="ci-job", image="agenttrust-iq:gate2"),
         WorkloadRequest(name="gate2-benchmark", workload_type="benchmark-job", image="agenttrust-iq:gate2"),
-        WorkloadRequest(name="gate2-inference", workload_type="inference-service", image="agenttrust-iq:gate2"),
+        WorkloadRequest(
+            name="gate2-inference",
+            workload_type="inference-service",
+            image="agenttrust-iq:gate2",
+            env={
+                "INFERENCE_ARTIFACTS_ROOT": "/tmp/inference_events",
+                "INFERENCE_LOG_PATH": "/tmp/inference_runs.jsonl",
+            },
+        ),
     ]
     objects = [{"apiVersion": "v1", "kind": "Namespace", "metadata": {"name": "agenttrust-gate2"}}]
     for request in requests:
