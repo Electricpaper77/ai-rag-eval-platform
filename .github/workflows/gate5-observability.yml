@@ -203,7 +203,7 @@ jobs:
           for _ in $(seq 1 60); do
             result="$(kubectl run gate5-grafana-check -n "$NAMESPACE" --rm -i --restart=Never \
               --image="$IMAGE" --image-pull-policy=Never -- \
-              python -c 'import base64,json,sys,urllib.request; p=base64.b64encode(b"admin:gate5-ci-only").decode(); r=urllib.request.Request("http://grafana.observability.svc.cluster.local:80/api/search?query=AgentTrust Observability SLO",headers={"Authorization":"Basic "+p}); d=json.load(urllib.request.urlopen(r,timeout=10)); print("DASHBOARD_FOUND" if any(x.get("title")=="AgentTrust Observability SLO" for x in d) else "DASHBOARD_WAIT")' 2>/dev/null || true)"
+              python -c 'import base64,json,urllib.parse,urllib.request; p=base64.b64encode(b"admin:gate5-ci-only").decode(); q=urllib.parse.urlencode({"query":"AgentTrust Observability SLO"}); r=urllib.request.Request("http://grafana.observability.svc.cluster.local:80/api/search?"+q,headers={"Authorization":"Basic "+p}); d=json.load(urllib.request.urlopen(r,timeout=10)); print("DASHBOARD_FOUND" if any(x.get("title")=="AgentTrust Observability SLO" for x in d) else "DASHBOARD_WAIT")' 2>/dev/null || true)"
             printf '%s\n' "$result" | tee artifacts/gate5/grafana-dashboard-poll.txt
             if grep -q DASHBOARD_FOUND <<<"$result"; then found=true; break; fi
             sleep 2
