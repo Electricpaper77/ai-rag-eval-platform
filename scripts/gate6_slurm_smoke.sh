@@ -13,6 +13,8 @@ fi
 
 user_name="$(id -un)"
 node_name="$(hostname -s)"
+cpus="$(nproc)"
+real_memory="$(awk '/^MemTotal:/ {print int($2 / 1024); exit}' /proc/meminfo)"
 conf="$root/slurm.conf"
 cat > "$conf" <<EOF
 ClusterName=agenttrust-gate6
@@ -22,8 +24,8 @@ SlurmdUser=$user_name
 AuthType=auth/none
 SelectType=select/cons_tres
 SelectTypeParameters=CR_Core
-NodeName=$node_name NodeAddr=127.0.0.1 NodeHostname=$node_name CPUs=1 RealMemory=1024 State=UNKNOWN
-PartitionName=debug Nodes=localhost Default=YES MaxTime=INFINITE State=UP
+NodeName=$node_name NodeAddr=127.0.0.1 NodeHostname=$node_name CPUs=$cpus RealMemory=$real_memory State=UNKNOWN
+PartitionName=debug Nodes=$node_name Default=YES MaxTime=INFINITE State=UP
 SlurmctldPidFile=$root/slurmctld.pid
 SlurmdPidFile=$root/slurmd.pid
 StateSaveLocation=$root/state
@@ -32,6 +34,7 @@ SlurmctldLogFile=$root/log/slurmctld.log
 SlurmdLogFile=$root/log/slurmd.log
 ProctrackType=proctrack/linuxproc
 TaskPlugin=task/none
+SlurmdParameters=config_overrides
 JobCompType=jobcomp/filetxt
 JobCompLoc=$root/jobcomp.log
 EOF
