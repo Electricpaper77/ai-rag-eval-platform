@@ -283,6 +283,11 @@ jobs:
             --image="$IMAGE" --image-pull-policy=Never -- \
             python -c 'import http.client,json; p=json.dumps({"model":"mock","messages":[{"role":"user","content":"gate5 incident"}]}).encode(); statuses=[(lambda c:(c.request("POST","/v1/chat/completions",p,{"Content-Type":"application/json"}),c.getresponse().status,c.close())[1])(http.client.HTTPConnection("agenttrust.agenttrust.svc.cluster.local",8080,timeout=10)) for _ in range(20)]; assert statuses==[500]*20, statuses; print("FORCED_500_COUNT",len(statuses))' \
             | tee artifacts/gate5/incident-traffic.txt
+          kubectl run gate5-prometheus-incident-debug -n "$OBS_NAMESPACE" --rm -i --restart=Never \
+            --labels=app.kubernetes.io/part-of=agenttrust-iq \
+            --image="$IMAGE" --image-pull-policy=Never -- \
+            python -c 'import json,urllib.parse,urllib.request; base="http://prometheus-server.observability.svc.cluster.local:80"; q="sum(rate(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\",status=~\"5..\"}[30s])) / clamp_min(sum(rate(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\"}[30s])),1)"; out={"error_rate":json.load(urllib.request.urlopen(base+"/api/v1/query?"+urllib.parse.urlencode({"query":q}),timeout=10)),"rules":json.load(urllib.request.urlopen(base+"/api/v1/rules?type=alert",timeout=10))}; print(json.dumps(out))' \
+            | tee artifacts/gate5/incident-prometheus-debug.txt
           detected=false
           for _ in $(seq 1 60); do
             result="$(kubectl run gate5-alert-error-check -n "$OBS_NAMESPACE" --rm -i --restart=Never \
