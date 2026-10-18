@@ -109,6 +109,7 @@ job_script="$root/benchmark-job.sh"
 cat > "$job_script" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
+echo "job_id=$SLURM_JOB_ID"
 hostname
 python3 - <<'PY'
 print("GATE6_SLURM_BENCHMARK_PASS")
@@ -116,9 +117,19 @@ print(sum(i * i for i in range(1000)))
 PY
 EOF
 chmod 0755 "$job_script"
-job_id="$(timeout 30s sbatch --parsable --wait --output="$artifact_dir/job-%j.out" --error="$artifact_dir/job-%j.err" "$job_script")"
-echo "job_id=$job_id" | tee "$artifact_dir/job-id.txt"
-timeout 30s squeue -j "$job_id" -o "%.18i %.9T %.20j" | tee "$artifact_dir/squeue.txt" || true
-timeout 30s sacct -X -j "$job_id" --starttime="$(date -d '2 minutes ago' '+%Y-%m-%dT%H:%M:%S')" --format=JobID,State,ExitCode | tee "$artifact_dir/sacct.txt" || true
-grep -R "GATE6_SLURM_BENCHMARK_PASS" "$root" "$artifact_dir" | tee "$artifact_dir/job-output.txt"
+set +e
+timeout 60s srun -N1 -n1 "$job_script" 2> "$artifact_dir/job-stderr.txt" | tee "$artifact_dir/job-output.txt"
+srun_status="${PIPESTATUS[0]}"
+set -e
+if [[ "$srun_status" -ne 0 ]]; then
+  echo "Slurm benchmark allocation failed with status $srun_status" >&2
+  exit "$srun_status"
+fi
+job_id="$(grep -o 'job_id=[0-9][0-9]*' "$artifact_dir/job-output.txt" | head -n 1 | cut -d= -f2)"
+echo "job_id=${job_id:-unknown}" | tee "$artifact_dir/job-id.txt"
+if [[ -n "$job_id" ]]; then
+  timeout 30s squeue -j "$job_id" -o "%.18i %.9T %.20j" | tee "$artifact_dir/squeue.txt" || true
+  timeout 30s sacct -X -j "$job_id" --starttime="$(date -d '2 minutes ago' '+%Y-%m-%dT%H:%M:%S')" --format=JobID,State,ExitCode | tee "$artifact_dir/sacct.txt" || true
+fi
+grep -R "GATE6_SLURM_BENCHMARK_PASS" "$root" "$artifact_dir" | tee -a "$artifact_dir/job-output.txt"
 echo "SLURM: PASS" | tee "$artifact_dir/status.txt"
