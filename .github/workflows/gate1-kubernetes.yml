@@ -107,7 +107,13 @@ jobs:
       - name: Verify inference service and limits
         run: |
           kubectl rollout status -n agenttrust-gate1 deployment/agenttrust-inference --timeout=180s
-          kubectl run -n agenttrust-gate1 inference-client --rm -i --restart=Never --image=agenttrust-iq:ci --image-pull-policy=Never -- python -c "import urllib.request; response=urllib.request.urlopen('http://agenttrust-inference:8080/', timeout=10); print(response.status); print(response.read(200).decode())"
+          kubectl run -n agenttrust-gate1 inference-client --rm -i --restart=Never --image=agenttrust-iq:ci --image-pull-policy=Never -- python -c "import json, urllib.request; health=urllib.request.urlopen('http://agenttrust-inference:8080/healthz', timeout=10); print('healthz', health.status, health.read().decode()); request=urllib.request.Request('http://agenttrust-inference:8080/v1/chat/completions', data=json.dumps({'model':'mock','messages':[{'role':'user','content':'hello'}]}).encode(), headers={'content-type':'application/json'}); response=urllib.request.urlopen(request, timeout=10); body=json.loads(response.read()); assert response.status == 200 and body['choices'][0]['message']['role'] == 'assistant'; print('chat', response.status, body)"
+          kubectl create namespace agenttrust-gate1-denied
+          if kubectl run -n agenttrust-gate1-denied network-negative --rm -i --restart=Never --image=agenttrust-iq:ci --image-pull-policy=Never -- python -c "import urllib.request; urllib.request.urlopen('http://agenttrust-inference.agenttrust-gate1.svc:8080/healthz', timeout=5)"; then
+            echo 'NetworkPolicy negative test unexpectedly succeeded' >&2
+            exit 1
+          fi
+          kubectl delete namespace agenttrust-gate1-denied --wait=true --timeout=60s
           kubectl get deployment,pod,service,networkpolicy -n agenttrust-gate1 -o yaml
 
       - name: Controlled failure and recovery
@@ -178,6 +184,9 @@ jobs:
           kubectl wait -n agenttrust-gate1 --for=condition=complete job/agenttrust-recovery-success --timeout=120s
           kubectl logs -n agenttrust-gate1 job/agenttrust-recovery
           kubectl logs -n agenttrust-gate1 job/agenttrust-recovery-success
+          kubectl delete pod -n agenttrust-gate1 -l app=agenttrust-inference --wait=false
+          kubectl rollout status -n agenttrust-gate1 deployment/agenttrust-inference --timeout=120s
+          kubectl run -n agenttrust-gate1 recovery-client --rm -i --restart=Never --image=agenttrust-iq:ci --image-pull-policy=Never -- python -c "import urllib.request; response=urllib.request.urlopen('http://agenttrust-inference:8080/healthz', timeout=10); assert response.status == 200; print('recovered endpoint', response.status)"
 
       - name: Run regression safeguards
         run: python -m pytest -q tests/test_workload_platform.py tests/test_platform_jobs.py
