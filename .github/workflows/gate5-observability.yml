@@ -136,11 +136,12 @@ jobs:
           set -euo pipefail
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
           helm repo update
+          rules_json="$(python -c 'import json, yaml; print(json.dumps(yaml.safe_load(open("deploy/observability/prometheus/alerting_rules.yaml", encoding="utf-8"))))')"
           helm upgrade --install prometheus prometheus-community/prometheus \
             --version "$PROMETHEUS_CHART_VERSION" \
             --namespace "$OBS_NAMESPACE" \
             -f deploy/observability/prometheus/values.yaml \
-            --set-file 'serverFiles.alerting_rules\.yml'=deploy/observability/prometheus/alerting_rules.yaml \
+            --set-json "serverFiles.alerting_rules\\.yml=${rules_json}" \
             --wait --timeout 300s | tee artifacts/gate5/prometheus-install.txt
 
       - name: Install Loki, Alloy and Grafana
