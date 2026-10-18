@@ -44,7 +44,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/gate6/slurm artifacts/gate6/helm
-          test "$(git config --get remote.origin.url)" = "https://github.com/Electricpaper77/ai-rag-eval-platform.git"
+          repository_url="$(git config --get remote.origin.url)"
+          case "$repository_url" in
+            https://github.com/Electricpaper77/ai-rag-eval-platform|https://github.com/Electricpaper77/ai-rag-eval-platform.git) ;;
+            *) echo "unexpected repository origin: $repository_url" >&2; exit 1 ;;
+          esac
           test "$(git rev-parse HEAD)" = "$FEATURE_SHA"
           git cat-file -e "$FEATURE_SHA^{commit}"
           {
