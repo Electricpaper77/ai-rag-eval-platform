@@ -7,8 +7,9 @@ from backend.app.main import app
 
 
 @pytest.fixture(autouse=True)
-def proof_artifact_seed(tmp_path):
+def proof_artifact_seed(tmp_path, monkeypatch):
     """Seed deterministic proof artifacts expected by legacy artifact tests."""
+    monkeypatch.setenv("AGENTTRUST_ARTIFACT_DIR", str(tmp_path))
     (tmp_path / "opentelemetry_pipeline.json").write_text(
         '{"otlp_exporter_enabled": false, "collector_config": "local-jsonl"}\n',
         encoding="utf-8",
