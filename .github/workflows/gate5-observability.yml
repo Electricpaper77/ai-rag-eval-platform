@@ -140,7 +140,7 @@ jobs:
             --version "$PROMETHEUS_CHART_VERSION" \
             --namespace "$OBS_NAMESPACE" \
             -f deploy/observability/prometheus/values.yaml \
-            --set-file serverFiles.alerting_rules.yml=deploy/observability/prometheus/alerting_rules.yaml \
+            --set-file 'serverFiles.alerting_rules\.yml'=deploy/observability/prometheus/alerting_rules.yaml \
             --wait --timeout 300s | tee artifacts/gate5/prometheus-install.txt
 
       - name: Install Loki, Alloy and Grafana
