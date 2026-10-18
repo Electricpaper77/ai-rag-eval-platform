@@ -1,6 +1,7 @@
 server:
   global:
     scrape_interval: 5s
+    scrape_timeout: 4s
     evaluation_interval: 5s
   persistentVolume:
     enabled: false
