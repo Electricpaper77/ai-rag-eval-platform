@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: agenttrust
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Electricpaper77/ai-rag-eval-platform.git
+    targetRevision: feature/gate3c-argocd-gitops
+    path: deploy/helm/agenttrust
+    helm:
+      releaseName: agenttrust
+      parameters:
+        - name: image.repository
+          value: agenttrust-iq
+        - name: image.tag
+          value: gate3c
+        - name: image.pullPolicy
+          value: Never
+        - name: replicaCount
+          value: "1"
+        - name: networkPolicy.enabled
+          value: "true"
+        - name: inference.artifactRoot
+          value: /tmp/inference_events
+        - name: inference.logPath
+          value: /tmp/inference_runs.jsonl
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: agenttrust-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
