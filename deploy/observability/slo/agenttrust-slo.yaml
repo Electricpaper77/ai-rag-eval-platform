@@ -1,0 +1,19 @@
+apiVersion: observability.agenttrust.io/v1alpha1
+kind: ServiceLevelObjectives
+metadata:
+  name: agenttrust-ci
+spec:
+  scope: isolated-kind-ci
+  availability:
+    objective: 0.99
+    query: healthy_requests / total_requests
+  errorRate:
+    objective: 0.01
+    comparator: less_than
+    query: error_requests / total_requests
+  latency:
+    percentile: 0.95
+    objectiveSeconds: 1.0
+    comparator: less_than
+  evaluationWindow: 5m
+  note: These thresholds are Gate 5 CI validation settings, not production commitments.

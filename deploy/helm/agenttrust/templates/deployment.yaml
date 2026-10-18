@@ -47,6 +47,10 @@ spec:
               value: {{ .Values.inference.artifactRoot | quote }}
             - name: INFERENCE_LOG_PATH
               value: {{ .Values.inference.logPath | quote }}
+            {{- range $name, $value := .Values.env }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+            {{- end }}
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu | quote }}

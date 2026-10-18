@@ -5,6 +5,12 @@ metadata:
   name: {{ $fullName }}
   labels:
     {{- include "agenttrust.labels" . | nindent 4 }}
+  {{- if .Values.observability.metrics.enabled }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: {{ .Values.observability.metrics.path | quote }}
+    prometheus.io/port: {{ .Values.observability.metrics.port | quote }}
+  {{- end }}
 spec:
   type: {{ .Values.service.type }}
   selector:

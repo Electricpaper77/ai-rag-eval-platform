@@ -1,0 +1,37 @@
+groups:
+  - name: agenttrust-slo
+    interval: 5s
+    rules:
+      - alert: AgentTrustHighErrorRate
+        expr: >-
+          sum(rate(http_requests_total{job="agenttrust",path="/v1/chat/completions",status=~"5.."}[30s]))
+          /
+          clamp_min(sum(rate(http_requests_total{job="agenttrust",path="/v1/chat/completions"}[30s])), 1)
+          > 0.01
+        for: 10s
+        labels:
+          severity: critical
+          service: agenttrust
+        annotations:
+          summary: AgentTrust inference error rate exceeds the CI SLO
+
+      - alert: AgentTrustHighLatency
+        expr: >-
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="agenttrust",path="/v1/chat/completions"}[30s])) by (le)
+          ) > 1
+        for: 10s
+        labels:
+          severity: warning
+          service: agenttrust
+        annotations:
+          summary: AgentTrust inference p95 latency exceeds the CI SLO
+
+      - alert: AgentTrustUnavailable
+        expr: up{job="agenttrust"} == 0
+        for: 10s
+        labels:
+          severity: critical
+          service: agenttrust
+        annotations:
+          summary: Prometheus cannot scrape AgentTrust
