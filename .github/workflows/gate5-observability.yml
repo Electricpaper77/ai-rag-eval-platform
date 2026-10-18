@@ -281,7 +281,7 @@ jobs:
           kubectl run gate5-error-client -n "$NAMESPACE" --rm -i --restart=Never \
             --labels=app.kubernetes.io/part-of=agenttrust-iq \
             --image="$IMAGE" --image-pull-policy=Never -- \
-            python -c 'import http.client,json; p=json.dumps({"model":"mock","messages":[{"role":"user","content":"gate5 incident"}]}).encode(); statuses=[(lambda c:(c.request("POST","/v1/chat/completions",p,{"Content-Type":"application/json"}),c.getresponse().status,c.close())[1])(http.client.HTTPConnection("agenttrust.agenttrust.svc.cluster.local",8080,timeout=10)) for _ in range(20)]; assert statuses==[500]*20, statuses; print("FORCED_500_COUNT",len(statuses))' \
+            python -c 'import http.client,json,time; p=json.dumps({"model":"mock","messages":[{"role":"user","content":"gate5 incident"}]}).encode(); statuses=[(lambda c:(c.request("POST","/v1/chat/completions",p,{"Content-Type":"application/json"}),c.getresponse().status,c.close(),time.sleep(0.25))[1])(http.client.HTTPConnection("agenttrust.agenttrust.svc.cluster.local",8080,timeout=10)) for _ in range(120)]; assert statuses==[500]*120, statuses; print("FORCED_500_COUNT",len(statuses))' \
             | tee artifacts/gate5/incident-traffic.txt
           kubectl run gate5-prometheus-incident-debug -n "$OBS_NAMESPACE" --rm -i --restart=Never \
             --labels=app.kubernetes.io/part-of=agenttrust-iq \
