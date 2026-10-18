@@ -107,8 +107,9 @@ jobs:
           python -m pytest --noconftest -q tests/test_gate5_observability.py | tee artifacts/gate5/focused-tests.txt
           docker pull "prom/prometheus:${PROMETHEUS_IMAGE}"
           docker run --rm -v "$GITHUB_WORKSPACE:/workspace:ro" \
+            --entrypoint promtool \
             "prom/prometheus:${PROMETHEUS_IMAGE}" \
-            promtool check rules /workspace/deploy/observability/prometheus/alerting_rules.yaml \
+            check rules /workspace/deploy/observability/prometheus/alerting_rules.yaml \
             | tee artifacts/gate5/promtool-rules.txt
 
       - name: Create isolated kind cluster
@@ -388,3 +389,4 @@ jobs:
       - name: Delete isolated kind cluster
         if: always()
         run: kind delete cluster --name "$CLUSTER_NAME" || true
+
