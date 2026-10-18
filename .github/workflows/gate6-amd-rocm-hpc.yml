@@ -1,0 +1,163 @@
+name: Gate 6 AMD ROCm HPC Proof
+
+on:
+  push:
+    branches:
+      - feature/gate6-amd-rocm-hpc
+    paths:
+      - "backend/app/gpu_runtime.py"
+      - "backend/app/main.py"
+      - "gpu_platform/scheduler_mapping.py"
+      - "deploy/gpu/amd/**"
+      - "deploy/hpc/slurm/**"
+      - "deploy/helm/agenttrust/**"
+      - "scripts/gate6_*.py"
+      - "scripts/gate6_*.sh"
+      - "tests/test_gate6_gpu.py"
+      - ".github/workflows/gate6-amd-rocm-hpc.yml"
+  workflow_dispatch:
+    inputs:
+      feature_sha:
+        description: "Exact commit to validate"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  gate6-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      FEATURE_SHA: ${{ inputs.feature_sha || github.sha }}
+
+    steps:
+      - name: Checkout exact feature SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.feature_sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Validate repository identity and SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/gate6/slurm artifacts/gate6/helm
+          test "$(git config --get remote.origin.url)" = "https://github.com/Electricpaper77/ai-rag-eval-platform.git"
+          test "$(git rev-parse HEAD)" = "$FEATURE_SHA"
+          git cat-file -e "$FEATURE_SHA^{commit}"
+          {
+            echo "repository=$(git config --get remote.origin.url)"
+            echo "feature_sha=$FEATURE_SHA"
+            git show -s --format='commit=%H%nsubject=%s' "$FEATURE_SHA"
+          } | tee artifacts/gate6/identity.txt
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --no-cache-dir -r requirements-lite.txt
+
+      - name: Record CPU-only ROCm detection
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/gate6_rocm_probe.py | tee artifacts/gate6/rocm-probe.txt
+          grep -Eq '^AMD_HARDWARE: (PASS|NOT_EXECUTED)$' artifacts/gate6/rocm-probe.txt
+
+      - name: Run Gate 6 focused tests
+        shell: bash
+        run: python -m pytest -q tests/test_gate6_gpu.py | tee artifacts/gate6/focused-tests.txt
+
+      - name: Install pinned Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+
+      - name: Render and validate AMD Helm configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          helm version | tee artifacts/gate6/helm-version.txt
+          helm lint deploy/helm/agenttrust | tee artifacts/gate6/helm-lint.txt
+          helm template agenttrust deploy/helm/agenttrust \
+            -f deploy/helm/agenttrust/values-amd-gpu.yaml \
+            > artifacts/gate6/helm-amd-render.yaml
+          grep -q 'amd.com/gpu: "1"' artifacts/gate6/helm-amd-render.yaml
+          grep -q 'agenttrust.ai/accelerator: amd-gpu' artifacts/gate6/helm-amd-render.yaml
+          grep -q 'readOnlyRootFilesystem: true' artifacts/gate6/helm-amd-render.yaml
+          grep -q 'runAsUser: 10001' artifacts/gate6/helm-amd-render.yaml
+
+      - name: Validate AMD device-plugin reference and manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' | tee artifacts/gate6/device-plugin-validation.txt
+          from pathlib import Path
+          import yaml
+
+          path = Path("deploy/gpu/amd/device-plugin.yaml")
+          docs = list(yaml.safe_load_all(path.read_text(encoding="utf-8")))
+          assert docs[0]["data"]["sourceRevision"] == "dea1db1"
+          assert docs[0]["data"]["expectedResource"] == "amd.com/gpu"
+          assert "v1.31.0.10" in docs[0]["data"]["source"]
+          print("DEVICE_PLUGIN_REFERENCE: PASS")
+          PY
+
+      - name: Install Slurm proof dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y slurm-wlm
+          {
+            slurmctld -V
+            slurmd -V
+          } | tee artifacts/gate6/slurm-version.txt
+
+      - name: Run isolated Slurm controller, node, and jobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/gate6_slurm_smoke.sh artifacts/gate6/slurm
+
+      - name: Run scheduler mapping tests
+        shell: bash
+        run: python -m pytest -q tests/test_gate6_gpu.py -k 'scheduler or invalid_gpu' | tee artifacts/gate6/mapping-tests.txt
+
+      - name: Run full regression suite
+        shell: bash
+        run: python -m pytest -q | tee artifacts/gate6/full-regression.txt
+
+      - name: Collect Gate 6 evidence
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          {
+            echo "feature_sha=$FEATURE_SHA"
+            git status --short --branch
+            git log -1 --format='%H %s'
+            python --version
+            helm version 2>&1
+            slurmctld -V 2>&1
+            git diff --check
+          } > artifacts/gate6/tool-versions-and-diff.txt 2>&1
+          find deploy/gpu/amd deploy/hpc/slurm -maxdepth 2 -type f -print | sort \
+            > artifacts/gate6/gpu-hpc-file-list.txt
+          set -e
+
+      - name: Upload Gate 6 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate6-amd-rocm-hpc-evidence
+          path: artifacts/gate6
+          if-no-files-found: error

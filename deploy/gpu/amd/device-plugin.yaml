@@ -1,0 +1,16 @@
+# Reference-only manifest for AMD nodes.
+# Source: ROCm/k8s-device-plugin v1.31.0.10 (dea1db1).
+# Do not apply this file on CPU-only CI runners.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agenttrust-amd-device-plugin-reference
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: amd-gpu-device-plugin
+    app.kubernetes.io/managed-by: agenttrust
+data:
+  source: https://github.com/ROCm/k8s-device-plugin/tree/v1.31.0.10
+  sourceRevision: dea1db1
+  expectedResource: amd.com/gpu
+  requiredNodeDevices: /dev/kfd,/dev/dri

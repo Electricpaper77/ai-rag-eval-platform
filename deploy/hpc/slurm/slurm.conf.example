@@ -1,0 +1,11 @@
+# The CI smoke script writes an equivalent configuration into a temporary
+# directory so it can run without changing the runner's system configuration.
+ClusterName=agenttrust-gate6
+SlurmctldHost=localhost
+AuthType=auth/none
+SelectType=select/cons_tres
+SelectTypeParameters=CR_Core
+NodeName=localhost CPUs=1 RealMemory=1024 State=UNKNOWN
+PartitionName=debug Nodes=localhost Default=YES MaxTime=INFINITE State=UP
+ProctrackType=proctrack/linuxproc
+TaskPlugin=task/none
