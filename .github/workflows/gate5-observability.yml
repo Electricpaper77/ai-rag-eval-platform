@@ -223,13 +223,13 @@ jobs:
           kubectl run gate5-prometheus-client -n "$OBS_NAMESPACE" --rm -i --restart=Never \
             --labels=app.kubernetes.io/part-of=agenttrust-iq \
             --image="$IMAGE" --image-pull-policy=Never -- \
-            python -c 'import json,urllib.parse,urllib.request; base="http://prometheus-server.observability.svc.cluster.local:9090"; qs={"up":"up{job=\"agenttrust\"}","availability":"sum(increase(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\",status=~\"2..\"}[5m])) / clamp_min(sum(increase(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\"}[5m])),1)","error_rate":"sum(increase(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\",status=~\"5..\"}[5m])) / clamp_min(sum(increase(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\"}[5m])),1)","p95":"histogram_quantile(0.95,sum(increase(http_request_duration_seconds_bucket{job=\"agenttrust\",path=\"/v1/chat/completions\"}[5m])) by (le))"}; out={k:json.load(urllib.request.urlopen(base+"/api/v1/query?"+urllib.parse.urlencode({"query":q}),timeout=10)) for k,q in qs.items()}; print(json.dumps(out)); val=lambda k:float(out[k]["data"]["result"][0]["value"][1]); assert val("up")==1 and val("availability")>=0.99 and val("error_rate")<0.01 and val("p95")<1.0' \
+            python -c 'import json,urllib.parse,urllib.request; base="http://prometheus-server.observability.svc.cluster.local:80"; qs={"up":"up{job=\"agenttrust\"}","availability":"sum(increase(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\",status=~\"2..\"}[5m])) / clamp_min(sum(increase(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\"}[5m])),1)","error_rate":"sum(increase(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\",status=~\"5..\"}[5m])) / clamp_min(sum(increase(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\"}[5m])),1)","p95":"histogram_quantile(0.95,sum(increase(http_request_duration_seconds_bucket{job=\"agenttrust\",path=\"/v1/chat/completions\"}[5m])) by (le))"}; out={k:json.load(urllib.request.urlopen(base+"/api/v1/query?"+urllib.parse.urlencode({"query":q}),timeout=10)) for k,q in qs.items()}; print(json.dumps(out)); val=lambda k:float(out[k]["data"]["result"][0]["value"][1]); assert val("up")==1 and val("availability")>=0.99 and val("error_rate")<0.01 and val("p95")<1.0' \
             | tee artifacts/gate5/baseline-prometheus-queries.txt
           grep -q '"status":"success"' artifacts/gate5/baseline-prometheus-queries.txt
           kubectl run gate5-alert-baseline -n "$OBS_NAMESPACE" --rm -i --restart=Never \
             --labels=app.kubernetes.io/part-of=agenttrust-iq \
             --image="$IMAGE" --image-pull-policy=Never -- \
-            python -c 'import json,urllib.request; a=json.load(urllib.request.urlopen("http://prometheus-server.observability.svc.cluster.local:9090/api/v1/alerts",timeout=10))["data"]["alerts"]; bad=[x["labels"].get("alertname") for x in a if x["labels"].get("alertname"," ").startswith("AgentTrust") and x["state"]=="firing"]; print("BASELINE_ALERTS_INACTIVE",bad); assert not bad' \
+            python -c 'import json,urllib.request; a=json.load(urllib.request.urlopen("http://prometheus-server.observability.svc.cluster.local:80/api/v1/alerts",timeout=10))["data"]["alerts"]; bad=[x["labels"].get("alertname") for x in a if x["labels"].get("alertname"," ").startswith("AgentTrust") and x["state"]=="firing"]; print("BASELINE_ALERTS_INACTIVE",bad); assert not bad' \
             | tee artifacts/gate5/baseline-alerts.txt
 
       - name: Prove Loki ingestion
@@ -288,7 +288,7 @@ jobs:
             result="$(kubectl run gate5-alert-error-check -n "$OBS_NAMESPACE" --rm -i --restart=Never \
               --labels=app.kubernetes.io/part-of=agenttrust-iq \
               --image="$IMAGE" --image-pull-policy=Never -- \
-              python -c 'import json,sys,urllib.request; a=json.load(urllib.request.urlopen("http://prometheus-server.observability.svc.cluster.local:9090/api/v1/alerts",timeout=10))["data"]["alerts"]; print("STATE=firing" if any(x["labels"].get("alertname")=="AgentTrustHighErrorRate" and x["state"]=="firing" for x in a) else "STATE=inactive")' 2>/dev/null || true)"
+              python -c 'import json,sys,urllib.request; a=json.load(urllib.request.urlopen("http://prometheus-server.observability.svc.cluster.local:80/api/v1/alerts",timeout=10))["data"]["alerts"]; print("STATE=firing" if any(x["labels"].get("alertname")=="AgentTrustHighErrorRate" and x["state"]=="firing" for x in a) else "STATE=inactive")' 2>/dev/null || true)"
             printf '%s\n' "$result" | tee -a artifacts/gate5/incident-alert-poll.txt
             if grep -q 'STATE=firing' <<<"$result"; then detected=true; break; fi
             sleep 2
@@ -317,7 +317,7 @@ jobs:
             result="$(kubectl run gate5-alert-recovery-check -n "$OBS_NAMESPACE" --rm -i --restart=Never \
               --labels=app.kubernetes.io/part-of=agenttrust-iq \
               --image="$IMAGE" --image-pull-policy=Never -- \
-              python -c 'import json,urllib.request; a=json.load(urllib.request.urlopen("http://prometheus-server.observability.svc.cluster.local:9090/api/v1/alerts",timeout=10))["data"]["alerts"]; print("STATE=resolved" if not any(x["labels"].get("alertname")=="AgentTrustHighErrorRate" and x["state"]=="firing" for x in a) else "STATE=firing")' 2>/dev/null || true)"
+              python -c 'import json,urllib.request; a=json.load(urllib.request.urlopen("http://prometheus-server.observability.svc.cluster.local:80/api/v1/alerts",timeout=10))["data"]["alerts"]; print("STATE=resolved" if not any(x["labels"].get("alertname")=="AgentTrustHighErrorRate" and x["state"]=="firing" for x in a) else "STATE=firing")' 2>/dev/null || true)"
             printf '%s\n' "$result" | tee -a artifacts/gate5/recovery-alert-poll.txt
             if grep -q 'STATE=resolved' <<<"$result"; then resolved=true; break; fi
             sleep 2
