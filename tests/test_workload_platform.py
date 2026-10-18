@@ -46,6 +46,34 @@ def test_gpu_pvc_and_inference_controls():
     assert any(item["kind"] == "PersistentVolumeClaim" for item in objects)
 
 
+@pytest.mark.parametrize("field,value,reason", [
+    ("cpu_request", "bad", "invalid_cpu_request"),
+    ("cpu_limit", "bad", "invalid_cpu_limit"),
+    ("memory_request", "1G", "invalid_memory_request"),
+    ("memory_limit", "1G", "invalid_memory_limit"),
+])
+def test_resource_quantity_reason_codes(field, value, reason):
+    payload = {"name": "demo", "workload_type": "ci-job", field: value}
+    result = validate_workload(WorkloadRequest(**payload))
+    assert result["admission_decision"] == "deny"
+    assert reason in result["reason_codes"]
+
+
+def test_resource_order_scheduling_and_gpu_admission():
+    result = validate_workload(WorkloadRequest(name="demo", workload_type="ci-job", cpu_request="2", cpu_limit="1", memory_request="1Gi", memory_limit="512Mi", node_selector={"bad key": "x"}, tolerations=[{"effect": "bad"}]))
+    assert result["admission_decision"] == "deny"
+    assert {"cpu_request_exceeds_limit", "memory_request_exceeds_limit", "invalid_node_selector", "invalid_toleration"}.issubset(result["reason_codes"])
+    no_gpu = build_workload_request(WorkloadRequest(name="nogpu", workload_type="ci-job"))[0]["spec"]["template"]["spec"]["containers"][0]
+    assert "amd.com/gpu" not in no_gpu["resources"]["limits"]
+
+
+def test_benchmark_command_is_executable_and_writable():
+    objects = build_workload_request(WorkloadRequest(name="bench", workload_type="benchmark-job"))
+    container = objects[0]["spec"]["template"]["spec"]["containers"][0]
+    assert container["command"] == ["python", "-m", "scripts.gate2_benchmark"]
+    assert {mount["mountPath"] for mount in container["volumeMounts"]} == {"/tmp"}
+
+
 def test_benchmark_success_and_cleanup(tmp_path: Path):
     executor = LocalWorkloadExecutor(tmp_path, lambda q, k: {"answer": q, "citations": ["local"], "usage": {"total_tokens": 1}})
     result = executor.run_benchmark("success")

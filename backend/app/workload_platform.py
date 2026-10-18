@@ -11,6 +11,9 @@ from .eval.regression import run_regression_eval
 WORKLOAD_TYPES = ("dev-pod", "ci-job", "inference-service", "benchmark-job")
 DEFAULT_IMAGE = "agenttrust-iq:ci"
 MAX_GPU, MAX_REPLICAS, MAX_TTL = 8, 8, 86400
+CPU_RE = re.compile(r"^(?:[1-9][0-9]*|0\.[0-9]+|[1-9][0-9]*m)$")
+MEMORY_RE = re.compile(r"^[1-9][0-9]*(?:Mi|Gi)$")
+KEY_RE = re.compile(r"^[A-Za-z0-9]([-A-Za-z0-9_.]*[A-Za-z0-9])?(?:/[A-Za-z0-9]([-A-Za-z0-9_.]*[A-Za-z0-9])?)?$")
 router = APIRouter(prefix="/platform/workloads", tags=["workloads"])
 
 class AdmissionError(ValueError):
@@ -45,12 +48,32 @@ def _security_context() -> dict[str, Any]:
 def _validate(request: WorkloadRequest) -> WorkloadRequest:
     reasons: list[str] = []
     if request.workload_type not in WORKLOAD_TYPES: reasons.append("unsupported_workload_type")
-    if not all((request.cpu_request, request.cpu_limit, request.memory_request, request.memory_limit)): reasons.append("resource_limit_required")
+    if not request.cpu_request: reasons.append("invalid_cpu_request")
+    elif not CPU_RE.fullmatch(request.cpu_request): reasons.append("invalid_cpu_request")
+    if not request.cpu_limit: reasons.append("invalid_cpu_limit")
+    elif not CPU_RE.fullmatch(request.cpu_limit): reasons.append("invalid_cpu_limit")
+    if not request.memory_request: reasons.append("invalid_memory_request")
+    elif not MEMORY_RE.fullmatch(request.memory_request): reasons.append("invalid_memory_request")
+    if not request.memory_limit: reasons.append("invalid_memory_limit")
+    elif not MEMORY_RE.fullmatch(request.memory_limit): reasons.append("invalid_memory_limit")
+    if CPU_RE.fullmatch(request.cpu_request) and CPU_RE.fullmatch(request.cpu_limit) and _cpu_value(request.cpu_request) > _cpu_value(request.cpu_limit): reasons.append("cpu_request_exceeds_limit")
+    if MEMORY_RE.fullmatch(request.memory_request) and MEMORY_RE.fullmatch(request.memory_limit) and _memory_value(request.memory_request) > _memory_value(request.memory_limit): reasons.append("memory_request_exceeds_limit")
+    if any(not KEY_RE.fullmatch(k) or len(k) > 253 or len(v) > 63 for k, v in request.node_selector.items()): reasons.append("invalid_node_selector")
+    for toleration in request.tolerations:
+        allowed = {"key", "operator", "value", "effect", "tolerationSeconds"}
+        if not isinstance(toleration, dict) or not set(toleration).issubset(allowed) or toleration.get("operator", "Equal") not in {"Exists", "Equal"} or toleration.get("effect") not in {None, "NoSchedule", "PreferNoSchedule", "NoExecute"}: reasons.append("invalid_toleration")
     if request.mount_path == "/" or not request.mount_path.startswith("/"): reasons.append("invalid_mount_path")
     if request.command and any(x in {"sh", "bash", "cmd", "powershell"} for x in request.command): reasons.append("invalid_command")
     if request.pvc_size and not re.fullmatch(r"[1-9][0-9]*(Mi|Gi|Ti)", request.pvc_size): reasons.append("invalid_storage_request")
     if reasons: raise AdmissionError(reasons)
     return request
+
+def _cpu_value(value: str) -> float:
+    return float(value[:-1]) / 1000 if value.endswith("m") else float(value)
+
+def _memory_value(value: str) -> int:
+    number, unit = int(value[:-2]), value[-2:]
+    return number * (1024 ** (2 if unit == "Mi" else 3))
 
 def _container(request: WorkloadRequest, name: str, command: list[str], port: int | None = None) -> dict[str, Any]:
     resources = {"requests": {"cpu": request.cpu_request, "memory": request.memory_request}, "limits": {"cpu": request.cpu_limit, "memory": request.memory_limit}}
@@ -75,7 +98,7 @@ def _pod_spec(request: WorkloadRequest, container: dict[str, Any], restart: str 
 def build_workload_request(request: WorkloadRequest) -> list[dict[str, Any]]:
     request = _validate(request); labels = {"app.kubernetes.io/name": request.name, "app.kubernetes.io/part-of": "agenttrust-iq"}
     base = {"metadata": {"name": request.name, "labels": labels}}
-    commands = {"dev-pod": ["python", "-m", "scripts.gate1_inference"], "ci-job": ["python", "-m", "pytest", "-q", "tests/test_workload_platform.py"], "benchmark-job": ["python", "-m", "backend.app.eval.regression"], "inference-service": ["python", "-m", "scripts.gate1_inference"]}
+    commands = {"dev-pod": ["python", "-m", "scripts.gate1_inference"], "ci-job": ["python", "-m", "pytest", "-q", "tests/test_workload_platform.py"], "benchmark-job": ["python", "-m", "scripts.gate2_benchmark"], "inference-service": ["python", "-m", "scripts.gate1_inference"]}
     command = request.command or commands[request.workload_type]; container = _container(request, request.workload_type, command, 8080 if request.workload_type == "inference-service" else None)
     if request.args: container["args"] = request.args
     if request.workload_type == "inference-service":
