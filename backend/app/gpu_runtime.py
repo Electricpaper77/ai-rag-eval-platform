@@ -190,10 +190,13 @@ def detect_rocm_runtime(
 
     devices = rocminfo_devices_result or rocm_smi_devices
     device_nodes = [path for path in device_paths if Path(path).exists()]
-    if device_nodes:
-        evidence.extend(f"device:{path}" for path in device_nodes)
+    rocm_device_nodes = [path for path in device_nodes if path.endswith("/kfd") or path == "/dev/kfd"]
+    if rocm_device_nodes:
+        evidence.extend(f"device:{path}" for path in rocm_device_nodes)
+        if "/dev/dri" in device_nodes:
+            evidence.append("device:/dev/dri")
     hip_available, hip_version = _hip_available(environment, runner)
-    rocm_available = rocm_command_succeeded or bool(device_nodes)
+    rocm_available = rocm_command_succeeded or bool(rocm_device_nodes)
     if hip_version and not runtime_version:
         runtime_version = hip_version
 
@@ -213,7 +216,7 @@ def detect_rocm_runtime(
             device.setdefault("vendor", "AMD")
 
     return {
-        "vendor": "AMD" if devices or evidence else None,
+        "vendor": "AMD" if devices or rocm_command_succeeded or rocm_device_nodes else None,
         "rocm_available": rocm_available,
         "hip_available": hip_available,
         "device_count": len(devices),
