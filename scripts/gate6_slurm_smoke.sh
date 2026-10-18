@@ -15,12 +15,20 @@ user_name="$(id -un)"
 node_name="$(hostname -s)"
 cpus="$(nproc)"
 real_memory="$(awk '/^MemTotal:/ {print int($2 / 1024); exit}' /proc/meminfo)"
+slurmd_privileged=0
+if sudo -n true 2>/dev/null; then
+  slurmd_privileged=1
+fi
+slurmd_user="$user_name"
+if [[ "$slurmd_privileged" -eq 1 ]]; then
+  slurmd_user=root
+fi
 conf="$root/slurm.conf"
 cat > "$conf" <<EOF
 ClusterName=agenttrust-gate6
 SlurmctldHost=$node_name
 SlurmUser=$user_name
-SlurmdUser=$user_name
+SlurmdUser=$slurmd_user
 AuthType=auth/none
 SelectType=select/cons_tres
 SelectTypeParameters=CR_Core
@@ -55,9 +63,7 @@ trap cleanup EXIT
 
 slurmctld -Dvvv -f "$conf" > "$artifact_dir/slurmctld.stdout" 2> "$artifact_dir/slurmctld.stderr" &
 slurmctld_pid=$!
-slurmd_privileged=0
-if sudo -n true 2>/dev/null; then
-  slurmd_privileged=1
+if [[ "$slurmd_privileged" -eq 1 ]]; then
   sudo -n slurmd -Dvvv -f "$conf" > "$artifact_dir/slurmd.stdout" 2> "$artifact_dir/slurmd.stderr" &
 else
   slurmd -Dvvv -f "$conf" > "$artifact_dir/slurmd.stdout" 2> "$artifact_dir/slurmd.stderr" &
