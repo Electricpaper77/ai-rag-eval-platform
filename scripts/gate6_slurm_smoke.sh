@@ -54,7 +54,7 @@ for _ in $(seq 1 30); do
 done
 
 timeout 30s scontrol ping | tee "$artifact_dir/controller-ping.txt"
-timeout 30s sinfo -f | tee "$artifact_dir/sinfo.txt"
+timeout 30s sinfo -l | tee "$artifact_dir/sinfo.txt"
 timeout 30s scontrol show node localhost | tee "$artifact_dir/node.txt"
 
 timeout 60s srun -N1 -n1 hostname | tee "$artifact_dir/srun-hostname.txt"
