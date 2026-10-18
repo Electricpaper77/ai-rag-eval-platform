@@ -17,7 +17,8 @@ cpus="$(nproc)"
 real_memory="$(awk '/^MemTotal:/ {print int($2 / 1024); exit}' /proc/meminfo)"
 conf="$root/slurm.conf"
 cat > "$root/cgroup.conf" <<'EOF'
-CgroupPlugin=disabled
+CgroupPlugin=autodetect
+IgnoreSystemd=yes
 EOF
 cat > "$conf" <<EOF
 ClusterName=agenttrust-gate6
