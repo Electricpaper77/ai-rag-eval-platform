@@ -34,5 +34,14 @@ inference:
   artifactRoot: /tmp/inference_events
   logPath: /tmp/inference_runs.jsonl
 
+env: {}
+
+observability:
+  metrics:
+    enabled: false
+    path: /metrics
+    port: 8080
+  monitoringNamespace: observability
+
 networkPolicy:
   enabled: true

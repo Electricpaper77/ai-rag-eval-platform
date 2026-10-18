@@ -1,0 +1,21 @@
+{
+  "annotations": {"list": []},
+  "editable": false,
+  "graphTooltip": 1,
+  "panels": [
+    {"type": "timeseries", "title": "Request rate", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "sum(rate(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\",status=~\"2..\"}[1m]))", "refId": "A"}]},
+    {"type": "timeseries", "title": "Error rate", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "sum(rate(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\",status=~\"5..\"}[1m])) / clamp_min(sum(rate(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\"}[1m])), 1)", "refId": "A"}]},
+    {"type": "timeseries", "title": "p50 latency", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"agenttrust\",path=\"/v1/chat/completions\"}[1m])) by (le))", "refId": "A"}]},
+    {"type": "timeseries", "title": "p95 latency", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"agenttrust\",path=\"/v1/chat/completions\"}[1m])) by (le))", "refId": "A"}]},
+    {"type": "timeseries", "title": "Inference requests", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "sum(rate(inference_requests_total[1m]))", "refId": "A"}]},
+    {"type": "timeseries", "title": "Inference errors", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "sum(rate(inference_errors_total[1m]))", "refId": "A"}]},
+    {"type": "stat", "title": "AgentTrust scrape / readiness", "gridPos": {"h": 6, "w": 24, "x": 0, "y": 24}, "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "up{job=\"agenttrust\"}", "refId": "A"}]}
+  ],
+  "schemaVersion": 39,
+  "tags": ["agenttrust", "gate5", "ci"],
+  "templating": {"list": []},
+  "time": {"from": "now-15m", "to": "now"},
+  "title": "AgentTrust Observability SLO",
+  "uid": "agenttrust-gate5",
+  "version": 1
+}

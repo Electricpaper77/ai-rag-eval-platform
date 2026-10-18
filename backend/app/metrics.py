@@ -2,6 +2,35 @@ from __future__ import annotations
 
 from prometheus_client import Counter, Gauge, Histogram
 
+HTTP_REQUESTS_TOTAL = Counter(
+    "http_requests_total",
+    "Total HTTP requests handled by the AgentTrust application",
+    labelnames=("method", "path", "status"),
+)
+
+HTTP_REQUEST_DURATION_SECONDS = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    labelnames=("method", "path"),
+)
+
+HTTP_REQUESTS_IN_FLIGHT = Gauge(
+    "http_requests_in_flight",
+    "Current number of in-flight HTTP requests",
+)
+
+HEALTHZ_REQUESTS_TOTAL = Counter(
+    "healthz_requests_total",
+    "Health probe request outcomes",
+    labelnames=("status",),
+)
+
+INFERENCE_ERRORS_TOTAL = Counter(
+    "inference_errors_total",
+    "Total inference request errors",
+    labelnames=("reason",),
+)
+
 TOKENS_GENERATED = Counter(
     "tokens_generated_total",
     "Total tokens generated",
