@@ -1,0 +1,6 @@
+apiVersion: v2
+name: agenttrust
+description: Production-shaped Helm packaging for the AgentTrust inference service
+type: application
+version: 0.1.0
+appVersion: "gate2"
