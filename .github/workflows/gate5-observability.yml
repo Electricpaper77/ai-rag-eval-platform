@@ -366,6 +366,12 @@ jobs:
           kubectl get pods -A -o wide > artifacts/gate5/pods-final.txt 2>&1 || true
           kubectl get events -A --sort-by=.lastTimestamp > artifacts/gate5/events-final.txt 2>&1 || true
           kubectl logs -n "$NAMESPACE" deployment/agenttrust --all-containers --tail=300 > artifacts/gate5/agenttrust-logs.txt 2>&1 || true
+          prometheus_pod="$(kubectl get pods -n "$OBS_NAMESPACE" -l app.kubernetes.io/name=prometheus,app.kubernetes.io/component=server -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+          if [[ -n "$prometheus_pod" ]]; then
+            kubectl logs -n "$OBS_NAMESPACE" "$prometheus_pod" -c prometheus-server --tail=300 > artifacts/gate5/prometheus-logs.txt 2>&1 || true
+            kubectl logs -n "$OBS_NAMESPACE" "$prometheus_pod" -c prometheus-server --previous --tail=300 > artifacts/gate5/prometheus-logs-previous.txt 2>&1 || true
+            kubectl describe pod -n "$OBS_NAMESPACE" "$prometheus_pod" > artifacts/gate5/prometheus-pod-describe.txt 2>&1 || true
+          fi
           kubectl logs -n "$OBS_NAMESPACE" daemonset/alloy --all-containers --tail=300 > artifacts/gate5/alloy-logs.txt 2>&1 || true
           kubectl logs -n "$OBS_NAMESPACE" statefulset/loki-single-binary --all-containers --tail=300 > artifacts/gate5/loki-logs.txt 2>&1 || true
           helm list -A > artifacts/gate5/helm-list.txt 2>&1 || true
