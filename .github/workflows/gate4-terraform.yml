@@ -82,7 +82,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m pytest -q tests/test_gate4_terraform.py | tee artifacts/gate4/terraform-tests.txt
+          python -m pytest --noconftest -q tests/test_gate4_terraform.py | tee artifacts/gate4/terraform-tests.txt
 
       - name: TFLint
         shell: bash
