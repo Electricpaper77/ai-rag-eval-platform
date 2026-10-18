@@ -12,6 +12,7 @@ if ! command -v slurmctld >/dev/null || ! command -v slurmd >/dev/null || ! comm
 fi
 
 user_name="$(id -un)"
+node_name="$(hostname -s)"
 conf="$root/slurm.conf"
 cat > "$conf" <<EOF
 ClusterName=agenttrust-gate6
@@ -21,7 +22,7 @@ SlurmdUser=$user_name
 AuthType=auth/none
 SelectType=select/cons_tres
 SelectTypeParameters=CR_Core
-NodeName=localhost CPUs=1 RealMemory=1024 State=UNKNOWN
+NodeName=$node_name NodeAddr=127.0.0.1 CPUs=1 RealMemory=1024 State=UNKNOWN
 PartitionName=debug Nodes=localhost Default=YES MaxTime=INFINITE State=UP
 SlurmctldPidFile=$root/slurmctld.pid
 SlurmdPidFile=$root/slurmd.pid
@@ -55,7 +56,7 @@ done
 
 timeout 30s scontrol ping | tee "$artifact_dir/controller-ping.txt"
 timeout 30s sinfo -l | tee "$artifact_dir/sinfo.txt"
-timeout 30s scontrol show node localhost | tee "$artifact_dir/node.txt"
+timeout 30s scontrol show node "$node_name" | tee "$artifact_dir/node.txt"
 
 timeout 60s srun -N1 -n1 hostname | tee "$artifact_dir/srun-hostname.txt"
 
