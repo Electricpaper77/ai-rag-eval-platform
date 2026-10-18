@@ -1,0 +1,10 @@
+project_id = "replace-with-an-existing-project-id"
+
+# Defaults are CPU-compatible and do not enable a GPU node pool.
+region       = "us-central1"
+cluster_name = "agenttrust-gke"
+
+# Set these only in an authorized plan/apply environment.
+gpu_enabled = false
+
+# No credentials or secret values belong in this file.

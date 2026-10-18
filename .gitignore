@@ -85,3 +85,4 @@ artifacts/eval_runs/
 
 .venv311/
 .tmp/
+.terraform/
