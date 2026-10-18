@@ -76,16 +76,33 @@ jobs:
       - name: Verify inference and recovery
         run: |
           set -euo pipefail
-          kubectl run -n agenttrust-gate2 inference-client --rm -i --restart=Never --image=agenttrust-iq:gate2 --image-pull-policy=Never -- python -c "import json,urllib.request; r=urllib.request.urlopen('http://gate2-inference:8080/healthz'); print('healthz',r.status); q=urllib.request.Request('http://gate2-inference:8080/v1/chat/completions',data=json.dumps({'model':'mock','messages':[{'role':'user','content':'hello'}]}).encode(),headers={'content-type':'application/json'}); b=json.loads(urllib.request.urlopen(q).read()); assert b['choices'][0]['message']['role']=='assistant'; print('inference',b)" | tee artifacts/gate2/inference.log
+          kubectl run -n agenttrust-gate2 inference-client --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image=agenttrust-iq:gate2 --image-pull-policy=Never -- python -c "import json,urllib.request; r=urllib.request.urlopen('http://gate2-inference:8080/healthz'); print('healthz',r.status); q=urllib.request.Request('http://gate2-inference:8080/v1/chat/completions',data=json.dumps({'model':'mock','messages':[{'role':'user','content':'hello'}]}).encode(),headers={'content-type':'application/json'}); b=json.loads(urllib.request.urlopen(q).read()); assert b['choices'][0]['message']['role']=='assistant'; print('inference',b)" | tee artifacts/gate2/inference.log
           kubectl create namespace agenttrust-gate2-denied
           if kubectl run -n agenttrust-gate2-denied deny-client --rm -i --restart=Never --image=agenttrust-iq:gate2 --image-pull-policy=Never -- python -c "import urllib.request; urllib.request.urlopen('http://gate2-inference.agenttrust-gate2.svc:8080/healthz',timeout=5)"; then exit 1; fi
           kubectl delete namespace agenttrust-gate2-denied --wait=true
-          kubectl delete pod -n agenttrust-gate2 -l app.kubernetes.io/name=gate2-inference --wait=false
-          kubectl rollout status -n agenttrust-gate2 deployment/gate2-inference --timeout=180s
-          kubectl run -n agenttrust-gate2 recovery-client --rm -i --restart=Never --image=agenttrust-iq:gate2 --image-pull-policy=Never -- python -c "import urllib.request; print('recovery',urllib.request.urlopen('http://gate2-inference:8080/healthz').status)" | tee artifacts/gate2/recovery.log
+          old_pod="$(kubectl get pods -n agenttrust-gate2 -l app.kubernetes.io/name=gate2-inference -o jsonpath='{.items[0].metadata.name}')"
+          old_uid="$(kubectl get pod -n agenttrust-gate2 "$old_pod" -o jsonpath='{.metadata.uid}')"
+          printf 'old_pod=%s old_uid=%s\n' "$old_pod" "$old_uid" | tee artifacts/gate2/recovery.log
+          kubectl delete pod -n agenttrust-gate2 "$old_pod" --wait=false
+          new_pod=""
+          new_uid=""
+          for _ in $(seq 1 120); do
+            for candidate in $(kubectl get pods -n agenttrust-gate2 -l app.kubernetes.io/name=gate2-inference -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'); do
+              candidate_uid="$(kubectl get pod -n agenttrust-gate2 "$candidate" -o jsonpath='{.metadata.uid}')"
+              if [[ "$candidate_uid" != "$old_uid" ]]; then new_pod="$candidate"; new_uid="$candidate_uid"; break; fi
+            done
+            [[ -n "$new_pod" ]] && break
+            sleep 1
+          done
+          test -n "$new_pod"
+          test "$new_uid" != "$old_uid"
+          kubectl wait -n agenttrust-gate2 --for=condition=Ready pod/"$new_pod" --timeout=120s
+          printf 'new_pod=%s new_uid=%s\n' "$new_pod" "$new_uid" | tee -a artifacts/gate2/recovery.log
+          kubectl run -n agenttrust-gate2 recovery-client --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image=agenttrust-iq:gate2 --image-pull-policy=Never -- python -c "import json,urllib.request; r=urllib.request.urlopen('http://gate2-inference:8080/healthz'); print('healthz',r.status); q=urllib.request.Request('http://gate2-inference:8080/v1/chat/completions',data=json.dumps({'model':'mock','messages':[{'role':'user','content':'recovery'}]}).encode(),headers={'content-type':'application/json'}); b=json.loads(urllib.request.urlopen(q).read()); assert b['choices'][0]['message']['role']=='assistant'; print('recovery',b)" | tee -a artifacts/gate2/recovery.log
       - name: Verify benchmark artifact
         run: |
-          grep -F 'artifact=/tmp/eval_runs/' artifacts/gate2/benchmark.log
+          grep -F "'total_cases': 9" artifacts/gate2/benchmark.log
+          grep -Fx 'artifact=/tmp/eval_runs/regression_gate2-benchmark.jsonl' artifacts/gate2/benchmark.log
       - name: PVC capability probe
         run: |
           kubectl get storageclass > artifacts/gate2/storageclass.txt

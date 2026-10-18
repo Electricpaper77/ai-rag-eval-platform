@@ -6,6 +6,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 import pytest
 
 from backend.app.workload_platform import LocalWorkloadExecutor, WorkloadRequest, build_workload, build_workload_request, network_policy, validate_workload, workload_types
+from scripts.gate2_render import render_objects
 
 
 @pytest.mark.parametrize("kind,expected", [("dev-pod", "Pod"), ("ci-job", "Job"), ("benchmark-job", "Job"), ("inference-service", "Deployment")])
@@ -72,6 +73,18 @@ def test_benchmark_command_is_executable_and_writable():
     container = objects[0]["spec"]["template"]["spec"]["containers"][0]
     assert container["command"] == ["python", "-m", "scripts.gate2_benchmark"]
     assert {mount["mountPath"] for mount in container["volumeMounts"]} == {"/tmp"}
+
+
+def test_gate2_renderer_uses_kind_image_and_pull_policy():
+    objects = render_objects()
+    containers = []
+    for item in objects:
+        spec = item.get("spec", {})
+        pod_spec = spec.get("template", {}).get("spec", spec)
+        containers.extend(pod_spec.get("containers", []))
+    assert len(containers) == 4
+    assert {container["image"] for container in containers} == {"agenttrust-iq:gate2"}
+    assert {container["imagePullPolicy"] for container in containers} == {"Never"}
 
 
 def test_benchmark_success_and_cleanup(tmp_path: Path):
