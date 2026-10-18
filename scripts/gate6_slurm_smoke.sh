@@ -24,6 +24,10 @@ if [[ "$slurmd_privileged" -eq 1 ]]; then
   slurmd_user=root
 fi
 conf="$root/slurm.conf"
+cat > "$root/cgroup.conf" <<'EOF'
+CgroupPlugin=autodetect
+IgnoreSystemd=yes
+EOF
 cat > "$conf" <<EOF
 ClusterName=agenttrust-gate6
 SlurmctldHost=$node_name
