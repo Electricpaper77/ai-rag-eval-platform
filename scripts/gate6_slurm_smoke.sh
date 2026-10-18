@@ -16,13 +16,13 @@ node_name="$(hostname -s)"
 conf="$root/slurm.conf"
 cat > "$conf" <<EOF
 ClusterName=agenttrust-gate6
-SlurmctldHost=localhost
+SlurmctldHost=$node_name
 SlurmUser=$user_name
 SlurmdUser=$user_name
 AuthType=auth/none
 SelectType=select/cons_tres
 SelectTypeParameters=CR_Core
-NodeName=$node_name NodeAddr=127.0.0.1 CPUs=1 RealMemory=1024 State=UNKNOWN
+NodeName=$node_name NodeAddr=127.0.0.1 NodeHostname=$node_name CPUs=1 RealMemory=1024 State=UNKNOWN
 PartitionName=debug Nodes=localhost Default=YES MaxTime=INFINITE State=UP
 SlurmctldPidFile=$root/slurmctld.pid
 SlurmdPidFile=$root/slurmd.pid
@@ -44,15 +44,33 @@ cleanup() {
 }
 trap cleanup EXIT
 
-slurmctld -D -f "$conf" > "$artifact_dir/slurmctld.stdout" 2> "$artifact_dir/slurmctld.stderr" &
+slurmctld -Dvvv -f "$conf" > "$artifact_dir/slurmctld.stdout" 2> "$artifact_dir/slurmctld.stderr" &
 slurmctld_pid=$!
-slurmd -D -f "$conf" > "$artifact_dir/slurmd.stdout" 2> "$artifact_dir/slurmd.stderr" &
+slurmd -Dvvv -f "$conf" > "$artifact_dir/slurmd.stdout" 2> "$artifact_dir/slurmd.stderr" &
 slurmd_pid=$!
 
+controller_ready=0
 for _ in $(seq 1 30); do
-  if scontrol ping 2>/dev/null | grep -q "UP"; then break; fi
+  if scontrol ping 2>/dev/null | grep -q "UP"; then controller_ready=1; break; fi
+  if ! kill -0 "$slurmctld_pid" 2>/dev/null; then break; fi
   sleep 1
 done
+
+if [[ "$controller_ready" -ne 1 ]]; then
+  {
+    echo "SLURM_CONTROLLER_STARTUP_FAILED"
+    ps -ef | grep -E "[s]lurm(ctld|d)"
+    echo "--- slurmctld stdout ---"
+    cat "$artifact_dir/slurmctld.stdout"
+    echo "--- slurmctld stderr ---"
+    cat "$artifact_dir/slurmctld.stderr"
+    echo "--- slurmd stdout ---"
+    cat "$artifact_dir/slurmd.stdout"
+    echo "--- slurmd stderr ---"
+    cat "$artifact_dir/slurmd.stderr"
+  } | tee "$artifact_dir/startup-diagnostics.txt"
+  exit 1
+fi
 
 timeout 30s scontrol ping | tee "$artifact_dir/controller-ping.txt"
 timeout 30s sinfo -l | tee "$artifact_dir/sinfo.txt"
