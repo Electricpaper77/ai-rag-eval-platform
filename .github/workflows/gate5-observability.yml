@@ -317,6 +317,11 @@ jobs:
             --image="$IMAGE" --image-pull-policy=Never -- \
             python -c 'import json,urllib.request; b="http://agenttrust.agenttrust.svc.cluster.local:8080"; assert urllib.request.urlopen(b+"/healthz",timeout=10).status==200; p=json.dumps({"model":"mock","messages":[{"role":"user","content":"gate5 recovery"}]}).encode(); r=urllib.request.urlopen(urllib.request.Request(b+"/v1/chat/completions",data=p,headers={"content-type":"application/json"}),timeout=15); assert r.status==200; print("RECOVERY_INFERENCE_PASS",r.status)' \
             | tee artifacts/gate5/recovery-inference.txt
+          kubectl run gate5-prometheus-recovery-client -n "$OBS_NAMESPACE" --rm -i --restart=Never \
+            --labels=app.kubernetes.io/part-of=agenttrust-iq \
+            --image="$IMAGE" --image-pull-policy=Never -- \
+            python -c 'import json,urllib.parse,urllib.request; base="http://prometheus-server.observability.svc.cluster.local:80"; qs={"up":"up{job=\"agenttrust\"}","error_rate":"sum(increase(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\",status=~\"5..\"}[5m])) / clamp_min(sum(increase(http_requests_total{job=\"agenttrust\",path=\"/v1/chat/completions\"}[5m])),1)"}; out={k:json.load(urllib.request.urlopen(base+"/api/v1/query?"+urllib.parse.urlencode({"query":q}),timeout=10)) for k,q in qs.items()}; print(json.dumps(out)); val=lambda k:float(out[k]["data"]["result"][0]["value"][1]) if out[k]["data"]["result"] else 0.0; assert val("up")==1 and val("error_rate")<0.01' \
+            | tee artifacts/gate5/recovery-prometheus-queries.txt
           resolved=false
           for _ in $(seq 1 90); do
             result="$(kubectl run gate5-alert-recovery-check -n "$OBS_NAMESPACE" --rm -i --restart=Never \
