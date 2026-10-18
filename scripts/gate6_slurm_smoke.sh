@@ -102,7 +102,7 @@ timeout 30s sinfo -l | tee "$artifact_dir/sinfo.txt"
 timeout 30s scontrol show node "$node_name" | tee "$artifact_dir/node.txt"
 
 timeout 60s srun -N1 -n1 hostname | tee "$artifact_dir/srun-hostname.txt"
-timeout 30s scontrol update NodeName="$node_name" State=RESUME | tee "$artifact_dir/node-resume.txt"
+timeout 30s scontrol update NodeName="$node_name" State=IDLE | tee "$artifact_dir/node-resume.txt"
 timeout 30s scontrol show node "$node_name" | tee "$artifact_dir/node-after-registration.txt"
 
 job_script="$root/benchmark-job.sh"
