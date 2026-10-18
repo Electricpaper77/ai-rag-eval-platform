@@ -16,10 +16,6 @@ node_name="$(hostname -s)"
 cpus="$(nproc)"
 real_memory="$(awk '/^MemTotal:/ {print int($2 / 1024); exit}' /proc/meminfo)"
 conf="$root/slurm.conf"
-cat > "$root/cgroup.conf" <<'EOF'
-CgroupPlugin=autodetect
-IgnoreSystemd=yes
-EOF
 cat > "$conf" <<EOF
 ClusterName=agenttrust-gate6
 SlurmctldHost=$node_name
@@ -46,14 +42,26 @@ export SLURM_CONF="$conf"
 
 cleanup() {
   set +e
-  [[ -n "${slurmd_pid:-}" ]] && kill "$slurmd_pid" 2>/dev/null || true
+  if [[ -n "${slurmd_pid:-}" ]]; then
+    if [[ "${slurmd_privileged:-0}" -eq 1 ]]; then
+      sudo -n kill "$slurmd_pid" 2>/dev/null || true
+    else
+      kill "$slurmd_pid" 2>/dev/null || true
+    fi
+  fi
   [[ -n "${slurmctld_pid:-}" ]] && kill "$slurmctld_pid" 2>/dev/null || true
 }
 trap cleanup EXIT
 
 slurmctld -Dvvv -f "$conf" > "$artifact_dir/slurmctld.stdout" 2> "$artifact_dir/slurmctld.stderr" &
 slurmctld_pid=$!
-slurmd -Dvvv -f "$conf" > "$artifact_dir/slurmd.stdout" 2> "$artifact_dir/slurmd.stderr" &
+slurmd_privileged=0
+if sudo -n true 2>/dev/null; then
+  slurmd_privileged=1
+  sudo -n slurmd -Dvvv -f "$conf" > "$artifact_dir/slurmd.stdout" 2> "$artifact_dir/slurmd.stderr" &
+else
+  slurmd -Dvvv -f "$conf" > "$artifact_dir/slurmd.stdout" 2> "$artifact_dir/slurmd.stderr" &
+fi
 slurmd_pid=$!
 
 controller_ready=0
