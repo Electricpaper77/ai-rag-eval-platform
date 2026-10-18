@@ -131,5 +131,5 @@ if [[ -n "$job_id" ]]; then
   timeout 30s squeue -j "$job_id" -o "%.18i %.9T %.20j" | tee "$artifact_dir/squeue.txt" || true
   timeout 30s sacct -X -j "$job_id" --starttime="$(date -d '2 minutes ago' '+%Y-%m-%dT%H:%M:%S')" --format=JobID,State,ExitCode | tee "$artifact_dir/sacct.txt" || true
 fi
-grep -R "GATE6_SLURM_BENCHMARK_PASS" "$root" "$artifact_dir" | tee -a "$artifact_dir/job-output.txt"
+grep -F "GATE6_SLURM_BENCHMARK_PASS" "$artifact_dir/job-output.txt" | tee "$artifact_dir/benchmark-proof.txt"
 echo "SLURM: PASS" | tee "$artifact_dir/status.txt"
