@@ -16,7 +16,7 @@ from .metrics import GRAPHRAG_LATENCY_SECONDS, GRAPHRAG_REQUESTS_TOTAL
 from .routes.regression_eval import router as regression_router
 from .routes.eval_compare import router as eval_compare_router
 from .routes.dashboard import router as dashboard_router
-from .inference import handle_chat_completions_async
+from .inference import handle_chat_completions
 from .agent_reliability import router as agent_reliability_router
 from .agent_evals import router as agent_evals_router
 from .tenants import router as tenants_router
@@ -370,7 +370,7 @@ def metrics():
 @core_router.post("/v1/chat/completions")
 async def chat_completions_openai_compatible(request: dict):
     try:
-        return await handle_chat_completions_async(request)
+        return await handle_chat_completions(request)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
