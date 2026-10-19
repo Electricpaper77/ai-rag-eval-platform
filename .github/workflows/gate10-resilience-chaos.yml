@@ -137,7 +137,7 @@ jobs:
             sleep 5
           done
           test "$dependency_ready" = true
-          kubectl run -n "$NAMESPACE" gate10-dependency-ready --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -c 'import urllib.request; r=urllib.request.urlopen("http://gate10-dependency:8081/healthz",timeout=10); assert r.status==200; print("DEPENDENCY_READY",r.read().decode())' | tee artifacts/gate10/dependency-ready.txt
+          kubectl run -n "$NAMESPACE" gate10-dependency-ready --labels=app.kubernetes.io/part-of=agenttrust-iq,app.kubernetes.io/name=gate10-serving --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -c 'import urllib.request; r=urllib.request.urlopen("http://gate10-dependency:8081/healthz",timeout=10); assert r.status==200; print("DEPENDENCY_READY",r.read().decode())' | tee artifacts/gate10/dependency-ready.txt
           kubectl get pods,svc,networkpolicy -n "$NAMESPACE" -o wide | tee artifacts/gate10/initial-resources.txt
 
       - name: Prove healthy baseline SLO
