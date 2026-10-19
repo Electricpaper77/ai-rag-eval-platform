@@ -122,7 +122,8 @@ jobs:
           set -euo pipefail
           kubectl apply --dry-run=server -f deploy/autoscaling/gate9.yaml | tee artifacts/gate9/server-dry-run.txt
           kubectl apply --dry-run=server -f deploy/autoscaling/gate9-hpa.yaml | tee -a artifacts/gate9/server-dry-run.txt
-          kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace "$NAMESPACE"
+          kubectl wait --for=jsonpath='{.status.phase}'=Active namespace/"$NAMESPACE" --timeout=30s
           kubectl apply -f deploy/autoscaling/gate9.yaml
           kubectl apply -f deploy/autoscaling/gate9-hpa.yaml
           kubectl rollout status -n "$NAMESPACE" deployment/gate9-serving --timeout=180s
