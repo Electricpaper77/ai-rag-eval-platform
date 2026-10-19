@@ -159,6 +159,13 @@ jobs:
           test "$NEW_UID" != "$OLD_UID"
           printf 'old_pod=%s old_uid=%s new_pod=%s new_uid=%s\n' "$OLD_POD" "$OLD_UID" "$NEW_POD" "$NEW_UID" | tee artifacts/gate11/pvc-persistence.txt
           kubectl exec -n "$NAMESPACE" "$NEW_POD" -- python -m scripts.gate11_state --action status | tee artifacts/gate11/state-after-pvc-restart.txt
+          kill "$PORT_FORWARD_PID" 2>/dev/null || true
+          kubectl port-forward -n "$NAMESPACE" svc/agenttrust-recovery 18080:8080 > artifacts/gate11/port-forward-after-restart.log 2>&1 &
+          PORT_FORWARD_PID=$!
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:18080/healthz >/dev/null; then break; fi
+            sleep 2
+          done
           kubectl exec -n "$NAMESPACE" "$NEW_POD" -- python -m scripts.gate11_state --action corrupt | tee artifacts/gate11/destructive-event.txt
           kubectl exec -n "$NAMESPACE" "$NEW_POD" -- python -m scripts.gate11_state --action status | tee artifacts/gate11/state-corrupted.txt || true
           RESTORE_START="$(date +%s%N)"
