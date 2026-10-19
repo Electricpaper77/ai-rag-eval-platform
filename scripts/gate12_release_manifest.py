@@ -91,7 +91,8 @@ def validate_exception_expiry(exceptions: list[dict[str, Any]], *, today: date |
         expiry = exception.get("expiry") or exception.get("expiryDate")
         if not expiry:
             raise ValueError("vulnerability exceptions require an expiry date")
-        if date.fromisoformat(expiry) < current:
+        expiry_date = expiry if isinstance(expiry, date) else date.fromisoformat(str(expiry))
+        if expiry_date < current:
             raise ValueError(f"vulnerability exception expired: {exception.get('CVE', '<unknown>')}")
 
 
