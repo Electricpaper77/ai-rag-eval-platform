@@ -283,14 +283,30 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          : > artifacts/gate10/rbac-stderr.txt
           auth_result() {
-            local result
-            if result="$(kubectl auth can-i "$@" 2>&1)"; then
-              :
+            local result rc err_file
+            err_file="$(mktemp)"
+            if result="$(kubectl auth can-i "$@" 2>"$err_file")"; then
+              rc=0
+            else
+              rc=$?
             fi
-            case "$result" in
-              yes|no) printf '%s' "$result" ;;
-              *) printf 'authorization check failed: %s\n' "$result" >&2; return 1 ;;
+            if [ -s "$err_file" ]; then
+              cat "$err_file" >> artifacts/gate10/rbac-stderr.txt
+            fi
+            rm -f "$err_file"
+            case "$rc:$result" in
+              0:yes)
+                printf 'yes'
+                ;;
+              1:no)
+                printf 'no'
+                ;;
+              *)
+                printf 'authorization check failed: rc=%s output=%s\n' "$rc" "$result" >&2
+                return 1
+                ;;
             esac
           }
           pod_get="$(auth_result get pods --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE")"
