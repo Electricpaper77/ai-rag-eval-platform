@@ -130,6 +130,14 @@ jobs:
           kubectl apply -f deploy/chaos/gate10.yaml
           kubectl rollout status -n "$NAMESPACE" deployment/gate10-dependency --timeout=180s
           kubectl rollout status -n "$NAMESPACE" deployment/gate10-serving --timeout=180s
+          dependency_ready=false
+          for _ in $(seq 1 36); do
+            endpoints="$(kubectl get endpoints gate10-dependency -n "$NAMESPACE" -o jsonpath='{.subsets[0].addresses[*].ip}' 2>/dev/null || true)"
+            if [[ -n "$endpoints" ]]; then dependency_ready=true; break; fi
+            sleep 5
+          done
+          test "$dependency_ready" = true
+          kubectl run -n "$NAMESPACE" gate10-dependency-ready --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -c 'import urllib.request; r=urllib.request.urlopen("http://gate10-dependency:8081/healthz",timeout=10); assert r.status==200; print("DEPENDENCY_READY",r.read().decode())' | tee artifacts/gate10/dependency-ready.txt
           kubectl get pods,svc,networkpolicy -n "$NAMESPACE" -o wide | tee artifacts/gate10/initial-resources.txt
 
       - name: Prove healthy baseline SLO
