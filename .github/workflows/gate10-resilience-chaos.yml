@@ -210,7 +210,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for pod in $(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=gate10-serving -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'); do ip="$(kubectl get pod -n "$NAMESPACE" "$pod" -o jsonpath='{.status.podIP}')"; kubectl run -n "$NAMESPACE" "gate10-error-${pod##*-}" --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_admin --url "http://$ip:8080" --action inject --fault-type http_5xx --duration 20; done
+          for pod in $(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=gate10-serving -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'); do ip="$(kubectl get pod -n "$NAMESPACE" "$pod" -o jsonpath='{.status.podIP}')"; kubectl run -n "$NAMESPACE" "gate10-error-${pod##*-}" --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_admin --url "http://$ip:8080" --action inject --fault-type http_5xx --duration 60; done
           kubectl run -n "$NAMESPACE" gate10-error-load --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 20 | tee artifacts/gate10/http-5xx.txt
           grep -q '"successes": 0' artifacts/gate10/http-5xx.txt
           sleep 40
