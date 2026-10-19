@@ -119,6 +119,7 @@ jobs:
           IMAGE_DIGEST="$(sed -n 's/.*digest: \(sha256:[0-9a-f]\{64\}\).*/\1/p' artifacts/gate12/image-push.txt | tail -n 1)"
           test -n "$IMAGE_DIGEST"
           IMAGE_REFERENCE="$REGISTRY_HOST/agenttrust-iq@$IMAGE_DIGEST"
+          export IMAGE_REFERENCE IMAGE_DIGEST REGISTRY_IMAGE
           {
             echo "IMAGE_REFERENCE=$IMAGE_REFERENCE"
             echo "IMAGE_DIGEST=$IMAGE_DIGEST"
