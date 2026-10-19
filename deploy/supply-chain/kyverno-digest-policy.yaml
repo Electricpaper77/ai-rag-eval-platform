@@ -18,10 +18,5 @@ spec:
         message: image must be pinned by digest
         foreach:
           - list: request.object.spec.containers[]
-            deny:
-              conditions:
-                any:
-                  - key: "{{ element.image }}"
-                    operator: AnyNotIn
-                    value:
-                      - "*@sha256:*"
+            pattern:
+              image: "*@sha256:*"

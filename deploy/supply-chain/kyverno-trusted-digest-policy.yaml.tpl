@@ -18,9 +18,5 @@ spec:
         message: image digest is not the CI-verified trusted digest
         foreach:
           - list: request.object.spec.containers[]
-            deny:
-              conditions:
-                any:
-                  - key: "{{ element.image }}"
-                    operator: NotEquals
-                    value: "__TRUSTED_IMAGE__"
+            pattern:
+              image: "__TRUSTED_IMAGE__"

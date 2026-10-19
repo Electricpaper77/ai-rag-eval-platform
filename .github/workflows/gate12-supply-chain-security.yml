@@ -275,6 +275,8 @@ jobs:
           kubectl apply -f deploy/supply-chain/namespace.yaml
           kubectl apply -f deploy/supply-chain/kyverno-digest-policy.yaml
           kubectl apply -f artifacts/gate12/kyverno-trusted-digest-policy.yaml
+          kubectl wait --for=condition=Ready clusterpolicy/agenttrust-require-digest --timeout=60s | tee artifacts/gate12/digest-policy-ready.txt
+          kubectl wait --for=condition=Ready clusterpolicy/agenttrust-trusted-digest --timeout=60s | tee artifacts/gate12/trusted-policy-ready.txt
           kubectl get clusterpolicy -o yaml | tee artifacts/gate12/policies.yaml
 
       - name: Prove real admission decisions and deploy trusted digest
