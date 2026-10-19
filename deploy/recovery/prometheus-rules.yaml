@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agenttrust-recovery-alert-rules
+  namespace: agenttrust-recovery
+data:
+  recovery-rules.yaml: |
+    groups:
+      - name: agenttrust-recovery
+        rules:
+          - alert: AgentTrustBackupStale
+            expr: time() - agenttrust_last_successful_backup_timestamp > 3600
+            for: 10m
+            labels:
+              severity: warning
+          - alert: AgentTrustRestoreFailed
+            expr: increase(agenttrust_restore_failure_total[5m]) > 0
+            for: 1m
+            labels:
+              severity: critical
+          - alert: AgentTrustStateIntegrityFailure
+            expr: increase(agenttrust_state_checksum_mismatch_total[5m]) > 0
+            for: 1m
+            labels:
+              severity: critical

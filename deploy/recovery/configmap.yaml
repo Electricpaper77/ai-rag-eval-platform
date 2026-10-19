@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agenttrust-recovery-config
+  namespace: agenttrust-recovery
+data:
+  recovery-config.json: |
+    {"model_name":"agenttrust-mock","policy_version":"gate11-v1","routing_mode":"deterministic"}

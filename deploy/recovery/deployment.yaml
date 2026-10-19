@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agenttrust-recovery
+  namespace: agenttrust-recovery
+  labels:
+    app.kubernetes.io/name: agenttrust-recovery
+    app.kubernetes.io/part-of: agenttrust-iq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agenttrust-recovery
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agenttrust-recovery
+        app.kubernetes.io/part-of: agenttrust-iq
+    spec:
+      serviceAccountName: agenttrust-recovery
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: agenttrust-api
+          image: agenttrust-iq:gate11
+          imagePullPolicy: Never
+          command: ["gunicorn"]
+          args: ["backend.app.main:app", "--bind", "0.0.0.0:8080", "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker"]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: RECOVERY_PRIMARY_PATH
+              value: /var/lib/agenttrust/state.json
+            - name: RECOVERY_BACKUP_PATH
+              value: /var/lib/agenttrust-backup
+            - name: RECOVERY_CONFIG_PATH
+              value: /etc/agenttrust/recovery-config.json
+            - name: INFERENCE_ARTIFACTS_ROOT
+              value: /tmp/inference_events
+            - name: INFERENCE_LOG_PATH
+              value: /tmp/inference_runs.jsonl
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /platform/recovery/status
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+          volumeMounts:
+            - name: primary-state
+              mountPath: /var/lib/agenttrust
+            - name: backup-state
+              mountPath: /var/lib/agenttrust-backup
+            - name: recovery-config
+              mountPath: /etc/agenttrust
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: primary-state
+          persistentVolumeClaim:
+            claimName: agenttrust-recovery-primary
+        - name: backup-state
+          persistentVolumeClaim:
+            claimName: agenttrust-recovery-backup
+        - name: recovery-config
+          configMap:
+            name: agenttrust-recovery-config
+        - name: tmp
+          emptyDir: {}
