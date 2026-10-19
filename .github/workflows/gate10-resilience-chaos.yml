@@ -146,7 +146,7 @@ jobs:
           set -euo pipefail
           kubectl run -n "$NAMESPACE" gate10-baseline --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 40 | tee artifacts/gate10/baseline.txt
           grep -q '"failed_requests": 0' artifacts/gate10/baseline.txt
-          kubectl run -n "$NAMESPACE" gate10-baseline-chat --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -c 'import json,urllib.request; r=urllib.request.urlopen("http://gate10-serving:8080/v1/chat/completions",data=json.dumps({"model":"mock","messages":[{"role":"user","content":"baseline"}]}).encode(),timeout=10); assert r.status==200; print(r.read().decode())' | tee artifacts/gate10/baseline-chat.txt
+          kubectl run -n "$NAMESPACE" gate10-baseline-chat --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -c 'import json,urllib.request; request=urllib.request.Request("http://gate10-serving:8080/v1/chat/completions",data=json.dumps({"model":"mock","messages":[{"role":"user","content":"baseline"}]}).encode(),headers={"content-type":"application/json"}); r=urllib.request.urlopen(request,timeout=10); assert r.status==200; print(r.read().decode())' | tee artifacts/gate10/baseline-chat.txt
 
       - name: Pod failure and replacement recovery
         shell: bash
