@@ -66,7 +66,9 @@ async def chat(request: dict[str, object]) -> dict[str, object] | Response:
     except CapacityTimeout:
         return JSONResponse({"error": {"reason_code": "capacity_queue_timeout", "message": "capacity queue timeout"}}, status_code=429)
     try:
-        _cpu_work(CPU_WORK_MS)
+        # Keep the event loop responsive while the disposable load test burns CPU.
+        # This lets Kubernetes probes and the HPA observe a stable serving pod.
+        await asyncio.to_thread(_cpu_work, CPU_WORK_MS)
         payload = await handle_chat_completions_async(request)
         payload["capacity"] = controller.snapshot().__dict__
         return payload
