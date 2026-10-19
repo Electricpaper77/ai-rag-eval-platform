@@ -1,0 +1,8 @@
+title = "Gate 12 secret scanning policy"
+
+[allowlist]
+description = "Only the literal redacted header placeholder in documentation examples"
+regexTarget = "match"
+regexes = [
+  '''X-AgentTrust-API-Key:\s+REDACTED'''
+]
