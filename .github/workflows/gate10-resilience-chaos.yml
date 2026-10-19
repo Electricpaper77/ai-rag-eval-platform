@@ -283,24 +283,31 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          kubectl auth can-i get pods --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE" | tee artifacts/gate10/rbac.txt
-          kubectl auth can-i delete pods --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE" | tee -a artifacts/gate10/rbac.txt
-          kubectl auth can-i get secrets --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE" | tee -a artifacts/gate10/rbac.txt
-          set +e
-          kubectl auth can-i get nodes --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner --as-group=system:serviceaccounts --as-group=system:serviceaccounts:$NAMESPACE > artifacts/gate10/node-auth.txt 2>&1
-          nodes_auth_rc=$?
-          set -e
-          cat artifacts/gate10/node-auth.txt | tee -a artifacts/gate10/rbac.txt
-          printf 'node-auth-exit=%s\n' "$nodes_auth_rc" | tee -a artifacts/gate10/rbac.txt
+          auth_result() {
+            local result
+            if result="$(kubectl auth can-i "$@" 2>&1)"; then
+              :
+            fi
+            case "$result" in
+              yes|no) printf '%s' "$result" ;;
+              *) printf 'authorization check failed: %s\n' "$result" >&2; return 1 ;;
+            esac
+          }
+          pod_get="$(auth_result get pods --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE")"
+          pod_delete="$(auth_result delete pods --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE")"
+          secret_get="$(auth_result get secrets --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE")"
+          node_get="$(auth_result get nodes --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner)"
+          {
+            printf 'pod_get=%s\n' "$pod_get"
+            printf 'pod_delete=%s\n' "$pod_delete"
+            printf 'secret_get=%s\n' "$secret_get"
+            printf 'node_get=%s\n' "$node_get"
+          } | tee artifacts/gate10/rbac.txt
+          test "$pod_get" = yes
+          test "$pod_delete" = yes
+          test "$secret_get" = no
+          test "$node_get" = no
           kubectl get clusterrolebindings -o yaml > artifacts/gate10/clusterrolebindings.yaml
-          if grep -qx 'yes' artifacts/gate10/node-auth.txt; then
-            printf 'unexpected cluster-wide node access\n' >&2
-            exit 1
-          else
-            printf 'no\n' | tee -a artifacts/gate10/rbac.txt
-          fi
-          grep -q '^yes$' artifacts/gate10/rbac.txt
-          grep -q '^no$' artifacts/gate10/rbac.txt
           kubectl get deploy -n "$NAMESPACE" -o json > artifacts/gate10/security.json
           python - <<'PY'
           import json
