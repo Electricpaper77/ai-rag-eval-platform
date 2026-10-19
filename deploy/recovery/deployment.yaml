@@ -38,6 +38,8 @@ spec:
           env:
             - name: PORT
               value: "8080"
+            - name: INFERENCE_BACKEND
+              value: mock
             - name: RECOVERY_PRIMARY_PATH
               value: /var/lib/agenttrust/state.json
             - name: RECOVERY_BACKUP_PATH
