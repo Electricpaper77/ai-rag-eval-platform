@@ -36,3 +36,20 @@ def test_gate13_workflow_requires_amd_self_hosted_runner() -> None:
     assert "ubuntu-latest" not in workflow
     assert "gate13-amd-rocm-hardware-evidence" in workflow
     assert "torch.cuda.is_available" in workflow
+
+
+def test_runner_preflight_requires_real_linux_rocm_conditions() -> None:
+    script = Path("scripts/gate13_runner_preflight.sh").read_text(encoding="utf-8")
+    for required in ("Linux", "x86_64", "rocminfo", "rocm-smi", "hipconfig", "/dev/kfd", "/dev/dri", "AMD_RUNNER_PREFLIGHT: PASS"):
+        assert required in script
+    assert "Device Type:[[:space:]]*GPU" in script
+    assert "gfx[0-9A-Za-z.-]" in script
+
+
+def test_pytorch_preflight_requires_hip_and_synchronized_compute() -> None:
+    source = Path("scripts/gate13_pytorch_preflight.py").read_text(encoding="utf-8")
+    assert "assert torch.version.hip" in source
+    assert "assert torch.cuda.is_available()" in source
+    assert "assert device_count >= 1" in source
+    assert "torch.cuda.synchronize" in source
+    assert "not NVIDIA CUDA" in source
