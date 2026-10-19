@@ -290,8 +290,7 @@ jobs:
           kubectl auth can-i get nodes --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner > artifacts/gate10/cluster-node-auth.txt 2>&1
           nodes_auth_rc=$?
           set -e
-          nodes_auth=$(tr -d '\r\n' < artifacts/gate10/cluster-node-auth.txt)
-          if [ "$nodes_auth_rc" -eq 0 ] && [ "$nodes_auth" = "yes" ]; then
+          if [ "$nodes_auth_rc" -eq 0 ] && grep -qx 'yes' artifacts/gate10/cluster-node-auth.txt; then
             printf 'unexpected cluster-wide node access\n' >&2
             exit 1
           fi
