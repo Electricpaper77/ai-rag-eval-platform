@@ -233,7 +233,7 @@ jobs:
       - name: Validate alert rules with pinned promtool
         run: |
           set -euo pipefail
-          docker run --rm -v "$PWD/deploy/observability:/rules:ro" prom/prometheus:v2.54.1 promtool check rules /rules/gate9-alerts.yaml | tee artifacts/gate9/promtool.txt
+          docker run --rm --entrypoint /bin/promtool -v "$PWD/deploy/observability:/rules:ro" prom/prometheus:v2.54.1 check rules /rules/gate9-alerts.yaml | tee artifacts/gate9/promtool.txt
 
       - name: Full regression suite
         run: python -m pytest -q | tee artifacts/gate9/full-regression.txt
