@@ -354,8 +354,9 @@ def _append_eval_log(payload: Dict[str, Any]) -> None:
 
 def _artifact_roots() -> list[Path]:
     configured_root = os.getenv("AGENTTRUST_ARTIFACT_DIR", "").strip()
-    roots = [Path(configured_root)] if configured_root else []
-    roots.extend([Path("artifacts"), Path("docs") / "artifacts"])
+    if configured_root:
+        return [Path(configured_root)]
+    roots = [Path("artifacts"), Path("docs") / "artifacts"]
     pytest_root = Path(".pytest_tmp")
     if pytest_root.exists():
         roots.extend(path for path in pytest_root.glob("test_*") if path.is_dir())

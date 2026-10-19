@@ -111,6 +111,9 @@ def test_recovery_manifests_preserve_security_and_recovery_contract():
     assert container["securityContext"]["capabilities"]["drop"] == ["ALL"]
     assert container["readinessProbe"]["httpGet"]["path"] == "/platform/recovery/status"
     assert container["livenessProbe"]["httpGet"]["path"] == "/healthz"
+    env = {item["name"]: item["value"] for item in container["env"]}
+    assert env["AGENTTRUST_ARTIFACT_DIR"] == "/tmp/agenttrust_artifacts"
+    assert env["INFERENCE_LOG_PATH"] == "/tmp/inference_runs.jsonl"
     assert {item["name"] for item in container["volumeMounts"]} >= {"primary-state", "backup-state", "tmp"}
     assert any(item.get("kind") == "PersistentVolumeClaim" for item in resources)
     rules = next(item for item in resources if item.get("metadata", {}).get("name") == "agenttrust-recovery-alert-rules")

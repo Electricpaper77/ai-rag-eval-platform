@@ -48,6 +48,8 @@ spec:
               value: /tmp/inference_events
             - name: INFERENCE_LOG_PATH
               value: /tmp/inference_runs.jsonl
+            - name: AGENTTRUST_ARTIFACT_DIR
+              value: /tmp/agenttrust_artifacts
           securityContext:
             runAsNonRoot: true
             runAsUser: 10001
