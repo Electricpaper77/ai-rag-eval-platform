@@ -194,7 +194,7 @@ jobs:
           kubectl run -n "$NAMESPACE" gate10-latency-load --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 20 | tee artifacts/gate10/latency.txt
           python - <<'PY'
           import json
-          text=open('artifacts/gate10/latency.txt', encoding='utf-8').read().split('WORKLOAD_SUMMARY ',1)[1]
+          text=open('artifacts/gate10/latency.txt', encoding='utf-8').read().split('WORKLOAD_SUMMARY ',1)[1].splitlines()[0]
           data=json.loads(text)
           assert data['p95_ms'] > 1000, data
           PY
