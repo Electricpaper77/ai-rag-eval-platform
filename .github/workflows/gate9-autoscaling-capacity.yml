@@ -165,6 +165,7 @@ jobs:
           for _ in $(seq 1 36); do kubectl get hpa,deploy -n "$NAMESPACE" -o wide | tee artifacts/gate9/hpa-progress.txt; replicas=$(kubectl get deploy gate9-serving -n "$NAMESPACE" -o jsonpath='{.status.readyReplicas}'); [ "${replicas:-0}" -ge 2 ] && scaled=true && break; sleep 5; done
           test "$scaled" = true
           kubectl get hpa,deploy -n "$NAMESPACE" -o yaml | tee artifacts/gate9/hpa-scale-up.yaml
+          kubectl wait -n "$NAMESPACE" --for=condition=complete job/gate9-cpu-load --timeout=120s
           kubectl logs -n "$NAMESPACE" job/gate9-cpu-load | tee artifacts/gate9/cpu-load.txt
 
       - name: Prove queue scaling and structured backpressure
@@ -201,11 +202,20 @@ jobs:
       - name: Prove scale-down and continuity
         run: |
           set -euo pipefail
-          kubectl delete job -n "$NAMESPACE" gate9-queue-load --ignore-not-found
+          kubectl delete job -n "$NAMESPACE" gate9-queue-load --ignore-not-found --wait=true
           kubectl set env -n "$NAMESPACE" deployment/gate9-serving GATE9_CPU_WORK_MS=0 GATE9_MAX_INFLIGHT_PER_REPLICA=4 GATE9_QUEUE_CAPACITY=8
           kubectl rollout status -n "$NAMESPACE" deployment/gate9-serving --timeout=180s
+          : > artifacts/gate9/scale-down.txt
+          scaled_down=false
+          for _ in $(seq 1 48); do
+            kubectl get hpa,deploy -n "$NAMESPACE" -o wide | tee -a artifacts/gate9/scale-down.txt
+            replicas=$(kubectl get deploy gate9-serving -n "$NAMESPACE" -o jsonpath='{.spec.replicas}')
+            ready=$(kubectl get deploy gate9-serving -n "$NAMESPACE" -o jsonpath='{.status.readyReplicas}')
+            if [ "${replicas:-0}" -eq 1 ] && [ "${ready:-0}" -eq 1 ]; then scaled_down=true; break; fi
+            sleep 5
+          done
+          test "$scaled_down" = true
           kubectl run -n "$NAMESPACE" gate9-recovery-client --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -c 'import json,urllib.request; q=urllib.request.Request("http://gate9-serving:8080/v1/chat/completions",data=json.dumps({"model":"mock","messages":[{"role":"user","content":"recovered"}]}).encode(),headers={"content-type":"application/json"}); r=urllib.request.urlopen(q,timeout=15); assert r.status==200; print("RECOVERY_CHAT",r.read().decode())' | tee artifacts/gate9/recovery.txt
-          kubectl get hpa,deploy -n "$NAMESPACE" -o wide | tee artifacts/gate9/scale-down.txt
 
       - name: Prove restrictive network policy and runtime security
         run: |
