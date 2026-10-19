@@ -1,0 +1,11 @@
+{
+  "title": "AgentTrust Gate 9 Capacity",
+  "schemaVersion": 39,
+  "tags": ["agenttrust", "capacity"],
+  "panels": [
+    {"type": "timeseries", "title": "Active and queued requests", "targets": [{"expr": "agenttrust_active_requests"}, {"expr": "agenttrust_queued_requests"}]},
+    {"type": "timeseries", "title": "Saturation ratio", "targets": [{"expr": "agenttrust_saturation_ratio"}]},
+    {"type": "stat", "title": "Scaling recommendation", "targets": [{"expr": "agenttrust_scaling_recommendation"}]},
+    {"type": "timeseries", "title": "Backpressure", "targets": [{"expr": "rate(agenttrust_backpressure_total[5m])"}]}
+  ]
+}
