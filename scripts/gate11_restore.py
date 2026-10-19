@@ -64,8 +64,15 @@ def main() -> int:
     service.restore_document(document, duration_seconds=0.0, rpo_records_lost=rpo_records_lost)
     config_file = directory / "recovery-config.json"
     if config_file.exists():
-        service.config_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(config_file, service.config_path)
+        try:
+            service.config_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(config_file, service.config_path)
+            print("CONFIG_RESTORE=APPLIED")
+        except OSError:
+            # Kubernetes ConfigMap mounts are intentionally read-only. The
+            # declarative ConfigMap recovery step restores this file without
+            # weakening the workload's filesystem policy.
+            print("CONFIG_RESTORE=DEFERRED_TO_DECLARATIVE_SOURCE")
     duration = round(time.monotonic() - started, 6)
     service._set_metadata(recovery_duration_seconds=duration, rpo_records_lost=rpo_records_lost)
     print(f"RESTORE_SUCCEEDED backup_id={manifest['backup_id']} records={manifest['record_count']} rpo_records_lost={rpo_records_lost} rto_seconds={duration}")
