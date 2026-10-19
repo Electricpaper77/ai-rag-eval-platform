@@ -3,7 +3,7 @@ groups:
     interval: 5s
     rules:
       - alert: AgentTrustResilienceHighErrorRate
-        expr: sum(rate(agenttrust_resilience_requests_total{job="agenttrust",result="failure"}[30s])) / clamp_min(sum(rate(agenttrust_resilience_requests_total{job="agenttrust"}[30s])), 1) > 0.01
+        expr: sum(increase(agenttrust_resilience_requests_total{job="agenttrust",result="failure"}[60s])) / clamp_min(sum(increase(agenttrust_resilience_requests_total{job="agenttrust"}[60s])), 1) > 0.01
         for: 10s
         labels: {severity: critical, service: agenttrust}
         annotations: {summary: AgentTrust CI resilience error rate exceeds SLO}
