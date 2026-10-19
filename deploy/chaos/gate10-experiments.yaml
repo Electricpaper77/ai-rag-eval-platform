@@ -1,0 +1,13 @@
+apiVersion: resilience.agenttrust.io/v1alpha1
+kind: ResilienceExperimentList
+metadata:
+  name: gate10-ci-experiments
+spec:
+  scope: isolated-kind-ci
+  experiments:
+    - {name: pod-delete, faultType: pod_delete, target: gate10-serving, durationSeconds: 30, expectedDetection: replacement-created, expectedRecovery: ready-and-serving, sloMetric: availability}
+    - {name: dependency-outage, faultType: dependency_unavailable, target: gate10-dependency, durationSeconds: 20, expectedDetection: bounded-503, expectedRecovery: dependency-restored, sloMetric: availability}
+    - {name: latency-injection, faultType: latency, target: gate10-serving, durationSeconds: 20, expectedDetection: p95-over-one-second, expectedRecovery: p95-restored, sloMetric: p95_latency}
+    - {name: http-5xx, faultType: http_5xx, target: gate10-serving, durationSeconds: 20, expectedDetection: error-rate-alert, expectedRecovery: errors-cleared, sloMetric: error_rate}
+    - {name: readiness-failure, faultType: readiness_failure, target: gate10-serving, durationSeconds: 15, expectedDetection: endpoint-removed, expectedRecovery: endpoint-restored, sloMetric: availability}
+    - {name: network-denial, faultType: network_denial, target: gate10-dependency, durationSeconds: 15, expectedDetection: bounded-503, expectedRecovery: policy-restored, sloMetric: availability}

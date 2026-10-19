@@ -1,0 +1,19 @@
+groups:
+  - name: agenttrust-gate10-resilience
+    interval: 5s
+    rules:
+      - alert: AgentTrustResilienceHighErrorRate
+        expr: sum(rate(http_requests_total{job="agenttrust",path="/v1/chat/completions",status=~"5.."}[30s])) / clamp_min(sum(rate(http_requests_total{job="agenttrust",path="/v1/chat/completions"}[30s])), 1) > 0.01
+        for: 10s
+        labels: {severity: critical, service: agenttrust}
+        annotations: {summary: AgentTrust CI resilience error rate exceeds SLO}
+      - alert: AgentTrustResilienceHighLatency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="agenttrust",path="/v1/chat/completions"}[30s])) by (le)) > 1
+        for: 10s
+        labels: {severity: warning, service: agenttrust}
+        annotations: {summary: AgentTrust CI resilience p95 latency exceeds SLO}
+      - alert: AgentTrustResilienceDependencyUnavailable
+        expr: increase(agenttrust_resilience_dependency_failures_total[30s]) > 0
+        for: 5s
+        labels: {severity: warning, service: agenttrust}
+        annotations: {summary: AgentTrust dependency failure observed}
