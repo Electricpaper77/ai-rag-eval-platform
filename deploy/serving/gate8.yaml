@@ -156,6 +156,8 @@ spec:
               value: mock
             - name: INFERENCE_LOG_PATH
               value: /tmp/inference_runs.jsonl
+            - name: INFERENCE_ARTIFACTS_ROOT
+              value: /tmp/inference_events
             - name: AGENTTRUST_ARTIFACT_DIR
               value: /tmp/artifacts
           securityContext:
@@ -226,6 +228,8 @@ spec:
               value: "0"
             - name: INFERENCE_LOG_PATH
               value: /tmp/inference_runs.jsonl
+            - name: INFERENCE_ARTIFACTS_ROOT
+              value: /tmp/inference_events
             - name: AGENTTRUST_ARTIFACT_DIR
               value: /tmp/artifacts
           securityContext:
