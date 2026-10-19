@@ -132,3 +132,10 @@ def test_tamper_detection_and_security_preservation():
     original = b"valid artifact\n"
     tampered = original + b"changed\n"
     assert hashlib.sha256(original).hexdigest() != hashlib.sha256(tampered).hexdigest()
+
+
+def test_secret_allowlist_is_only_the_redacted_documentation_placeholder():
+    config = (ROOT / ".gitleaks.toml").read_text(encoding="utf-8")
+    assert "X-AgentTrust-API-Key:\\s+REDACTED" in config
+    assert "*" not in config
+    assert "paths" not in config

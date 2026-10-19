@@ -198,7 +198,8 @@ jobs:
           set -euo pipefail
           set +e
           docker run --rm -v "$PWD:/repo" "zricethezav/gitleaks:${GITLEAKS_VERSION}" detect \
-            --source=/repo --no-banner --redact --report-format json --report-path=/repo/artifacts/gate12/secret-scan.json
+            --source=/repo --config=/repo/.gitleaks.toml --no-banner --redact \
+            --report-format json --report-path=/repo/artifacts/gate12/secret-scan.json
           rc=$?
           set -e
           test "$rc" -eq 0
