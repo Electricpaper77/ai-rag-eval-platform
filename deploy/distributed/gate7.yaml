@@ -1,0 +1,229 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gate7-distributed
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gate7-router
+  namespace: gate7-distributed
+  labels:
+    app.kubernetes.io/name: gate7-router
+    app.kubernetes.io/part-of: agenttrust-iq
+spec:
+  selector:
+    app.kubernetes.io/name: gate7-router
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gate7-worker-headless
+  namespace: gate7-distributed
+  labels:
+    app.kubernetes.io/name: gate7-worker
+    app.kubernetes.io/part-of: agenttrust-iq
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app.kubernetes.io/name: gate7-worker
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gate7-router
+  namespace: gate7-distributed
+  labels:
+    app.kubernetes.io/name: gate7-router
+    app.kubernetes.io/part-of: agenttrust-iq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gate7-router
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gate7-router
+        app.kubernetes.io/part-of: agenttrust-iq
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: router
+          image: agenttrust-iq:gate7
+          imagePullPolicy: Never
+          command: ["python", "-m", "scripts.gate7_router"]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: GATE7_WORKER_DISCOVERY_HOST
+              value: gate7-worker-headless.gate7-distributed.svc.cluster.local
+            - name: GATE7_WORKER_DISCOVERY_PORT
+              value: "8080"
+            - name: GATE7_ROUTING_POLICY
+              value: round_robin
+            - name: GATE7_MAX_INFLIGHT_PER_WORKER
+              value: "8"
+            - name: GATE7_HEALTH_FAILURE_THRESHOLD
+              value: "2"
+            - name: GATE7_HEALTH_TIMEOUT_SECONDS
+              value: "1"
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 300m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 5
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+            timeoutSeconds: 2
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gate7-worker
+  namespace: gate7-distributed
+  labels:
+    app.kubernetes.io/name: gate7-worker
+    app.kubernetes.io/part-of: agenttrust-iq
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gate7-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gate7-worker
+        app.kubernetes.io/part-of: agenttrust-iq
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: worker
+          image: agenttrust-iq:gate7
+          imagePullPolicy: Never
+          command: ["python", "-m", "scripts.gate7_worker"]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: GATE7_WORKER_ID
+              valueFrom:
+                fieldRef: {fieldPath: metadata.name}
+            - name: INFERENCE_ARTIFACTS_ROOT
+              value: /tmp/inference_events
+            - name: INFERENCE_LOG_PATH
+              value: /tmp/inference_runs.jsonl
+          resources:
+            requests: {cpu: 150m, memory: 256Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+            timeoutSeconds: 2
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gate7-router-ingress-egress
+  namespace: gate7-distributed
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: gate7-router
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: agenttrust-iq
+      ports: [{protocol: TCP, port: 8080}]
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+      ports: [{protocol: TCP, port: 8080}]
+  egress:
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+        - {protocol: TCP, port: 8080}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gate7-worker-ingress-egress
+  namespace: gate7-distributed
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: gate7-worker
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: gate7-router
+      ports: [{protocol: TCP, port: 8080}]
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+      ports: [{protocol: TCP, port: 8080}]
+  egress:
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}

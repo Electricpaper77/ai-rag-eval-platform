@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gate7-distributed-dashboard
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+data:
+  gate7-distributed.json: |
+    {
+      "title": "AgentTrust Gate 7 Distributed Inference",
+      "schemaVersion": 39,
+      "timezone": "browser",
+      "panels": [
+        {"type": "timeseries", "title": "Per-worker request rate", "targets": [{"expr": "sum by (worker_id) (rate(distributed_worker_requests_total[5m]))"}]},
+        {"type": "timeseries", "title": "Worker health", "targets": [{"expr": "distributed_worker_health"}]},
+        {"type": "timeseries", "title": "Routing failures", "targets": [{"expr": "rate(distributed_routing_failures_total[5m])"}]},
+        {"type": "timeseries", "title": "Retries", "targets": [{"expr": "rate(distributed_retries_total[5m])"}]},
+        {"type": "timeseries", "title": "Distributed request latency", "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(distributed_request_latency_seconds_bucket[5m])))"}]}
+      ]
+    }
