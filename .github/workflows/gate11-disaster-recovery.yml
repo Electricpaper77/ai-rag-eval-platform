@@ -40,7 +40,7 @@ jobs:
           mkdir -p artifacts/gate11
           EXPECTED_SHA="${{ inputs.feature_sha || github.sha }}"
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-          test "$(git config --get remote.origin.url)" = "https://github.com/Electricpaper77/ai-rag-eval-platform.git"
+          test "$(git remote get-url origin | sed 's#\.git$##')" = "https://github.com/Electricpaper77/ai-rag-eval-platform"
           {
             echo "tested_sha=$EXPECTED_SHA"
             git log -1 --format='%H %s'
