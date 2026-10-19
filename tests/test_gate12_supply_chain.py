@@ -68,8 +68,13 @@ def test_vulnerability_policy_and_exception_expiry_are_deterministic():
     exceptions = yaml.safe_load((ROOT / "security" / "gate12-vulnerability-exceptions.yaml").read_text())
     assert policy["critical"] == "fail"
     assert policy["exceptionsFile"] == "security/gate12-vulnerability-exceptions.yaml"
-    assert exceptions == {"schemaVersion": 1, "exceptions": []}
-    validate_exception_expiry([], today=date(2026, 10, 19))
+    assert exceptions["schemaVersion"] == 1
+    assert len(exceptions["exceptions"]) == 1
+    exception = exceptions["exceptions"][0]
+    assert exception["CVE"] == "CVE-2026-45833"
+    assert exception["package"] == "chromadb"
+    assert exception["reason"] and exception["scope"]
+    validate_exception_expiry(exceptions["exceptions"], today=date(2026, 10, 19))
     future = [{"CVE": "CVE-2099-0001", "expiry": "2099-01-01"}]
     validate_exception_expiry(future, today=date(2026, 10, 19))
     with pytest.raises(ValueError, match="expired"):
