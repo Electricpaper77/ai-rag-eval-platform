@@ -247,7 +247,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          kubectl apply -f "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/install.yaml" \
+          kubectl apply --server-side -f "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/install.yaml" \
             2>&1 | tee artifacts/gate12/kyverno-install.txt
           kubectl rollout status -n kyverno deployment/kyverno-admission-controller --timeout=180s | tee artifacts/gate12/kyverno-rollout.txt
           kubectl get deployments,pods -n kyverno -o wide | tee artifacts/gate12/kyverno-status.txt
