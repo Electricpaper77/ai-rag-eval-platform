@@ -44,6 +44,7 @@ from .distributed.router import router as distributed_router
 from .serving.router import router as serving_router
 from .capacity import router as capacity_router
 from .resilience.controller import router as resilience_router
+from .recovery.service import recovery_router
 
 from urllib.parse import urlparse
 
@@ -197,6 +198,7 @@ app.include_router(distributed_router)
 app.include_router(serving_router)
 app.include_router(capacity_router)
 app.include_router(resilience_router)
+app.include_router(recovery_router)
 
 
 PUBLIC_PRODUCTION_PATHS = {"/health"}
@@ -339,6 +341,11 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/healthz")
+def healthz():
+    return {"status": "ok"}
+
+
 def _append_eval_log(payload: Dict[str, Any]) -> None:
     EVAL_RUN_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     with EVAL_RUN_LOG_PATH.open("a", encoding="utf-8") as handle:
@@ -347,8 +354,9 @@ def _append_eval_log(payload: Dict[str, Any]) -> None:
 
 def _artifact_roots() -> list[Path]:
     configured_root = os.getenv("AGENTTRUST_ARTIFACT_DIR", "").strip()
-    roots = [Path(configured_root)] if configured_root else []
-    roots.extend([Path("artifacts"), Path("docs") / "artifacts"])
+    if configured_root:
+        return [Path(configured_root)]
+    roots = [Path("artifacts"), Path("docs") / "artifacts"]
     pytest_root = Path(".pytest_tmp")
     if pytest_root.exists():
         roots.extend(path for path in pytest_root.glob("test_*") if path.is_dir())

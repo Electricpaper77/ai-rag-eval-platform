@@ -1,0 +1,290 @@
+name: Gate 11 Disaster Recovery Runtime
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature_sha:
+        description: Exact feature commit to validate
+        required: true
+        type: string
+  push:
+    branches:
+      - feature/gate11-disaster-recovery
+
+permissions:
+  contents: read
+
+env:
+  CLUSTER_NAME: agenttrust-gate11
+  NAMESPACE: agenttrust-recovery
+  IMAGE: agenttrust-iq:gate11
+  KIND_VERSION: v0.27.0
+  NODE_IMAGE: kindest/node:v1.32.5
+
+jobs:
+  disaster-recovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Check out exact feature commit
+        uses: actions/checkout@v4.2.2
+        with:
+          repository: Electricpaper77/ai-rag-eval-platform
+          ref: ${{ inputs.feature_sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Validate repository identity and prepare evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/gate11
+          EXPECTED_SHA="${{ inputs.feature_sha || github.sha }}"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$(git remote get-url origin | sed 's#\.git$##')" = "https://github.com/Electricpaper77/ai-rag-eval-platform"
+          {
+            echo "tested_sha=$EXPECTED_SHA"
+            git log -1 --format='%H %s'
+            git status --short --branch
+          } | tee artifacts/gate11/identity.txt
+
+      - name: Install Python dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --no-cache-dir -r requirements.txt
+
+      - name: Run Gate 11 focused tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest -q tests/test_gate11_disaster_recovery.py 2>&1 | tee artifacts/gate11/focused-tests.txt
+
+      - name: Validate manifests and recovery alert rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          resources = []
+          for path in sorted(Path('deploy/recovery').glob('*.yaml')):
+              for resource in yaml.safe_load_all(path.read_text()):
+                  if resource:
+                      resources.append(resource)
+          assert any(item.get('kind') == 'Deployment' for item in resources)
+          deployment = next(item for item in resources if item.get('kind') == 'Deployment')
+          pod = deployment['spec']['template']['spec']
+          container = pod['containers'][0]
+          assert pod['automountServiceAccountToken'] is False
+          assert pod['securityContext']['runAsUser'] == 10001
+          assert pod['securityContext']['runAsGroup'] == 10001
+          assert pod['securityContext']['seccompProfile']['type'] == 'RuntimeDefault'
+          assert container['securityContext']['runAsNonRoot'] is True
+          assert container['securityContext']['readOnlyRootFilesystem'] is True
+          assert container['securityContext']['allowPrivilegeEscalation'] is False
+          assert container['securityContext']['capabilities']['drop'] == ['ALL']
+          assert container['resources']['requests'] and container['resources']['limits']
+          rules = next(item for item in resources if item.get('metadata', {}).get('name') == 'agenttrust-recovery-alert-rules')
+          text = rules['data']['recovery-rules.yaml']
+          for name in ('AgentTrustBackupStale', 'AgentTrustRestoreFailed', 'AgentTrustStateIntegrityFailure'):
+              assert name in text
+          Path('artifacts/gate11/manifest-validation.txt').write_text('MANIFEST_SECURITY: PASS\nALERT_RULES: PASS\n')
+          PY
+          git diff --check
+
+      - name: Install pinned kind
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64" -o kind
+          chmod +x kind
+          sudo install -m 0755 kind /usr/local/bin/kind
+          kind version | tee artifacts/gate11/kind-version.txt
+
+      - name: Create isolated kind cluster
+        shell: bash
+        run: |
+          set -euo pipefail
+          kind create cluster --name "$CLUSTER_NAME" --image "$NODE_IMAGE" --wait 120s 2>&1 | tee artifacts/gate11/cluster-create.txt
+          kubectl version --client=true | tee artifacts/gate11/kubectl-version.txt
+          kubectl get nodes -o wide | tee artifacts/gate11/nodes.txt
+          test "$(kubectl get nodes -o jsonpath='{.items[0].status.conditions[?(@.type=="Ready")].status}')" = True
+
+      - name: Build and load AgentTrust image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --tag "$IMAGE" . 2>&1 | tee artifacts/gate11/image-build.txt
+          kind load docker-image "$IMAGE" --name "$CLUSTER_NAME" 2>&1 | tee artifacts/gate11/image-load.txt
+
+      - name: Deploy recovery workload
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl apply -f deploy/recovery/namespace.yaml
+          kubectl wait --for=jsonpath='{.status.phase}'=Active namespace/$NAMESPACE --timeout=30s
+          kubectl apply -f deploy/recovery 2>&1 | tee artifacts/gate11/deploy.txt
+          kubectl wait --for=jsonpath='{.status.phase}'=Bound pvc/agenttrust-recovery-primary -n "$NAMESPACE" --timeout=120s
+          kubectl wait --for=jsonpath='{.status.phase}'=Bound pvc/agenttrust-recovery-backup -n "$NAMESPACE" --timeout=120s
+          kubectl rollout status deployment/agenttrust-recovery -n "$NAMESPACE" --timeout=180s 2>&1 | tee artifacts/gate11/rollout.txt
+          kubectl get pods,pvc,svc -n "$NAMESPACE" -o wide | tee artifacts/gate11/initial-resources.txt
+
+      - name: Execute backup restore and recovery proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          POD="$(kubectl get pod -n "$NAMESPACE" -l app.kubernetes.io/name=agenttrust-recovery -o jsonpath='{.items[0].metadata.name}')"
+          kubectl port-forward -n "$NAMESPACE" svc/agenttrust-recovery 18080:8080 > artifacts/gate11/port-forward.log 2>&1 &
+          PORT_FORWARD_PID=$!
+          trap 'kill "$PORT_FORWARD_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:18080/healthz >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:18080/healthz | tee artifacts/gate11/health-before.txt
+          curl --fail --silent -X POST http://127.0.0.1:18080/v1/chat/completions -H 'content-type: application/json' -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Return one deterministic sentence."}],"max_tokens":16,"temperature":0}' | tee artifacts/gate11/inference-before.json
+          kubectl exec -n "$NAMESPACE" "$POD" -- python -m scripts.gate11_state --action seed --count 20 | tee artifacts/gate11/seed.txt
+          kubectl exec -n "$NAMESPACE" "$POD" -- python -m scripts.gate11_backup --backup-id checkpoint-20 | tee artifacts/gate11/backup.txt
+          kubectl exec -n "$NAMESPACE" "$POD" -- python -m scripts.gate11_restore --backup-dir /var/lib/agenttrust-backup --backup-id checkpoint-20 --verify-only | tee artifacts/gate11/backup-verify.txt
+          kubectl exec -n "$NAMESPACE" "$POD" -- python -m scripts.gate11_state --action append --count 3 | tee artifacts/gate11/post-checkpoint.txt
+          kubectl exec -n "$NAMESPACE" "$POD" -- python -m scripts.gate11_state --action status | tee artifacts/gate11/state-before-failure.txt
+          OLD_POD="$POD"
+          OLD_UID="$(kubectl get pod -n "$NAMESPACE" "$OLD_POD" -o jsonpath='{.metadata.uid}')"
+          kubectl delete pod -n "$NAMESPACE" "$OLD_POD" --wait=true
+          kubectl rollout status deployment/agenttrust-recovery -n "$NAMESPACE" --timeout=180s | tee artifacts/gate11/pvc-restart.txt
+          NEW_POD="$(kubectl get pod -n "$NAMESPACE" -l app.kubernetes.io/name=agenttrust-recovery -o jsonpath='{.items[0].metadata.name}')"
+          NEW_UID="$(kubectl get pod -n "$NAMESPACE" "$NEW_POD" -o jsonpath='{.metadata.uid}')"
+          test "$NEW_UID" != "$OLD_UID"
+          printf 'old_pod=%s old_uid=%s new_pod=%s new_uid=%s\n' "$OLD_POD" "$OLD_UID" "$NEW_POD" "$NEW_UID" | tee artifacts/gate11/pvc-persistence.txt
+          kubectl exec -n "$NAMESPACE" "$NEW_POD" -- python -m scripts.gate11_state --action status | tee artifacts/gate11/state-after-pvc-restart.txt
+          kill "$PORT_FORWARD_PID" 2>/dev/null || true
+          kubectl port-forward -n "$NAMESPACE" svc/agenttrust-recovery 18080:8080 > artifacts/gate11/port-forward-after-restart.log 2>&1 &
+          PORT_FORWARD_PID=$!
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:18080/healthz >/dev/null; then break; fi
+            sleep 2
+          done
+          kubectl exec -n "$NAMESPACE" "$NEW_POD" -- python -m scripts.gate11_state --action corrupt | tee artifacts/gate11/destructive-event.txt
+          kubectl exec -n "$NAMESPACE" "$NEW_POD" -- python -m scripts.gate11_state --action status | tee artifacts/gate11/state-corrupted.txt || true
+          RESTORE_START="$(date +%s%N)"
+          kubectl exec -n "$NAMESPACE" "$NEW_POD" -- python -m scripts.gate11_restore --backup-dir /var/lib/agenttrust-backup --backup-id checkpoint-20 --latest-pre-failure-sequence 23 | tee artifacts/gate11/restore.txt
+          curl --fail --silent http://127.0.0.1:18080/platform/recovery/status | tee artifacts/gate11/recovery-status.txt
+          curl --fail --silent http://127.0.0.1:18080/platform/recovery/state | tee artifacts/gate11/recovered-state.json
+          curl --fail --silent http://127.0.0.1:18080/healthz | tee artifacts/gate11/health-after-restore.txt
+          curl --fail --silent -X POST http://127.0.0.1:18080/v1/chat/completions -H 'content-type: application/json' -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Confirm recovery."}],"max_tokens":16,"temperature":0}' | tee artifacts/gate11/inference-after-restore.json
+          RESTORE_END="$(date +%s%N)"
+          python - "$RESTORE_START" "$RESTORE_END" <<'PY' | tee artifacts/gate11/rpo-rto.txt
+          import sys
+          print(f"rto_seconds={(int(sys.argv[2])-int(sys.argv[1]))/1_000_000_000:.6f}")
+          print("CI_RPO_RECORDS_LOST=3")
+          PY
+          mkdir -p /tmp/gate11-invalid-backup
+          kubectl exec -n "$NAMESPACE" "$NEW_POD" -- sh -c 'rm -rf /tmp/invalid-backup && cp -R /var/lib/agenttrust-backup/checkpoint-20 /tmp/invalid-backup && sed -i s/recovery-0001/tampered-0001/ /tmp/invalid-backup/state.json'
+          if kubectl exec -n "$NAMESPACE" "$NEW_POD" -- python -m scripts.gate11_restore --backup-dir /tmp/invalid-backup --verify-only > artifacts/gate11/corrupt-backup.txt 2>&1; then
+            echo 'corrupt backup unexpectedly accepted' | tee -a artifacts/gate11/corrupt-backup.txt
+            exit 1
+          fi
+          echo 'CORRUPT_BACKUP_REJECTED: PASS' | tee -a artifacts/gate11/corrupt-backup.txt
+
+      - name: Verify ConfigMap recovery and failed revision rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl get configmap agenttrust-recovery-config -n "$NAMESPACE" -o yaml > artifacts/gate11/config-before.yaml
+          kubectl patch configmap agenttrust-recovery-config -n "$NAMESPACE" --type merge -p '{"data":{"recovery-config.json":"{\"broken\":true}"}}'
+          kubectl rollout restart deployment/agenttrust-recovery -n "$NAMESPACE"
+          if kubectl rollout status deployment/agenttrust-recovery -n "$NAMESPACE" --timeout=45s; then
+            echo 'invalid ConfigMap unexpectedly became ready' > artifacts/gate11/config-failure.txt
+            exit 1
+          else
+            echo 'CONFIGMAP_CORRUPTION_DETECTED: PASS' | tee artifacts/gate11/config-failure.txt
+          fi
+          kubectl apply -f deploy/recovery/configmap.yaml
+          kubectl rollout restart deployment/agenttrust-recovery -n "$NAMESPACE"
+          kubectl rollout status deployment/agenttrust-recovery -n "$NAMESPACE" --timeout=180s | tee artifacts/gate11/config-recovery.txt
+          kubectl set env deployment/agenttrust-recovery -n "$NAMESPACE" RECOVERY_CONFIG_PATH=/etc/agenttrust/missing.json
+          if kubectl rollout status deployment/agenttrust-recovery -n "$NAMESPACE" --timeout=45s; then
+            echo 'broken revision unexpectedly became ready' > artifacts/gate11/rollback-failure.txt
+            exit 1
+          else
+            echo 'BROKEN_REVISION_DETECTED: PASS' | tee artifacts/gate11/rollback-failure.txt
+          fi
+          kubectl rollout undo deployment/agenttrust-recovery -n "$NAMESPACE"
+          kubectl rollout status deployment/agenttrust-recovery -n "$NAMESPACE" --timeout=180s | tee artifacts/gate11/rollback.txt
+          kubectl get deployment/agenttrust-recovery -n "$NAMESPACE" -o jsonpath='{.spec.template.spec.containers[0].env}' | tee artifacts/gate11/post-rollback-env.txt
+
+      - name: Verify NetworkPolicy and runtime security
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl port-forward -n "$NAMESPACE" svc/agenttrust-recovery 18080:8080 > artifacts/gate11/final-port-forward.log 2>&1 &
+          PORT_FORWARD_PID=$!
+          trap 'kill "$PORT_FORWARD_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:18080/healthz >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:18080/healthz | tee artifacts/gate11/final-health.json
+          curl --fail --silent -X POST http://127.0.0.1:18080/v1/chat/completions -H 'content-type: application/json' -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Return the final recovery proof."}],"max_tokens":16,"temperature":0}' | tee artifacts/gate11/final-inference.json
+          curl --fail --silent http://127.0.0.1:18080/metrics > artifacts/gate11/recovery-metrics.txt
+          for metric in agenttrust_backup_success_total agenttrust_backup_failure_total agenttrust_restore_success_total agenttrust_restore_failure_total agenttrust_last_successful_backup_timestamp agenttrust_recovery_duration_seconds agenttrust_rpo_records_lost agenttrust_state_checksum_mismatch_total; do
+            grep -q "$metric" artifacts/gate11/recovery-metrics.txt
+          done
+          echo 'METRICS: PASS' | tee artifacts/gate11/metrics-validation.txt
+          kubectl get networkpolicy -n "$NAMESPACE" -o yaml | tee artifacts/gate11/networkpolicy.yaml
+          kubectl get deployment/agenttrust-recovery -n "$NAMESPACE" -o json > artifacts/gate11/deployment.json
+          python - <<'PY' | tee artifacts/gate11/security.txt
+          import json
+          d=json.load(open('artifacts/gate11/deployment.json'))
+          pod=d['spec']['template']['spec']; c=pod['containers'][0]
+          assert pod['automountServiceAccountToken'] is False
+          assert pod['securityContext']['runAsNonRoot'] is True
+          assert pod['securityContext']['runAsUser'] == 10001
+          assert pod['securityContext']['runAsGroup'] == 10001
+          assert pod['securityContext']['seccompProfile']['type'] == 'RuntimeDefault'
+          assert c['securityContext']['readOnlyRootFilesystem'] is True
+          assert c['securityContext']['allowPrivilegeEscalation'] is False
+          assert c['securityContext']['capabilities']['drop'] == ['ALL']
+          assert c['resources']['requests'] and c['resources']['limits']
+          print('SECURITY: PASS')
+          PY
+          SA="system:serviceaccount:${NAMESPACE}:agenttrust-recovery"
+          pod_get="$(kubectl auth can-i get pods --as="$SA" -n "$NAMESPACE")"
+          secret_get="$(kubectl auth can-i get secrets --as="$SA" -n "$NAMESPACE" || true)"
+          node_get="$(kubectl auth can-i get nodes --as="$SA" || true)"
+          printf 'pod_get=%s\nsecret_get=%s\nnode_get=%s\n' "$pod_get" "$secret_get" "$node_get" | tee artifacts/gate11/rbac.txt
+          test "$pod_get" = yes
+          test "$secret_get" = no
+          test "$node_get" = no
+
+      - name: Run full regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest -q 2>&1 | tee artifacts/gate11/full-regression.txt
+
+      - name: Collect diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          kubectl get all,pvc,configmap,networkpolicy -n "$NAMESPACE" -o wide > artifacts/gate11/final-resources.txt 2>&1
+          kubectl describe pods -n "$NAMESPACE" > artifacts/gate11/pod-describe.txt 2>&1
+          kubectl get events -n "$NAMESPACE" --sort-by=.lastTimestamp > artifacts/gate11/events.txt 2>&1
+          kubectl logs deployment/agenttrust-recovery -n "$NAMESPACE" --all-containers=true > artifacts/gate11/application.log 2>&1
+
+      - name: Upload Gate 11 evidence
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: gate11-disaster-recovery-evidence
+          path: artifacts/gate11
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Delete isolated kind cluster
+        if: always()
+        shell: bash
+        run: kind delete cluster --name "$CLUSTER_NAME"
