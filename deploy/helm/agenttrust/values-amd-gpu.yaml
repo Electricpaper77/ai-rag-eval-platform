@@ -1,0 +1,22 @@
+# Declarative AMD GPU example only.  This is not evidence of AMD hardware
+# execution; apply it only to a node with the AMD device plugin installed.
+replicaCount: 1
+
+image:
+  repository: agenttrust-iq
+  tag: gate6
+  pullPolicy: IfNotPresent
+
+gpu:
+  count: 1
+  resourceKey: amd.com/gpu
+
+nodeSelector:
+  agenttrust.ai/accelerator: amd-gpu
+
+tolerations:
+  - key: amd.com/gpu
+    operator: Exists
+    effect: NoSchedule
+
+priorityClassName: ""

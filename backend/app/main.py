@@ -39,6 +39,7 @@ from gpu_platform.api import summary_router as shadow_eval_router
 from gpu_platform.api import benchmark_router
 from .control_plane import router as gpu_control_plane_router
 from .workload_platform import router as workload_platform_router
+from .gpu_runtime import router as gpu_runtime_router
 
 from urllib.parse import urlparse
 
@@ -187,6 +188,7 @@ app.include_router(shadow_eval_router)
 app.include_router(benchmark_router)
 app.include_router(gpu_control_plane_router)
 app.include_router(workload_platform_router)
+app.include_router(gpu_runtime_router)
 
 
 PUBLIC_PRODUCTION_PATHS = {"/health"}
@@ -336,7 +338,9 @@ def _append_eval_log(payload: Dict[str, Any]) -> None:
 
 
 def _artifact_roots() -> list[Path]:
-    roots = [Path("artifacts"), Path("docs") / "artifacts"]
+    configured_root = os.getenv("AGENTTRUST_ARTIFACT_DIR", "").strip()
+    roots = [Path(configured_root)] if configured_root else []
+    roots.extend([Path("artifacts"), Path("docs") / "artifacts"])
     pytest_root = Path(".pytest_tmp")
     if pytest_root.exists():
         roots.extend(path for path in pytest_root.glob("test_*") if path.is_dir())
