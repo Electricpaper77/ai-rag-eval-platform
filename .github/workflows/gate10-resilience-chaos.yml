@@ -286,12 +286,16 @@ jobs:
           kubectl auth can-i get pods --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE" | tee artifacts/gate10/rbac.txt
           kubectl auth can-i delete pods --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE" | tee -a artifacts/gate10/rbac.txt
           kubectl auth can-i get secrets --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE" | tee -a artifacts/gate10/rbac.txt
-          kubectl auth can-i get nodes --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner > artifacts/gate10/cluster-node-auth.txt 2>/dev/null || true
-          if [ -s artifacts/gate10/cluster-node-auth.txt ]; then
-            cat artifacts/gate10/cluster-node-auth.txt | tee -a artifacts/gate10/rbac.txt
-          else
-            printf 'no\n' | tee -a artifacts/gate10/rbac.txt
+          set +e
+          kubectl auth can-i get nodes --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner > artifacts/gate10/cluster-node-auth.txt 2>&1
+          nodes_auth_rc=$?
+          set -e
+          nodes_auth=$(tr -d '\r\n' < artifacts/gate10/cluster-node-auth.txt)
+          if [ "$nodes_auth_rc" -eq 0 ] && [ "$nodes_auth" = "yes" ]; then
+            printf 'unexpected cluster-wide node access\n' >&2
+            exit 1
           fi
+          printf 'no\n' | tee -a artifacts/gate10/rbac.txt
           grep -q '^yes$' artifacts/gate10/rbac.txt
           grep -q '^no$' artifacts/gate10/rbac.txt
           kubectl get deploy -n "$NAMESPACE" -o json > artifacts/gate10/security.json
