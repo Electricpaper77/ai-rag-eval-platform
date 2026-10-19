@@ -286,7 +286,14 @@ jobs:
           kubectl auth can-i get pods --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE" | tee artifacts/gate10/rbac.txt
           kubectl auth can-i delete pods --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE" | tee -a artifacts/gate10/rbac.txt
           kubectl auth can-i get secrets --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE" | tee -a artifacts/gate10/rbac.txt
-          if kubectl auth can-i get nodes --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner --as-group=system:serviceaccounts --as-group=system:serviceaccounts:$NAMESPACE 2>&1 | grep -qx 'yes'; then
+          set +e
+          kubectl auth can-i get nodes --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner --as-group=system:serviceaccounts --as-group=system:serviceaccounts:$NAMESPACE > artifacts/gate10/node-auth.txt 2>&1
+          nodes_auth_rc=$?
+          set -e
+          cat artifacts/gate10/node-auth.txt | tee -a artifacts/gate10/rbac.txt
+          printf 'node-auth-exit=%s\n' "$nodes_auth_rc" | tee -a artifacts/gate10/rbac.txt
+          kubectl get clusterrolebindings -o yaml > artifacts/gate10/clusterrolebindings.yaml
+          if grep -qx 'yes' artifacts/gate10/node-auth.txt; then
             printf 'unexpected cluster-wide node access\n' >&2
             exit 1
           else
