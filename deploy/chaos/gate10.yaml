@@ -108,6 +108,11 @@ spec:
             requests: {cpu: 25m, memory: 64Mi}
             limits: {cpu: 100m, memory: 128Mi}
           volumeMounts: [{name: tmp, mountPath: /tmp}]
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 3
       volumes: [{name: tmp, emptyDir: {}}]
 ---
 apiVersion: networking.k8s.io/v1
