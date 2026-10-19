@@ -123,6 +123,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          kubectl apply -f deploy/recovery/namespace.yaml
+          kubectl wait --for=jsonpath='{.status.phase}'=Active namespace/$NAMESPACE --timeout=30s
           kubectl apply -f deploy/recovery 2>&1 | tee artifacts/gate11/deploy.txt
           kubectl wait --for=jsonpath='{.status.phase}'=Bound pvc/agenttrust-recovery-primary -n "$NAMESPACE" --timeout=120s
           kubectl wait --for=jsonpath='{.status.phase}'=Bound pvc/agenttrust-recovery-backup -n "$NAMESPACE" --timeout=120s
