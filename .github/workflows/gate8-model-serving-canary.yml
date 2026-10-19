@@ -1,0 +1,184 @@
+name: Gate 8 Model Serving Canary
+
+on:
+  push:
+    branches: [feature/gate8-model-serving-canary]
+    paths:
+      - ".github/workflows/gate8-model-serving-canary.yml"
+      - "backend/app/serving/**"
+      - "backend/app/main.py"
+      - "deploy/serving/**"
+      - "deploy/canary/**"
+      - "scripts/gate8_*.py"
+      - "tests/test_gate8_model_serving.py"
+      - "Dockerfile"
+      - "requirements*.txt"
+  workflow_dispatch:
+    inputs:
+      feature_sha:
+        description: Exact feature commit SHA to validate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  gate8-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      FEATURE_SHA: ${{ inputs.feature_sha || github.sha }}
+      KIND_VERSION: v0.27.0
+      CLUSTER_NAME: agenttrust-gate8
+      NAMESPACE: gate8-serving
+      IMAGE: agenttrust-iq:gate8
+      ROUTER_URL: http://gate8-router:8080/platform
+
+    steps:
+      - name: Checkout exact feature SHA
+        uses: actions/checkout@v4
+        with:
+          repository: Electricpaper77/ai-rag-eval-platform
+          ref: ${{ env.FEATURE_SHA }}
+          fetch-depth: 0
+
+      - name: Validate repository identity and SHA
+        run: |
+          set -euo pipefail
+          [[ "$FEATURE_SHA" =~ ^[0-9a-fA-F]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$FEATURE_SHA"
+          git cat-file -e "$FEATURE_SHA^{commit}"
+          test "$(git remote get-url origin | sed 's#\.git$##')" = "https://github.com/Electricpaper77/ai-rag-eval-platform"
+          mkdir -p artifacts/gate8
+          {
+            echo "repository=$(git remote get-url origin)"
+            echo "feature_sha=$FEATURE_SHA"
+            git show -s --format='commit=%H%nsubject=%s' "$FEATURE_SHA"
+          } | tee artifacts/gate8/identity.txt
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --no-cache-dir -r requirements-lite.txt
+
+      - name: Run Gate 8 focused tests
+        run: python -m pytest -q tests/test_gate8_model_serving.py | tee artifacts/gate8/focused-tests.txt
+
+      - name: Validate vLLM TGI and Triton adapters
+        run: python -c "from backend.app.serving.adapters import validate_runtime_configs; import json; print(json.dumps(validate_runtime_configs(), indent=2))" | tee artifacts/gate8/runtime-config-validation.json
+
+      - name: Install pinned kind
+        run: |
+          set -euo pipefail
+          curl -fsSLo kind-linux-amd64 "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+          curl -fsSLo kind.sha256sum "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64.sha256sum"
+          sha256sum -c kind.sha256sum
+          mkdir -p "$HOME/.local/bin"
+          install -m 0755 kind-linux-amd64 "$HOME/.local/bin/kind"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          kind version | tee artifacts/gate8/kind-version.txt
+
+      - name: Create kind cluster
+        run: |
+          set -euo pipefail
+          kind create cluster --name "$CLUSTER_NAME" --wait 120s
+          kubectl version --client=true | tee artifacts/gate8/kubectl-version.txt
+          kubectl get nodes -o wide | tee artifacts/gate8/nodes.txt
+
+      - name: Build and load AgentTrust image
+        run: |
+          set -euo pipefail
+          docker build -t "$IMAGE" . | tee artifacts/gate8/docker-build.txt
+          kind load docker-image "$IMAGE" --name "$CLUSTER_NAME"
+          docker image inspect "$IMAGE" --format '{{.Id}}' | tee artifacts/gate8/image-id.txt
+
+      - name: Deploy baseline candidate and router
+        run: |
+          set -euo pipefail
+          kubectl apply --dry-run=server -f deploy/serving/gate8.yaml | tee artifacts/gate8/server-dry-run.txt
+          kubectl apply -f deploy/serving/gate8.yaml | tee artifacts/gate8/deploy.txt
+          kubectl rollout status -n "$NAMESPACE" deployment/gate8-router --timeout=180s
+          kubectl rollout status -n "$NAMESPACE" deployment/gate8-baseline --timeout=180s
+          kubectl rollout status -n "$NAMESPACE" deployment/gate8-candidate --timeout=180s
+          kubectl get pods,svc,networkpolicy -n "$NAMESPACE" -o wide | tee artifacts/gate8/initial-state.txt
+
+      - name: Prove live baseline and healthy canary promotion
+        run: |
+          set -euo pipefail
+          kubectl run -n "$NAMESPACE" gate8-healthy-client --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate8_runtime_probe --base-url "$ROUTER_URL" --phase healthy --output /tmp/healthy.json | tee artifacts/gate8/healthy-canary.txt
+
+      - name: Enable deterministic candidate defect and prove rollback
+        run: |
+          set -euo pipefail
+          kubectl set env -n "$NAMESPACE" deployment/gate8-candidate GATE8_FORCE_LATENCY_MS=500
+          kubectl rollout status -n "$NAMESPACE" deployment/gate8-candidate --timeout=180s
+          kubectl run -n "$NAMESPACE" gate8-degraded-client --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate8_runtime_probe --base-url "$ROUTER_URL" --phase degraded --output /tmp/degraded.json | tee artifacts/gate8/degraded-canary.txt
+
+      - name: Verify serving security and restrictive network paths
+        run: |
+          set -euo pipefail
+          kubectl get deploy -n "$NAMESPACE" -o json > artifacts/gate8/deployments.json
+          python - <<'PY'
+          import json
+          data=json.load(open("artifacts/gate8/deployments.json", encoding="utf-8"))
+          assert {item["metadata"]["name"] for item in data["items"]} == {"gate8-router", "gate8-baseline", "gate8-candidate"}
+          for deployment in data["items"]:
+              pod=deployment["spec"]["template"]["spec"]
+              assert pod["automountServiceAccountToken"] is False
+              assert pod["securityContext"]["runAsNonRoot"] is True
+              assert pod["securityContext"]["runAsUser"] == 10001 and pod["securityContext"]["runAsGroup"] == 10001
+              assert pod["securityContext"]["seccompProfile"]["type"] == "RuntimeDefault"
+              container=pod["containers"][0]
+              assert container["securityContext"]["readOnlyRootFilesystem"] is True
+              assert container["securityContext"]["allowPrivilegeEscalation"] is False
+              assert container["securityContext"]["capabilities"]["drop"] == ["ALL"]
+              assert container["resources"]["requests"] and container["resources"]["limits"]
+          print("SECURITY: PASS")
+          PY
+          kubectl run -n "$NAMESPACE" gate8-approved-client --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -c 'import urllib.request; r=urllib.request.urlopen("http://gate8-router:8080/healthz",timeout=10); print("approved_router",r.status); assert r.status == 200' | tee artifacts/gate8/network-approved.txt
+          kubectl create namespace gate8-denied
+          if kubectl run -n gate8-denied gate8-denied-client --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -c 'import urllib.request; urllib.request.urlopen("http://gate8-baseline.gate8-serving.svc.cluster.local:8080/healthz",timeout=5)'; then
+            echo "NetworkPolicy denied path unexpectedly succeeded" >&2
+            exit 1
+          else
+            echo "NETWORK_POLICY_DENIED: PASS" | tee artifacts/gate8/network-denied.txt
+          fi
+          kubectl delete namespace gate8-denied --wait=true
+
+      - name: Full regression suite
+        run: python -m pytest -q | tee artifacts/gate8/full-regression.txt
+
+      - name: Collect Gate 8 evidence
+        if: always()
+        run: |
+          set +e
+          mkdir -p artifacts/gate8
+          kubectl get pods,deploy,svc,networkpolicy -n "$NAMESPACE" -o yaml > artifacts/gate8/final-resources.yaml 2>&1
+          kubectl get events -n "$NAMESPACE" --sort-by=.lastTimestamp > artifacts/gate8/events.txt 2>&1
+          kubectl logs -n "$NAMESPACE" deployment/gate8-router --tail=500 > artifacts/gate8/router-logs.txt 2>&1
+          kubectl logs -n "$NAMESPACE" deployment/gate8-baseline --tail=500 > artifacts/gate8/baseline-logs.txt 2>&1
+          kubectl logs -n "$NAMESPACE" deployment/gate8-candidate --tail=500 > artifacts/gate8/candidate-logs.txt 2>&1
+          kubectl describe pods -n "$NAMESPACE" > artifacts/gate8/pod-describe.txt 2>&1
+          kubectl describe networkpolicy -n "$NAMESPACE" > artifacts/gate8/networkpolicy-describe.txt 2>&1
+          git diff --check > artifacts/gate8/diff-check.txt 2>&1
+          git status --short --branch > artifacts/gate8/git-status.txt 2>&1
+          git log -1 --format='%H %s' > artifacts/gate8/git-head.txt 2>&1
+          set -e
+
+      - name: Upload Gate 8 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate8-model-serving-canary-evidence
+          path: artifacts/gate8
+          if-no-files-found: error
+
+      - name: Delete kind cluster
+        if: always()
+        run: kind delete cluster --name "$CLUSTER_NAME"
