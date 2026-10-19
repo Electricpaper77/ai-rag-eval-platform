@@ -1,0 +1,19 @@
+groups:
+  - name: agenttrust-gate9-capacity
+    rules:
+      - alert: AgentTrustCapacitySaturated
+        expr: agenttrust_saturation_ratio >= 0.8
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: AgentTrust serving capacity is saturated
+          description: Active and queued requests are using at least 80 percent of bounded capacity.
+      - alert: AgentTrustScalingStuck
+        expr: agenttrust_scaling_recommendation > 0 and max_over_time(kube_deployment_status_replicas_available{deployment="gate9-serving"}[5m]) < kube_deployment_spec_replicas{deployment="gate9-serving"}
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: AgentTrust scaling recommendation is not converging
+          description: The capacity controller recommends scale-up while available replicas remain below desired replicas.
