@@ -286,8 +286,12 @@ jobs:
           kubectl auth can-i get pods --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE" | tee artifacts/gate10/rbac.txt
           kubectl auth can-i delete pods --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE" | tee -a artifacts/gate10/rbac.txt
           kubectl auth can-i get secrets --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE" | tee -a artifacts/gate10/rbac.txt
-          denied_nodes="$(kubectl auth can-i get nodes --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner 2>/dev/null || true)"
-          printf '%s\n' "${denied_nodes:-no}" | tee -a artifacts/gate10/rbac.txt
+          kubectl auth can-i get nodes --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner > artifacts/gate10/cluster-node-auth.txt 2>/dev/null || true
+          if [ -s artifacts/gate10/cluster-node-auth.txt ]; then
+            cat artifacts/gate10/cluster-node-auth.txt | tee -a artifacts/gate10/rbac.txt
+          else
+            printf 'no\n' | tee -a artifacts/gate10/rbac.txt
+          fi
           grep -q '^yes$' artifacts/gate10/rbac.txt
           grep -q '^no$' artifacts/gate10/rbac.txt
           kubectl get deploy -n "$NAMESPACE" -o json > artifacts/gate10/security.json
