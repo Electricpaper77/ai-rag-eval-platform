@@ -36,10 +36,11 @@ def _cpu_work(milliseconds: int) -> None:
     if not milliseconds:
         return
     deadline = time.perf_counter() + milliseconds / 1000.0
-    value = 0
+    # Hashing a large input uses the C implementation and releases the GIL,
+    # so concurrent test load consumes CPU without starving probe handling.
+    payload = b"agenttrust-gate9-cpu-work" * 8192
     while time.perf_counter() < deadline:
-        value = (value * 33 + 17) % 1000003
-    hashlib.sha256(str(value).encode()).digest()
+        hashlib.sha256(payload).digest()
 
 
 @app.get("/healthz")
