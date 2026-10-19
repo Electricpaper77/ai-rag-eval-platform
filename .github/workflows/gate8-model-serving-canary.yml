@@ -101,6 +101,12 @@ jobs:
       - name: Deploy baseline candidate and router
         run: |
           set -euo pipefail
+          kubectl apply -f - <<'YAML'
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: gate8-serving
+          YAML
           kubectl apply --dry-run=server -f deploy/serving/gate8.yaml | tee artifacts/gate8/server-dry-run.txt
           kubectl apply -f deploy/serving/gate8.yaml | tee artifacts/gate8/deploy.txt
           kubectl rollout status -n "$NAMESPACE" deployment/gate8-router --timeout=180s
