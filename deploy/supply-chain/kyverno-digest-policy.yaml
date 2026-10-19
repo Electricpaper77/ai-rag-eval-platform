@@ -1,0 +1,27 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: agenttrust-require-digest
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: require-digest-pinned-image
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - gate12
+      validate:
+        message: image must be pinned by digest
+        foreach:
+          - list: request.object.spec.containers[]
+            deny:
+              conditions:
+                any:
+                  - key: "{{ element.image }}"
+                    operator: AnyNotIn
+                    value:
+                      - "*@sha256:*"
