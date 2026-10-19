@@ -1,0 +1,12 @@
+apiVersion: agenttrust.ai/v1alpha1
+kind: CanaryPolicy
+metadata:
+  name: gate8-default
+spec:
+  errorRateDelta: 0.01
+  latencyRatio: 1.25
+  minimumSamples: 3
+  stages:
+    - 5
+    - 25
+    - 100
