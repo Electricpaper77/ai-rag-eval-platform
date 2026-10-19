@@ -1,0 +1,19 @@
+server:
+  global:
+    scrape_interval: 5s
+    scrape_timeout: 4s
+    evaluation_interval: 5s
+  persistentVolume:
+    enabled: false
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+serverFiles:
+  prometheus.yml:
+    rule_files:
+      - /etc/config/gate10-alerts.yml
+extraScrapeConfigs: |
+  - job_name: agenttrust
+    metrics_path: /metrics
+    static_configs:
+      - targets: [gate10-serving.gate10-resilience.svc.cluster.local:8080]

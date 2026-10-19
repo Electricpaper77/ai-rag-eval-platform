@@ -43,6 +43,7 @@ from .gpu_runtime import router as gpu_runtime_router
 from .distributed.router import router as distributed_router
 from .serving.router import router as serving_router
 from .capacity import router as capacity_router
+from .resilience.controller import router as resilience_router
 
 from urllib.parse import urlparse
 
@@ -195,6 +196,7 @@ app.include_router(gpu_runtime_router)
 app.include_router(distributed_router)
 app.include_router(serving_router)
 app.include_router(capacity_router)
+app.include_router(resilience_router)
 
 
 PUBLIC_PRODUCTION_PATHS = {"/health"}

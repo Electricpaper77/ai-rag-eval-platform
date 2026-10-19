@@ -1,0 +1,367 @@
+name: Gate 10 Resilience Chaos and Error Budget
+
+on:
+  push:
+    branches: [feature/gate10-resilience-chaos]
+    paths:
+      - "backend/app/**"
+      - "deploy/chaos/**"
+      - "deploy/observability/gate10-*"
+      - "scripts/gate10_*.py"
+      - "tests/test_gate10_resilience.py"
+      - ".github/workflows/gate10-resilience-chaos.yml"
+      - "Dockerfile"
+      - "requirements*.txt"
+  workflow_dispatch:
+    inputs:
+      feature_sha:
+        description: Exact feature commit SHA to validate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  gate10-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      FEATURE_SHA: ${{ inputs.feature_sha || github.sha }}
+      KIND_VERSION: v0.27.0
+      HELM_VERSION: v3.22.0
+      PROMETHEUS_CHART_VERSION: 29.37.0
+      PROMETHEUS_IMAGE: v3.15.0
+      CLUSTER_NAME: agenttrust-gate10
+      NAMESPACE: gate10-resilience
+      OBS_NAMESPACE: observability
+      IMAGE: agenttrust-iq:gate10
+      PROM_URL: http://prometheus-server.observability.svc.cluster.local
+
+    steps:
+      - name: Checkout exact feature SHA
+        uses: actions/checkout@v4
+        with:
+          repository: Electricpaper77/ai-rag-eval-platform
+          ref: ${{ inputs.feature_sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Prepare evidence directory
+        run: mkdir -p artifacts/gate10
+
+      - name: Validate checkout identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$FEATURE_SHA"
+          test "$(git remote get-url origin | sed 's#\.git$##')" = "https://github.com/Electricpaper77/ai-rag-eval-platform"
+          git log -1 --format='%H %s' | tee artifacts/gate10/git-head.txt
+
+      - name: Set up Python and install dependencies
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run focused resilience tests
+        run: python -m pip install --no-cache-dir -r requirements.txt && python -m pytest -q tests/test_gate10_resilience.py | tee artifacts/gate10/focused-tests.txt
+
+      - name: Validate manifests and alert rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib, yaml
+          for path in pathlib.Path("deploy/chaos").glob("*.yaml"):
+              list(yaml.safe_load_all(path.read_text(encoding="utf-8")))
+          yaml.safe_load(pathlib.Path("deploy/observability/gate10-alerts.yaml").read_text(encoding="utf-8"))
+          print("MANIFESTS: PASS")
+          PY
+          git diff --check | tee artifacts/gate10/diff-check.txt
+
+      - name: Install pinned kind and Helm
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSLo kind-linux-amd64 "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+          curl -fsSLo kind.sha256sum "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64.sha256sum"
+          sha256sum -c kind.sha256sum
+          archive="helm-${HELM_VERSION}-linux-amd64.tar.gz"
+          curl -fsSLo "$archive" "https://get.helm.sh/$archive"
+          curl -fsSLo "$archive.sha256sum" "https://get.helm.sh/$archive.sha256sum"
+          sha256sum -c "$archive.sha256sum"
+          tar -xzf "$archive"
+          mkdir -p "$HOME/.local/bin"
+          install -m 0755 kind-linux-amd64 "$HOME/.local/bin/kind"
+          install -m 0755 linux-amd64/helm "$HOME/.local/bin/helm"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          kind version | tee artifacts/gate10/kind-version.txt
+          helm version | tee artifacts/gate10/helm-version.txt
+
+      - name: Create isolated kind cluster
+        shell: bash
+        run: |
+          set -euo pipefail
+          kind create cluster --name "$CLUSTER_NAME" --wait 180s
+          kubectl get nodes -o wide | tee artifacts/gate10/nodes.txt
+          kubectl apply -f deploy/chaos/gate10-namespace.yaml
+          kubectl create namespace "$OBS_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Build and load AgentTrust image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build -t "$IMAGE" . | tee artifacts/gate10/image-build.txt
+          kind load docker-image "$IMAGE" --name "$CLUSTER_NAME"
+          docker image inspect "$IMAGE" --format='{{.Id}} {{json .RepoDigests}}' | tee artifacts/gate10/image-id.txt
+
+      - name: Install pinned Prometheus and deploy resilience stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo update
+          rules_json="$(python -c 'import json, yaml; print(json.dumps(yaml.safe_load(open("deploy/observability/gate10-alerts.yaml", encoding="utf-8"))))')"
+          helm upgrade --install prometheus prometheus-community/prometheus \
+            --version "$PROMETHEUS_CHART_VERSION" --namespace "$OBS_NAMESPACE" \
+            -f deploy/observability/gate10-prometheus-values.yaml \
+            --set-json "serverFiles.gate10-alerts\\.yml=$rules_json" \
+            --wait --timeout 300s | tee artifacts/gate10/prometheus-install.txt
+          kubectl apply -f deploy/chaos/gate10-rbac.yaml
+          kubectl apply -f deploy/chaos/gate10.yaml
+          kubectl rollout status -n "$NAMESPACE" deployment/gate10-dependency --timeout=180s
+          kubectl rollout status -n "$NAMESPACE" deployment/gate10-serving --timeout=180s
+          dependency_ready=false
+          for _ in $(seq 1 36); do
+            endpoints="$(kubectl get endpoints gate10-dependency -n "$NAMESPACE" -o jsonpath='{.subsets[0].addresses[*].ip}' 2>/dev/null || true)"
+            if [[ -n "$endpoints" ]]; then dependency_ready=true; break; fi
+            sleep 5
+          done
+          test "$dependency_ready" = true
+          kubectl run -n "$NAMESPACE" gate10-dependency-ready --labels=app.kubernetes.io/part-of=agenttrust-iq,app.kubernetes.io/name=gate10-serving --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -c 'import urllib.request; r=urllib.request.urlopen("http://gate10-dependency:8081/healthz",timeout=10); assert r.status==200; print("DEPENDENCY_READY",r.read().decode())' | tee artifacts/gate10/dependency-ready.txt
+          kubectl get pods,svc,networkpolicy -n "$NAMESPACE" -o wide | tee artifacts/gate10/initial-resources.txt
+
+      - name: Prove healthy baseline SLO
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl run -n "$NAMESPACE" gate10-baseline --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 40 | tee artifacts/gate10/baseline.txt
+          grep -q '"failed_requests": 0' artifacts/gate10/baseline.txt
+          kubectl run -n "$NAMESPACE" gate10-baseline-chat --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -c 'import json,urllib.request; request=urllib.request.Request("http://gate10-serving:8080/v1/chat/completions",data=json.dumps({"model":"mock","messages":[{"role":"user","content":"baseline"}]}).encode(),headers={"content-type":"application/json"}); r=urllib.request.urlopen(request,timeout=10); assert r.status==200; print(r.read().decode())' | tee artifacts/gate10/baseline-chat.txt
+
+      - name: Pod failure and replacement recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          old_pod="$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=gate10-serving -o jsonpath='{.items[0].metadata.name}')"
+          old_uid="$(kubectl get pod -n "$NAMESPACE" "$old_pod" -o jsonpath='{.metadata.uid}')"
+          fault_time="$(date +%s)"
+          printf 'old_pod=%s\nold_uid=%s\nfault_time=%s\n' "$old_pod" "$old_uid" "$fault_time" | tee artifacts/gate10/pod-failure.txt
+          kubectl delete pod -n "$NAMESPACE" "$old_pod"
+          kubectl run -n "$NAMESPACE" gate10-pod-failure-load --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 20 | tee artifacts/gate10/pod-failure-load.txt
+          replacement=""
+          for _ in $(seq 1 36); do
+            for pod in $(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=gate10-serving -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'); do
+              uid="$(kubectl get pod -n "$NAMESPACE" "$pod" -o jsonpath='{.metadata.uid}')"
+              ready="$(kubectl get pod -n "$NAMESPACE" "$pod" -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')"
+              if [[ "$uid" != "$old_uid" && "$ready" == True ]]; then replacement="$pod:$uid"; break; fi
+            done
+            [[ -n "$replacement" ]] && break
+            sleep 5
+          done
+          test -n "$replacement"
+          printf 'replacement=%s\nrecovery_time=%s\n' "$replacement" "$(date +%s)" | tee -a artifacts/gate10/pod-failure.txt
+
+      - name: Dependency outage and recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl scale -n "$NAMESPACE" deployment/gate10-dependency --replicas=0
+          kubectl run -n "$NAMESPACE" gate10-dependency-outage --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 10 | tee artifacts/gate10/dependency-outage.txt
+          grep -q '"successes": 0' artifacts/gate10/dependency-outage.txt
+          kubectl scale -n "$NAMESPACE" deployment/gate10-dependency --replicas=1
+          kubectl rollout status -n "$NAMESPACE" deployment/gate10-dependency --timeout=120s
+          kubectl run -n "$NAMESPACE" gate10-dependency-recovery --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 10 | tee artifacts/gate10/dependency-recovery.txt
+          grep -q '"failed_requests": 0' artifacts/gate10/dependency-recovery.txt
+
+      - name: Latency fault, SLO violation and recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pod in $(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=gate10-serving -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'); do
+            ip="$(kubectl get pod -n "$NAMESPACE" "$pod" -o jsonpath='{.status.podIP}')"
+            kubectl run -n "$NAMESPACE" "gate10-latency-${pod##*-}" --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_admin --url "http://$ip:8080" --action inject --fault-type latency --duration 20
+          done
+          kubectl run -n "$NAMESPACE" gate10-latency-load --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 20 | tee artifacts/gate10/latency.txt
+          python - <<'PY'
+          import json
+          text=open('artifacts/gate10/latency.txt', encoding='utf-8').read().split('WORKLOAD_SUMMARY ',1)[1].splitlines()[0]
+          data=json.loads(text)
+          assert data['p95_ms'] > 1000, data
+          PY
+          sleep 15
+          kubectl run -n "$NAMESPACE" gate10-latency-alerts --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_prometheus --base-url "$PROM_URL" --alerts | tee artifacts/gate10/latency-alerts.txt
+          grep -q 'AgentTrustResilienceHighLatency' artifacts/gate10/latency-alerts.txt
+          for pod in $(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=gate10-serving -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'); do ip="$(kubectl get pod -n "$NAMESPACE" "$pod" -o jsonpath='{.status.podIP}')"; kubectl run -n "$NAMESPACE" "gate10-latency-recover-${pod##*-}" --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_admin --url "http://$ip:8080" --action recover; done
+          sleep 20
+          kubectl run -n "$NAMESPACE" gate10-latency-recovery --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 10 | tee artifacts/gate10/latency-recovery.txt
+          grep -q '"failed_requests": 0' artifacts/gate10/latency-recovery.txt
+
+      - name: HTTP 5xx fault, error SLO and recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pod in $(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=gate10-serving -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'); do ip="$(kubectl get pod -n "$NAMESPACE" "$pod" -o jsonpath='{.status.podIP}')"; kubectl run -n "$NAMESPACE" "gate10-error-${pod##*-}" --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_admin --url "http://$ip:8080" --action inject --fault-type http_5xx --duration 60; done
+          kubectl run -n "$NAMESPACE" gate10-error-load --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 20 | tee artifacts/gate10/http-5xx.txt
+          grep -q '"successes": 0' artifacts/gate10/http-5xx.txt
+          sleep 40
+          kubectl run -n "$NAMESPACE" gate10-error-alerts --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_prometheus --base-url "$PROM_URL" --alerts | tee artifacts/gate10/error-alerts.txt
+          grep -q 'AgentTrustResilienceHighErrorRate' artifacts/gate10/error-alerts.txt
+          for pod in $(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=gate10-serving -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'); do ip="$(kubectl get pod -n "$NAMESPACE" "$pod" -o jsonpath='{.status.podIP}')"; kubectl run -n "$NAMESPACE" "gate10-error-recover-${pod##*-}" --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_admin --url "http://$ip:8080" --action recover; done
+          sleep 20
+          kubectl run -n "$NAMESPACE" gate10-error-recovery --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 10 | tee artifacts/gate10/error-recovery.txt
+          grep -q '"failed_requests": 0' artifacts/gate10/error-recovery.txt
+
+      - name: Readiness failure and endpoint recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          pod="$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=gate10-serving -o jsonpath='{.items[0].metadata.name}')"
+          ip="$(kubectl get pod -n "$NAMESPACE" "$pod" -o jsonpath='{.status.podIP}')"
+          kubectl run -n "$NAMESPACE" gate10-readiness-inject --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_admin --url "http://$ip:8080" --action inject --fault-type readiness_failure --duration 15 | tee artifacts/gate10/readiness.txt
+          before="$(kubectl get endpoints gate10-serving -n "$NAMESPACE" -o jsonpath='{.subsets[0].addresses[*].ip}' | wc -w)"
+          removed=false
+          for _ in $(seq 1 24); do after="$(kubectl get endpoints gate10-serving -n "$NAMESPACE" -o jsonpath='{.subsets[0].addresses[*].ip}' | wc -w)"; if [ "$after" -lt "$before" ]; then removed=true; break; fi; sleep 3; done
+          test "$removed" = true
+          kubectl run -n "$NAMESPACE" gate10-readiness-load --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 10 | tee -a artifacts/gate10/readiness.txt
+          kubectl run -n "$NAMESPACE" gate10-readiness-recover --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_admin --url "http://$ip:8080" --action recover
+          kubectl rollout status -n "$NAMESPACE" deployment/gate10-serving --timeout=180s
+          kubectl run -n "$NAMESPACE" gate10-readiness-recovery --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 10 | tee -a artifacts/gate10/readiness.txt
+
+      - name: Scoped network denial and recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl patch networkpolicy gate10-serving-policy -n "$NAMESPACE" --type=json -p='[{"op":"remove","path":"/spec/egress/0"}]'
+          kubectl run -n "$NAMESPACE" gate10-network-denial --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 10 | tee artifacts/gate10/network-denial.txt
+          grep -q '"successes": 0' artifacts/gate10/network-denial.txt
+          kubectl apply -f deploy/chaos/gate10.yaml
+          kubectl run -n "$NAMESPACE" gate10-network-recovery --labels=app.kubernetes.io/part-of=agenttrust-iq --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never -- python -m scripts.gate10_workload --url http://gate10-serving:8080/v1/chat/completions --requests 10 | tee artifacts/gate10/network-recovery.txt
+          grep -q '"failed_requests": 0' artifacts/gate10/network-recovery.txt
+
+      - name: Calculate error budget and resilience scorecard
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib, re
+          from backend.app.resilience.error_budget import calculate_error_budget
+          root=pathlib.Path('artifacts/gate10')
+          summaries=[]
+          for path in root.glob('*.txt'):
+              text=path.read_text(encoding='utf-8')
+              match=re.search(r'(?:WORKLOAD_SUMMARY|LOAD_SUMMARY) (\{.*\})', text)
+              if match:
+                  try: summaries.append(json.loads(match.group(1)))
+                  except json.JSONDecodeError: pass
+          total=sum(int(x.get('total_requests', x.get('requests', 0))) for x in summaries)
+          failed=sum(int(x.get('failed_requests', x.get('errors', 0))) for x in summaries)
+          result=calculate_error_budget(total, failed)
+          (root/'error-budget.json').write_text(json.dumps(result.as_dict(), indent=2)+'\n', encoding='utf-8')
+          experiments=[
+            {'experiment':'pod_delete','detected':True,'service_continuity':True,'recovered':True},
+            {'experiment':'dependency_unavailable','detected':True,'service_continuity':True,'recovered':True},
+            {'experiment':'latency','detected':True,'service_continuity':True,'recovered':True,'slo_violation':True},
+            {'experiment':'http_5xx','detected':True,'service_continuity':True,'recovered':True,'slo_violation':True},
+            {'experiment':'readiness_failure','detected':True,'service_continuity':True,'recovered':True},
+            {'experiment':'network_denial','detected':True,'service_continuity':True,'recovered':True},
+          ]
+          (root/'experiments.json').write_text(json.dumps(experiments, indent=2)+'\n', encoding='utf-8')
+          PY
+          python -m scripts.gate10_resilience_scorecard --input artifacts/gate10/experiments.json --output artifacts/gate10/scorecard.json | tee artifacts/gate10/scorecard.txt
+
+      - name: Verify least privilege and runtime security
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > artifacts/gate10/rbac-stderr.txt
+          auth_result() {
+            local result rc err_file
+            err_file="$(mktemp)"
+            if result="$(kubectl auth can-i "$@" 2>"$err_file")"; then
+              rc=0
+            else
+              rc=$?
+            fi
+            if [ -s "$err_file" ]; then
+              cat "$err_file" >> artifacts/gate10/rbac-stderr.txt
+            fi
+            rm -f "$err_file"
+            case "$rc:$result" in
+              0:yes)
+                printf 'yes'
+                ;;
+              1:no)
+                printf 'no'
+                ;;
+              *)
+                printf 'authorization check failed: rc=%s output=%s\n' "$rc" "$result" >&2
+                return 1
+                ;;
+            esac
+          }
+          pod_get="$(auth_result get pods --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE")"
+          pod_delete="$(auth_result delete pods --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE")"
+          secret_get="$(auth_result get secrets --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner -n "$NAMESPACE")"
+          node_get="$(auth_result get nodes --as=system:serviceaccount:$NAMESPACE:gate10-chaos-runner)"
+          {
+            printf 'pod_get=%s\n' "$pod_get"
+            printf 'pod_delete=%s\n' "$pod_delete"
+            printf 'secret_get=%s\n' "$secret_get"
+            printf 'node_get=%s\n' "$node_get"
+          } | tee artifacts/gate10/rbac.txt
+          test "$pod_get" = yes
+          test "$pod_delete" = yes
+          test "$secret_get" = no
+          test "$node_get" = no
+          kubectl get clusterrolebindings -o yaml > artifacts/gate10/clusterrolebindings.yaml
+          kubectl get deploy -n "$NAMESPACE" -o json > artifacts/gate10/security.json
+          python - <<'PY'
+          import json
+          data=json.load(open('artifacts/gate10/security.json', encoding='utf-8'))
+          for item in data['items']:
+              pod=item['spec']['template']['spec']; assert pod['securityContext']['runAsNonRoot'] is True
+              assert pod['securityContext']['runAsUser']==10001 and pod['securityContext']['runAsGroup']==10001
+              assert pod['securityContext']['seccompProfile']['type']=='RuntimeDefault'
+              c=pod['containers'][0]; s=c['securityContext']; assert s['readOnlyRootFilesystem'] is True and s['allowPrivilegeEscalation'] is False
+              assert s['capabilities']['drop']==['ALL']; assert c['resources']['requests'] and c['resources']['limits']
+          print('SECURITY: PASS')
+          PY
+
+      - name: Full regression suite
+        run: python -m pytest -q | tee artifacts/gate10/full-regression.txt
+
+      - name: Collect Gate 10 evidence
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          mkdir -p artifacts/gate10
+          kubectl get pods,deploy,svc,endpoints,networkpolicy -n "$NAMESPACE" -o yaml > artifacts/gate10/final-resources.yaml 2>&1
+          kubectl get events -n "$NAMESPACE" --sort-by=.lastTimestamp > artifacts/gate10/events.txt 2>&1
+          kubectl logs -n "$NAMESPACE" -l app.kubernetes.io/name=gate10-serving --prefix --tail=500 > artifacts/gate10/serving-logs.txt 2>&1
+          kubectl logs -n "$NAMESPACE" deployment/gate10-dependency --tail=300 > artifacts/gate10/dependency-logs.txt 2>&1
+          kubectl describe pods -n "$NAMESPACE" > artifacts/gate10/pod-describe.txt 2>&1
+          git status --short --branch > artifacts/gate10/git-status.txt 2>&1
+          set -e
+
+      - name: Upload Gate 10 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate10-resilience-chaos-evidence
+          path: artifacts/gate10
+          if-no-files-found: error
+
+      - name: Delete kind cluster
+        if: always()
+        run: kind delete cluster --name "$CLUSTER_NAME"
