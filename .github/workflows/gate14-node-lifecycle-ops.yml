@@ -7,6 +7,14 @@ on:
         description: Exact Gate 14 commit to validate
         required: true
         type: string
+  push:
+    branches:
+      - feature/gate14-node-lifecycle-ops
+    paths:
+      - ".github/workflows/gate14-node-lifecycle-ops.yml"
+      - "deploy/operations/**"
+      - "scripts/gate14_node_lifecycle.py"
+      - "tests/test_gate14_node_lifecycle.py"
 
 permissions:
   contents: read
@@ -16,7 +24,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      FEATURE_SHA: ${{ inputs.feature_sha }}
+      FEATURE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.feature_sha || github.sha }}
       CLUSTER_NAME: agenttrust-gate14
       NAMESPACE: agenttrust-gate14
       IMAGE: agenttrust-iq:gate14
@@ -25,7 +33,7 @@ jobs:
       - name: Checkout exact feature SHA
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.feature_sha }}
+          ref: ${{ env.FEATURE_SHA }}
           fetch-depth: 0
 
       - name: Prepare evidence and validate identity
