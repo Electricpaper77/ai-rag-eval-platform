@@ -262,7 +262,7 @@ jobs:
           metadata: {name: gate16-unschedulable, namespace: gate16-pressure}
           spec:
             containers: [{name: probe, image: agenttrust-iq:gate16, imagePullPolicy: Never, command: [python, -c, "import time; time.sleep(60)"], resources: {requests: {cpu: "4", memory: 4Gi}, limits: {cpu: "4", memory: 4Gi}}}]
-            nodeSelector: {agenttrust.io/nonexistent: true}
+            nodeSelector: {agenttrust.io/nonexistent: "true"}
           YAML
           kubectl apply -f artifacts/gate16/unschedulable.yaml
           sleep 5
