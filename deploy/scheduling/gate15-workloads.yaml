@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agenttrust-standard
+  namespace: tenant-standard
+  labels: {app: agenttrust-gate15, tenant: standard}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: agenttrust-gate15, tenant: standard}
+  template:
+    metadata:
+      labels: {app: agenttrust-gate15, tenant: standard}
+    spec:
+      priorityClassName: agenttrust-standard
+      automountServiceAccountToken: false
+      securityContext: &gate15-pod-security
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: agenttrust.io/workload-tier
+                    operator: In
+                    values: [standard]
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels: {app: agenttrust-gate15, tenant: standard}
+              topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels: {app: agenttrust-gate15, tenant: standard}
+      containers:
+        - name: agenttrust
+          image: agenttrust-iq:gate15
+          imagePullPolicy: Never
+          command: [python, -m, scripts.gate1_inference]
+          ports: [{name: http, containerPort: 8080}]
+          env:
+            - {name: INFERENCE_ARTIFACTS_ROOT, value: /tmp/inference_events}
+            - {name: INFERENCE_LOG_PATH, value: /tmp/inference_runs.jsonl}
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          readinessProbe: {httpGet: {path: /healthz, port: http}, periodSeconds: 3, timeoutSeconds: 2}
+          livenessProbe: {httpGet: {path: /healthz, port: http}, periodSeconds: 10, timeoutSeconds: 2}
+          volumeMounts: [{name: tmp, mountPath: /tmp}]
+      volumes: [{name: tmp, emptyDir: {}}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agenttrust-standard
+  namespace: tenant-standard
+spec:
+  selector: {app: agenttrust-gate15, tenant: standard}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agenttrust-priority
+  namespace: tenant-priority
+  labels: {app: agenttrust-gate15, tenant: priority}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: agenttrust-gate15, tenant: priority}
+  template:
+    metadata:
+      labels: {app: agenttrust-gate15, tenant: priority}
+    spec:
+      priorityClassName: agenttrust-critical
+      tolerations: [{key: dedicated, operator: Equal, value: priority, effect: NoSchedule}]
+      nodeSelector: {agenttrust.io/workload-tier: priority}
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: agenttrust
+          image: agenttrust-iq:gate15
+          imagePullPolicy: Never
+          command: [python, -m, scripts.gate1_inference]
+          ports: [{name: http, containerPort: 8080}]
+          env:
+            - {name: INFERENCE_ARTIFACTS_ROOT, value: /tmp/inference_events}
+            - {name: INFERENCE_LOG_PATH, value: /tmp/inference_runs.jsonl}
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          readinessProbe: {httpGet: {path: /healthz, port: http}, periodSeconds: 3, timeoutSeconds: 2}
+          livenessProbe: {httpGet: {path: /healthz, port: http}, periodSeconds: 10, timeoutSeconds: 2}
+          volumeMounts: [{name: tmp, mountPath: /tmp}]
+      volumes: [{name: tmp, emptyDir: {}}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agenttrust-priority
+  namespace: tenant-priority
+spec:
+  selector: {app: agenttrust-gate15, tenant: priority}
+  ports: [{name: http, port: 8080, targetPort: http}]

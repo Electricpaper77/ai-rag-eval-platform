@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: tenant-standard-defaults
+  namespace: tenant-standard
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 100m
+        memory: 128Mi
+      default:
+        cpu: 200m
+        memory: 256Mi
+      max:
+        cpu: "1"
+        memory: 1Gi
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: tenant-priority-defaults
+  namespace: tenant-priority
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 100m
+        memory: 128Mi
+      default:
+        cpu: 200m
+        memory: 256Mi
+      max:
+        cpu: "1"
+        memory: 1Gi
