@@ -1,0 +1,117 @@
+name: Gate 17 Infrastructure Evidence Pack
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature_sha:
+        description: Exact Gate 17 commit to validate
+        required: true
+        type: string
+  push:
+    branches: [feature/gate17-infrastructure-evidence-pack]
+    paths:
+      - evidence/infrastructure/gates.json
+      - docs/INFRASTRUCTURE_CASE_STUDY.md
+      - docs/INFRASTRUCTURE_EVIDENCE_SUMMARY.md
+      - scripts/gate17_*.py
+      - tests/test_gate17_infrastructure_evidence.py
+      - .github/workflows/gate17-infrastructure-evidence.yml
+
+permissions:
+  contents: read
+
+jobs:
+  evidence-pack:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      FEATURE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.feature_sha || github.sha }}
+
+    steps:
+      - name: Checkout exact feature SHA and validate repository identity
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.FEATURE_SHA }}
+          fetch-depth: 0
+
+      - name: Prepare evidence and verify identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/gate17
+          origin="$(git config --get remote.origin.url)"
+          case "$origin" in
+            https://github.com/Electricpaper77/ai-rag-eval-platform|https://github.com/Electricpaper77/ai-rag-eval-platform.git) ;;
+            *) echo "unexpected origin: $origin" >&2; exit 1 ;;
+          esac
+          test "$(git rev-parse HEAD)" = "$FEATURE_SHA"
+          git cat-file -e "$FEATURE_SHA^{commit}"
+          { echo "repository=$origin"; echo "feature_sha=$FEATURE_SHA"; git show -s --format='commit=%H%nsubject=%s' "$FEATURE_SHA"; } | tee artifacts/gate17/identity.txt
+
+      - name: Install validation dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --no-cache-dir -r requirements-lite.txt
+
+      - name: Validate JSON, YAML, Markdown, and patch hygiene
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import yaml
+          json.loads(Path('evidence/infrastructure/gates.json').read_text())
+          for path in Path('.github/workflows').glob('*.yml'):
+              yaml.safe_load(path.read_text())
+          for path in (Path('docs/INFRASTRUCTURE_CASE_STUDY.md'), Path('docs/INFRASTRUCTURE_EVIDENCE_SUMMARY.md')):
+              assert path.read_text().strip()
+          print('FORMAT_VALIDATION: PASS')
+          PY
+          git diff --check
+
+      - name: Run focused Gate 17 tests
+        shell: bash
+        run: python -m pytest -q tests/test_gate17_infrastructure_evidence.py | tee artifacts/gate17/focused-tests.txt
+
+      - name: Run evidence integrity and claims audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/gate17_evidence_integrity.py
+          python scripts/gate17_claims_audit.py
+          python scripts/gate17_scorecard.py
+          python scripts/gate17_resume_bullets.py
+          python scripts/gate17_interview_evidence.py
+          python - <<'PY'
+          import json
+          data=json.load(open('evidence/infrastructure/gates.json'))
+          gate13=next(item for item in data['gates'] if item['gate']=='13')
+          assert gate13['status']=='BLOCKED'
+          assert gate13['evidence_level']=='BLOCKED'
+          print('GATE13: BLOCKED')
+          PY
+
+      - name: Run complete regression
+        shell: bash
+        run: python -m pytest -q | tee artifacts/gate17/full-regression.txt
+
+      - name: Collect evidence pack
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp evidence/infrastructure/gates.json artifacts/gate17/gates.json
+          cp docs/INFRASTRUCTURE_CASE_STUDY.md artifacts/gate17/INFRASTRUCTURE_CASE_STUDY.md
+          cp docs/INFRASTRUCTURE_EVIDENCE_SUMMARY.md artifacts/gate17/INFRASTRUCTURE_EVIDENCE_SUMMARY.md
+          { echo "workflow_run_id=${{ github.run_id }}"; echo "workflow_sha=$FEATURE_SHA"; } > artifacts/gate17/workflow.txt
+
+      - name: Upload Gate 17 evidence pack
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate17-infrastructure-evidence-pack
+          path: artifacts/gate17
+          if-no-files-found: error

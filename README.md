@@ -126,6 +126,16 @@ The deterministic evaluator always runs and remains the fallback if Gemini is un
 - Optional Gemini evaluator integration through `GEMINI_API_KEY`.
 - Docker, Kubernetes, Helm, and Terraform packaging; no live production cluster is claimed.
 
+## Infrastructure Evidence Pack
+
+Gate 17 consolidates recruiter-safe infrastructure evidence with explicit execution levels and limitations:
+
+- [Infrastructure case study](docs/INFRASTRUCTURE_CASE_STUDY.md)
+- [Infrastructure evidence summary](docs/INFRASTRUCTURE_EVIDENCE_SUMMARY.md)
+- [Machine-readable gate registry](evidence/infrastructure/gates.json)
+
+The registry and CI audits reject unsupported production, managed-cloud, and real-AMD-hardware claims. Gate 13 remains explicitly blocked until a qualifying AMD ROCm runner is available.
+
 ## Project Links
 
 - [Static project walkthrough](https://ai-agent-reliability-platform-rtcd.vercel.app/)
