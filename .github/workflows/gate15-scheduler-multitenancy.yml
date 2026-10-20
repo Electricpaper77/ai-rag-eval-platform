@@ -397,7 +397,7 @@ jobs:
           kind: Pod
           metadata: {name: capacity-probe, namespace: gate15-scheduler}
           spec:
-            nodeName: $CAPACITY_NODE
+            nodeSelector: {agenttrust.io/capacity-domain: standard-b}
             containers: [{name: probe, image: agenttrust-iq:gate15, imagePullPolicy: Never, command: [python, -c, "import time; time.sleep(60)"], resources: {requests: {cpu: 1500m, memory: 64Mi}, limits: {cpu: 1500m, memory: 128Mi}}}]
           YAML
           started="$(date +%s)"
