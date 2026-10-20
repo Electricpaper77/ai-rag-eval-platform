@@ -1,0 +1,301 @@
+name: Gate 14 Kubernetes Node Lifecycle Operations
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature_sha:
+        description: Exact Gate 14 commit to validate
+        required: true
+        type: string
+  push:
+    branches:
+      - feature/gate14-node-lifecycle-ops
+    paths:
+      - ".github/workflows/gate14-node-lifecycle-ops.yml"
+      - "deploy/operations/**"
+      - "scripts/gate14_node_lifecycle.py"
+      - "tests/test_gate14_node_lifecycle.py"
+
+permissions:
+  contents: read
+
+jobs:
+  node-lifecycle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      FEATURE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.feature_sha || github.sha }}
+      CLUSTER_NAME: agenttrust-gate14
+      NAMESPACE: agenttrust-gate14
+      IMAGE: agenttrust-iq:gate14
+
+    steps:
+      - name: Checkout exact feature SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.FEATURE_SHA }}
+          fetch-depth: 0
+
+      - name: Prepare evidence and validate identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/gate14
+          repository_url="$(git config --get remote.origin.url)"
+          case "$repository_url" in
+            https://github.com/Electricpaper77/ai-rag-eval-platform|https://github.com/Electricpaper77/ai-rag-eval-platform.git) ;;
+            *) echo "unexpected repository origin: $repository_url" >&2; exit 1 ;;
+          esac
+          test "$(git rev-parse HEAD)" = "$FEATURE_SHA"
+          git cat-file -e "$FEATURE_SHA^{commit}"
+          {
+            echo "repository=$repository_url"
+            echo "feature_sha=$FEATURE_SHA"
+            git show -s --format='commit=%H%nsubject=%s' "$FEATURE_SHA"
+          } | tee artifacts/gate14/identity.txt
+
+      - name: Install kind and record Kubernetes tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64 -o "$HOME/.local/bin/kind"
+          chmod +x "$HOME/.local/bin/kind"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          kind version | tee artifacts/gate14/kind-version.txt
+          kubectl version --client=true | tee artifacts/gate14/kubectl-version.txt
+          docker version | tee artifacts/gate14/docker-version.txt
+
+      - name: Install Python dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --no-cache-dir -r requirements-lite.txt
+
+      - name: Run focused Gate 14 tests
+        shell: bash
+        run: python -m pytest -q tests/test_gate14_node_lifecycle.py | tee artifacts/gate14/focused-tests.txt
+
+      - name: Create disposable three-node kind cluster
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/gate14-kind.yaml <<'YAML'
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+            - role: control-plane
+            - role: worker
+            - role: worker
+          YAML
+          kind create cluster --name "$CLUSTER_NAME" --config /tmp/gate14-kind.yaml --wait 180s 2>&1 | tee artifacts/gate14/cluster-create.txt
+          kubectl wait --for=condition=Ready nodes --all --timeout=180s | tee artifacts/gate14/nodes-ready-wait.txt
+          kubectl get nodes -o wide | tee artifacts/gate14/nodes-ready.txt
+          test "$(kubectl get nodes --no-headers | wc -l)" -eq 3
+          test "$(kubectl get nodes --no-headers | grep -c ' Ready ')" -eq 3
+
+      - name: Build and load real AgentTrust image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --pull=false -t "$IMAGE" . 2>&1 | tee artifacts/gate14/image-build.txt
+          kind load docker-image "$IMAGE" --name "$CLUSTER_NAME" 2>&1 | tee artifacts/gate14/image-load.txt
+
+      - name: Deploy workload and prove baseline placement
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -n "$NAMESPACE" -f deploy/operations/gate14-workload.yaml | tee artifacts/gate14/deploy.txt
+          kubectl apply -n "$NAMESPACE" -f deploy/operations/gate14-pdb.yaml | tee artifacts/gate14/pdb-apply.txt
+          kubectl rollout status -n "$NAMESPACE" deployment/agenttrust-gate14 --timeout=180s | tee artifacts/gate14/rollout-baseline.txt
+          kubectl get pdb -n "$NAMESPACE" agenttrust-gate14 -o yaml | tee artifacts/gate14/pdb-baseline.yaml
+          kubectl get pdb -n "$NAMESPACE" agenttrust-gate14 -o json > artifacts/gate14/pdb-baseline.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          status=json.loads(Path("artifacts/gate14/pdb-baseline.json").read_text())["status"]
+          assert status.get("currentHealthy", 0) >= 1, status
+          assert status.get("desiredHealthy", 0) >= 1, status
+          print("PDB: ACTIVE")
+          PY
+          kubectl get pods -n "$NAMESPACE" -o wide | tee artifacts/gate14/baseline-pods.txt
+          python scripts/gate14_node_lifecycle.py placement --namespace "$NAMESPACE" --output artifacts/gate14/baseline-placement.json
+
+      - name: Validate service health and baseline inference
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl port-forward -n "$NAMESPACE" svc/agenttrust-gate14 18080:8080 > artifacts/gate14/port-forward.log 2>&1 &
+          echo "$!" > artifacts/gate14/port-forward.pid
+          for attempt in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:18080/healthz > artifacts/gate14/health-baseline.json && break
+            sleep 1
+          done
+          test -s artifacts/gate14/health-baseline.json
+          curl -fsS -X POST http://127.0.0.1:18080/v1/chat/completions \
+            -H 'Content-Type: application/json' \
+            -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Return one short maintenance status."}],"max_tokens":32}' \
+            | tee artifacts/gate14/inference-baseline.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          payload = json.loads(Path("artifacts/gate14/inference-baseline.json").read_text())
+          assert payload.get("choices"), payload
+          PY
+          kill "$(cat artifacts/gate14/port-forward.pid)" 2>/dev/null || true
+
+      - name: Cordon one worker and prove scheduling restriction
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORKER_A="$(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o jsonpath='{.items[0].metadata.name}')"
+          WORKER_B="$(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o jsonpath='{.items[1].metadata.name}')"
+          echo "$WORKER_A" > artifacts/gate14/worker-a.txt
+          echo "$WORKER_B" > artifacts/gate14/worker-b.txt
+          kubectl cordon "$WORKER_A" | tee artifacts/gate14/cordon.txt
+          kubectl get node "$WORKER_A" -o json | tee artifacts/gate14/cordoned-node.json
+          kubectl get node "$WORKER_A" | tee artifacts/gate14/cordoned-node-status.txt
+          grep -q 'SchedulingDisabled' artifacts/gate14/cordoned-node-status.txt
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          node=json.loads(Path("artifacts/gate14/cordoned-node.json").read_text())
+          assert node["spec"].get("unschedulable") is True, node["spec"]
+          print("CORDON: SchedulingDisabled")
+          PY
+          kubectl run gate14-scheduling-probe -n "$NAMESPACE" --image="$IMAGE" --image-pull-policy=Never \
+            --restart=Never --command -- python -c 'import time; time.sleep(30)' \
+            --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":10001,"runAsGroup":10001,"seccompProfile":{"type":"RuntimeDefault"}},"containers":[{"name":"gate14-scheduling-probe","image":"agenttrust-iq:gate14","imagePullPolicy":"Never","command":["python","-c","import time; time.sleep(30)"],"securityContext":{"allowPrivilegeEscalation":false,"readOnlyRootFilesystem":true,"capabilities":{"drop":["ALL"]}},"resources":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"cpu":"50m","memory":"64Mi"}}}]}}' \
+            | tee artifacts/gate14/scheduling-probe-create.txt
+          kubectl wait -n "$NAMESPACE" --for=jsonpath='{.status.phase}'=Running pod/gate14-scheduling-probe --timeout=60s
+          PROBE_NODE="$(kubectl get pod -n "$NAMESPACE" gate14-scheduling-probe -o jsonpath='{.spec.nodeName}')"
+          test "$PROBE_NODE" != "$WORKER_A"
+          echo "probe_node=$PROBE_NODE" | tee artifacts/gate14/scheduling-probe-placement.txt
+          kubectl delete pod -n "$NAMESPACE" gate14-scheduling-probe --ignore-not-found=true
+
+      - name: Measure traffic during planned maintenance and drain worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORKER_A="$(cat artifacts/gate14/worker-a.txt)"
+          kubectl get pods -n "$NAMESPACE" -o json | tee artifacts/gate14/pre-drain-pods.json
+          kubectl port-forward -n "$NAMESPACE" svc/agenttrust-gate14 18080:8080 > artifacts/gate14/port-forward-drain.log 2>&1 &
+          PORT_FORWARD_PID=$!
+          trap 'kill "$PORT_FORWARD_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:18080/healthz > /dev/null && break
+            sleep 1
+          done
+          python scripts/gate14_node_lifecycle.py traffic --url http://127.0.0.1:18080/v1/chat/completions --duration 90 --interval 0.2 --output artifacts/gate14/traffic-during-drain.json &
+          TRAFFIC_PID=$!
+          sleep 3
+          kubectl drain "$WORKER_A" --ignore-daemonsets --delete-emptydir-data --grace-period=30 --timeout=180s \
+            | tee artifacts/gate14/drain.txt
+          kubectl get events -n "$NAMESPACE" --sort-by=.lastTimestamp | tee artifacts/gate14/events-after-drain.txt
+          kubectl get pods -n "$NAMESPACE" -o wide | tee artifacts/gate14/post-drain-pods.txt
+          wait "$TRAFFIC_PID"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          before = json.loads(Path("artifacts/gate14/pre-drain-pods.json").read_text())
+          assert before["items"], "no pre-drain pods recorded"
+          print("EVICTION_EVIDENCE: pre-drain pod identities recorded")
+          PY
+
+      - name: Prove eviction, replacement readiness, and service continuity
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl get pods -n "$NAMESPACE" -o json | tee artifacts/gate14/replacement-pods-before-uncordon.json
+          kubectl get pdb -n "$NAMESPACE" agenttrust-gate14 -o yaml | tee artifacts/gate14/pdb-during-drain.yaml
+          kubectl get events -A --sort-by=.lastTimestamp | tee artifacts/gate14/cluster-events.txt
+          grep -Eiq 'Evict|evict|agenttrust-gate14' artifacts/gate14/drain.txt artifacts/gate14/cluster-events.txt
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          before=json.loads(Path("artifacts/gate14/pre-drain-pods.json").read_text())
+          during=json.loads(Path("artifacts/gate14/replacement-pods-before-uncordon.json").read_text())
+          old={item["metadata"]["uid"] for item in before["items"] if item["metadata"].get("labels", {}).get("app") == "agenttrust-gate14"}
+          replacement=[item for item in during["items"] if item["metadata"].get("labels", {}).get("app") == "agenttrust-gate14" and item["metadata"]["uid"] not in old]
+          assert replacement, "no replacement pod identity observed after eviction"
+          print("REPLACEMENT_POD_UID: PASS")
+          PY
+          kubectl uncordon "$(cat artifacts/gate14/worker-a.txt)" | tee artifacts/gate14/uncordon.txt
+          kubectl wait -n "$NAMESPACE" --for=condition=Ready pod -l app=agenttrust-gate14 --timeout=180s
+          python scripts/gate14_node_lifecycle.py placement --namespace "$NAMESPACE" --output artifacts/gate14/final-placement.json
+          kubectl get pods -n "$NAMESPACE" -o json | tee artifacts/gate14/final-pods.json
+          kubectl get pods -n "$NAMESPACE" -o wide | tee artifacts/gate14/final-pods.txt
+          kubectl port-forward -n "$NAMESPACE" svc/agenttrust-gate14 18080:8080 > artifacts/gate14/port-forward-recovery.log 2>&1 &
+          RECOVERY_PORT_FORWARD_PID=$!
+          trap 'kill "$RECOVERY_PORT_FORWARD_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:18080/healthz > /dev/null && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:18080/healthz | tee artifacts/gate14/health-after-drain.json
+          curl -fsS -X POST http://127.0.0.1:18080/v1/chat/completions \
+            -H 'Content-Type: application/json' \
+            -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Return one short recovery status."}],"max_tokens":32}' \
+            | tee artifacts/gate14/inference-after-drain.json
+
+      - name: Record optional unplanned node-loss scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'UNPLANNED_NODE_LOSS: NOT_EXECUTED (optional kind experiment; planned maintenance proof is required)' \
+            | tee artifacts/gate14/unplanned-node-loss.txt
+
+      - name: Validate live security and operational controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl get deployment -n "$NAMESPACE" agenttrust-gate14 -o json > artifacts/gate14/live-deployment.json
+          python - <<'PY' | tee artifacts/gate14/security.txt
+          import json
+          from pathlib import Path
+          d=json.loads(Path("artifacts/gate14/live-deployment.json").read_text())
+          pod=d["spec"]["template"]["spec"]
+          c=pod["containers"][0]
+          assert pod["securityContext"]["runAsNonRoot"] is True
+          assert pod["securityContext"]["runAsUser"] == 10001
+          assert pod["securityContext"]["runAsGroup"] == 10001
+          assert pod["securityContext"]["seccompProfile"]["type"] == "RuntimeDefault"
+          assert pod["automountServiceAccountToken"] is False
+          assert c["securityContext"]["readOnlyRootFilesystem"] is True
+          assert c["securityContext"]["allowPrivilegeEscalation"] is False
+          assert c["securityContext"]["capabilities"]["drop"] == ["ALL"]
+          assert c["resources"]["requests"] and c["resources"]["limits"]
+          print("SECURITY: PASS")
+          PY
+
+      - name: Run full regression suite
+        shell: bash
+        run: timeout 300s python -m pytest -q | tee artifacts/gate14/full-regression.txt
+
+      - name: Collect evidence and cleanup
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          kubectl get nodes -o wide > artifacts/gate14/final-nodes.txt 2>&1
+          kubectl get pods -A -o wide > artifacts/gate14/all-pods.txt 2>&1
+          kubectl get events -A --sort-by=.lastTimestamp > artifacts/gate14/final-events.txt 2>&1
+          if [ -f artifacts/gate14/port-forward.pid ]; then
+            kill "$(cat artifacts/gate14/port-forward.pid)" 2>/dev/null || true
+          fi
+          git status --short --branch > artifacts/gate14/git-status.txt 2>&1
+          git diff --check > artifacts/gate14/diff-check.txt 2>&1
+          if kind get clusters | grep -qx "$CLUSTER_NAME"; then
+            kind delete cluster --name "$CLUSTER_NAME" > artifacts/gate14/cluster-cleanup.txt 2>&1
+          fi
+          set -e
+
+      - name: Upload Gate 14 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate14-node-lifecycle-ops-evidence
+          path: artifacts/gate14
+          if-no-files-found: error
