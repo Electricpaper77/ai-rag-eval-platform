@@ -1,46 +1,21 @@
-# AgentTrust IQ Architecture
-
-AgentTrust IQ evaluates reasoning-agent outputs against retrieved evidence and turns the result
-into a deployment decision.
-
-## Reliability Evaluation Flow
+# AgentTrust IQ architecture
 
 ```mermaid
 flowchart LR
-    A[User Prompt] --> B[Reasoning Agent Output]
-    B --> C[Retrieved Evidence / Policy Context]
-    C --> D[AgentTrust IQ Reliability Gate]
-    D --> E1[Groundedness Check]
-    D --> E2[Citation Support Check]
-    D --> E3[Hallucination Risk Check]
-    D --> E4[PII Exposure Check]
-    D --> E5[Latency Check]
-    D --> E6[Audit Log Completeness Check]
-    E1 --> F[Release / Block / Escalate Decision]
-    E2 --> F
-    E3 --> F
-    E4 --> F
-    E5 --> F
-    E6 --> F
-    F --> G[Deployment Decision]
-    G --> H[Approve / Fix / Escalate]
-    H --> I[JSONL Audit Evidence]
-    I --> J[Regression / CI Proof]
+    Client[Client / recruiter or test caller] --> API[FastAPI API]
+    API --> Eval[Evaluation and reliability layer]
+    API --> Router[Serving and routing components]
+    Eval --> Artifacts[Replayable evidence artifacts]
+    Router --> Workloads[Kubernetes workloads\ninteractive, CI, benchmark, inference]
+    API --> Metrics[Metrics and observability]
+    CI[CI validation workflows] --> API
+    CI --> Workloads
+    CI --> Artifacts
+    Helm[Helm / GitOps / Terraform evidence] -. validated packaging .-> Workloads
 ```
 
-## Model-agnostic deployment pipeline
+The client-facing surface is the FastAPI application in `backend/app`. Its evaluation and reliability modules implement deterministic groundedness, citation, refusal, prompt-injection, PII, unsafe-action, routing, and audit behavior. Serving and routing modules select the supported runtime path and expose the OpenAI-compatible inference surface.
 
-```text
-GitOps -> IaC / Terraform -> DevOps -> AgentTrust IQ Reliability Gate -> Deploy or Block
-```
+The Kubernetes layer contains the verified interactive, CI, benchmark, inference, scheduling, autoscaling, resilience, recovery, and resource-pressure workloads. Metrics and structured JSONL artifacts capture runtime and evaluation evidence. GitHub Actions workflows build the images, create disposable validation environments where applicable, execute bounded checks, and upload evidence.
 
-AgentTrust IQ is the reliability and evaluation gate between production agent engineering and
-deployment.
-
-## Judge Proof
-
-- [Live Command Center](https://ai-agent-reliability-platform-rtcd.vercel.app/agenttrust-iq-command-center.html)
-- JSONL audit evidence
-- Full local suite: **148 passed, 1 expected xfail**
-- Pytest collection: **149 tests collected**
-- `git diff --check`: **passed**
+Helm, GitOps, and Terraform appear here as repository packaging and CI-validated infrastructure evidence. No production cluster, managed-cloud operation, or real AMD GPU execution is claimed. AMD/ROCm hardware validation is implemented, but real GPU execution remains blocked pending access to qualifying AMD hardware.
