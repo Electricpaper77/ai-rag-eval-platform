@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agenttrust-gate16
+  namespace: gate16
+  labels: {app: agenttrust-gate16}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: agenttrust-gate16}
+  template:
+    metadata:
+      labels: {app: agenttrust-gate16}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: agenttrust
+          image: agenttrust-iq:gate16
+          imagePullPolicy: Never
+          command: [python, -m, scripts.gate1_inference]
+          ports: [{name: http, containerPort: 8080}]
+          env:
+            - {name: INFERENCE_ARTIFACTS_ROOT, value: /tmp/inference_events}
+            - {name: INFERENCE_LOG_PATH, value: /tmp/inference_runs.jsonl}
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          readinessProbe: {httpGet: {path: /healthz, port: http}, periodSeconds: 3, timeoutSeconds: 2, failureThreshold: 10}
+          livenessProbe: {httpGet: {path: /healthz, port: http}, periodSeconds: 10, timeoutSeconds: 2, failureThreshold: 6}
+          volumeMounts: [{name: tmp, mountPath: /tmp}]
+      volumes: [{name: tmp, emptyDir: {}}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agenttrust-gate16
+  namespace: gate16
+spec:
+  selector: {app: agenttrust-gate16}
+  ports: [{name: http, port: 8080, targetPort: http}]

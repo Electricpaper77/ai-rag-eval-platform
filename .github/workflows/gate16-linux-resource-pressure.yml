@@ -1,0 +1,316 @@
+name: Gate 16 Linux Resource Pressure and OOM Diagnostics
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature_sha:
+        description: Exact Gate 16 commit to validate
+        required: true
+        type: string
+  push:
+    branches: [feature/gate16-linux-resource-pressure]
+    paths:
+      - .github/workflows/gate16-linux-resource-pressure.yml
+      - deploy/resource-pressure/**
+      - scripts/gate16_resource_diagnostics.py
+      - tests/test_gate16_linux_resource_pressure.py
+
+permissions:
+  contents: read
+
+jobs:
+  resource-pressure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      FEATURE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.feature_sha || github.sha }}
+      CLUSTER_NAME: agenttrust-gate16
+      IMAGE: agenttrust-iq:gate16
+
+    steps:
+      - name: Checkout exact feature SHA and validate identity
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.FEATURE_SHA }}
+          fetch-depth: 0
+
+      - name: Prepare evidence and verify repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/gate16
+          origin="$(git config --get remote.origin.url)"
+          case "$origin" in
+            https://github.com/Electricpaper77/ai-rag-eval-platform|https://github.com/Electricpaper77/ai-rag-eval-platform.git) ;;
+            *) echo "unexpected repository origin: $origin" >&2; exit 1 ;;
+          esac
+          test "$(git rev-parse HEAD)" = "$FEATURE_SHA"
+          git cat-file -e "$FEATURE_SHA^{commit}"
+          { echo "repository=$origin"; echo "feature_sha=$FEATURE_SHA"; git show -s --format='commit=%H%nsubject=%s' "$FEATURE_SHA"; } | tee artifacts/gate16/identity.txt
+
+      - name: Run focused Gate 16 tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --no-cache-dir -r requirements-lite.txt
+          python -m pytest -q tests/test_gate16_linux_resource_pressure.py | tee artifacts/gate16/focused-tests.txt
+
+      - name: Capture Linux and cgroup diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          uname -a | tee artifacts/gate16/uname.txt
+          cat /etc/os-release | tee artifacts/gate16/os-release.txt
+          nproc | tee artifacts/gate16/nproc.txt
+          free -h | tee artifacts/gate16/free.txt
+          df -h | tee artifacts/gate16/df.txt
+          mount | tee artifacts/gate16/mount.txt
+          stat -fc '%T' /sys/fs/cgroup | tee artifacts/gate16/cgroup-filesystem.txt
+          if [ "$(stat -fc '%T' /sys/fs/cgroup)" = cgroup2fs ]; then echo 'cgroup_version=v2' | tee artifacts/gate16/cgroup-version.txt; else echo 'cgroup_version=v1' | tee artifacts/gate16/cgroup-version.txt; fi
+          kubectl version --client=true | tee artifacts/gate16/kubectl-version.txt
+          docker version | tee artifacts/gate16/docker-version.txt
+
+      - name: Create disposable three-node kind cluster
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64 -o "$HOME/.local/bin/kind"
+          chmod +x "$HOME/.local/bin/kind"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          kind version | tee artifacts/gate16/kind-version.txt
+          cat > /tmp/gate16-kind.yaml <<'YAML'
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+            - role: control-plane
+            - role: worker
+            - role: worker
+          YAML
+          kind create cluster --name "$CLUSTER_NAME" --config /tmp/gate16-kind.yaml --wait 180s 2>&1 | tee artifacts/gate16/cluster-create.txt
+          kubectl wait --for=condition=Ready nodes --all --timeout=180s | tee artifacts/gate16/nodes-ready.txt
+          kubectl version | tee artifacts/gate16/kubernetes-version.txt
+          kubectl get nodes -o wide | tee artifacts/gate16/nodes.txt
+          test "$(kubectl get nodes --no-headers | wc -l)" -eq 3
+          test "$(kubectl get nodes --no-headers | grep -c ' Ready ')" -eq 3
+
+      - name: Build and load real AgentTrust image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --pull=false -t "$IMAGE" . 2>&1 | tee artifacts/gate16/image-build.txt
+          kind load docker-image "$IMAGE" --name "$CLUSTER_NAME" 2>&1 | tee artifacts/gate16/image-load.txt
+
+      - name: Deploy healthy AgentTrust baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl create namespace gate16 --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace gate16-pressure --dry-run=client -o yaml | kubectl apply -f -
+          kubectl label namespace gate16 purpose=resource-pressure --overwrite
+          kubectl label namespace gate16-pressure purpose=noisy-neighbor --overwrite
+          kubectl apply -f deploy/resource-pressure/gate16-workload.yaml | tee artifacts/gate16/workload-apply.txt
+          kubectl rollout status -n gate16 deployment/agenttrust-gate16 --timeout=180s | tee artifacts/gate16/baseline-rollout.txt
+          kubectl get deployment -n gate16 agenttrust-gate16 -o json | tee artifacts/gate16/baseline-deployment.json
+          kubectl get pods -n gate16 -o wide | tee artifacts/gate16/baseline-pods.txt
+
+      - name: Establish baseline health, inference, and telemetry
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl port-forward -n gate16 svc/agenttrust-gate16 18080:8080 > artifacts/gate16/port-forward.log 2>&1 &
+          echo "$!" > artifacts/gate16/port-forward.pid
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:18080/healthz > artifacts/gate16/health-baseline.json && break; sleep 1; done
+          test -s artifacts/gate16/health-baseline.json
+          curl -fsS -X POST http://127.0.0.1:18080/v1/chat/completions -H 'Content-Type: application/json' -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Return one short baseline status."}],"max_tokens":16}' | tee artifacts/gate16/inference-baseline.json
+          python scripts/gate16_resource_diagnostics.py traffic --url http://127.0.0.1:18080/v1/chat/completions --duration 15 --interval 0.2 --output artifacts/gate16/baseline-telemetry.json
+          kubectl get pod -n gate16 -l app=agenttrust-gate16 -o json | tee artifacts/gate16/baseline-pod.json
+          kubectl top pod -n gate16 > artifacts/gate16/baseline-top.txt 2>&1 || true
+
+      - name: Execute CPU pressure and prove cgroup throttling
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > artifacts/gate16/cpu-pressure.yaml <<'YAML'
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: gate16-cpu-pressure, namespace: gate16-pressure, labels: {app: gate16-cpu-pressure}}
+          spec:
+            restartPolicy: Always
+            automountServiceAccountToken: false
+            securityContext: {runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, seccompProfile: {type: RuntimeDefault}}
+            containers:
+              - name: pressure
+                image: agenttrust-iq:gate16
+                imagePullPolicy: Never
+                command: [python, -c, "while True: pass"]
+                resources: {requests: {cpu: 10m, memory: 32Mi}, limits: {cpu: 100m, memory: 128Mi}}
+                securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          YAML
+          kubectl apply -f artifacts/gate16/cpu-pressure.yaml
+          kubectl wait -n gate16-pressure --for=jsonpath='{.status.phase}'=Running pod/gate16-cpu-pressure --timeout=90s
+          kubectl exec -n gate16-pressure gate16-cpu-pressure -- cat /sys/fs/cgroup/cpu.stat | tee artifacts/gate16/cpu-stat-before.txt
+          python scripts/gate16_resource_diagnostics.py traffic --url http://127.0.0.1:18080/v1/chat/completions --duration 20 --interval 0.2 --output artifacts/gate16/pressure-telemetry.json
+          kubectl exec -n gate16-pressure gate16-cpu-pressure -- cat /sys/fs/cgroup/cpu.stat | tee artifacts/gate16/cpu-stat-after.txt
+          kubectl get pod -n gate16-pressure gate16-cpu-pressure -o json | tee artifacts/gate16/cpu-pressure-pod.json
+          python - <<'PY'
+          from pathlib import Path
+          from scripts.gate16_resource_diagnostics import cpu_throttle_delta, parse_cpu_stat
+          before=parse_cpu_stat(Path('artifacts/gate16/cpu-stat-before.txt').read_text())
+          after=parse_cpu_stat(Path('artifacts/gate16/cpu-stat-after.txt').read_text())
+          delta=cpu_throttle_delta(before, after)
+          print(delta)
+          assert delta.get('nr_throttled', 0) > 0, delta
+          print('CPU_THROTTLING: OBSERVED')
+          PY
+
+      - name: Recover CPU pressure and measure post-recovery behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl delete pod -n gate16-pressure gate16-cpu-pressure --wait=true | tee artifacts/gate16/cpu-pressure-recovery.txt
+          kubectl wait -n gate16 --for=condition=Ready pod -l app=agenttrust-gate16 --timeout=90s
+          python scripts/gate16_resource_diagnostics.py traffic --url http://127.0.0.1:18080/v1/chat/completions --duration 15 --interval 0.2 --output artifacts/gate16/recovered-telemetry.json
+          curl -fsS http://127.0.0.1:18080/healthz | tee artifacts/gate16/health-after-cpu.json
+          curl -fsS -X POST http://127.0.0.1:18080/v1/chat/completions -H 'Content-Type: application/json' -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Return one short recovery status."}],"max_tokens":16}' | tee artifacts/gate16/inference-after-cpu.json
+          python - <<'PY'
+          import json
+          for name in ('baseline','pressure','recovered'):
+              payload=json.load(open(f'artifacts/gate16/{name}-telemetry.json'))['summary']
+              print(name, payload)
+              assert payload['total_requests'] > 0
+              assert payload['successful_requests'] > 0
+          PY
+
+      - name: Execute bounded memory pressure and prove OOMKilled
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > artifacts/gate16/oom-pressure.yaml <<'YAML'
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: gate16-oom, namespace: gate16-pressure, labels: {app: gate16-oom}}
+          spec:
+            restartPolicy: Never
+            automountServiceAccountToken: false
+            securityContext: {runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, seccompProfile: {type: RuntimeDefault}}
+            containers:
+              - name: memory-pressure
+                image: agenttrust-iq:gate16
+                imagePullPolicy: Never
+                command: [python, -c, "x=bytearray(256*1024*1024); import time; time.sleep(30)"]
+                resources: {requests: {cpu: 10m, memory: 16Mi}, limits: {cpu: 100m, memory: 32Mi}}
+                securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          YAML
+          started="$(date +%s)"
+          kubectl apply -f artifacts/gate16/oom-pressure.yaml
+          set +e
+          kubectl wait -n gate16-pressure --for=jsonpath='{.status.phase}'=Failed pod/gate16-oom --timeout=120s > artifacts/gate16/oom-wait.txt 2>&1
+          wait_rc=$?
+          set -e
+          kubectl get pod -n gate16-pressure gate16-oom -o json | tee artifacts/gate16/oom-pod.json
+          kubectl describe pod -n gate16-pressure gate16-oom | tee artifacts/gate16/oom-describe.txt
+          kubectl get events -n gate16-pressure --sort-by=.lastTimestamp | tee artifacts/gate16/oom-events.txt
+          test "$wait_rc" -eq 0
+          python - <<'PY' | tee artifacts/gate16/oom-result.txt
+          import json
+          from scripts.gate16_resource_diagnostics import parse_oom_status
+          status=parse_oom_status(json.load(open('artifacts/gate16/oom-pod.json')))
+          print(status)
+          assert status['reason']=='OOMKilled', status
+          assert status['exit_code']==137, status
+          print('OOM_KILLED: PASS')
+          PY
+
+      - name: Recover memory workload and prove inference recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl delete pod -n gate16-pressure gate16-oom --ignore-not-found=true --wait=true
+          cat > artifacts/gate16/oom-recovery.yaml <<'YAML'
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: gate16-oom, namespace: gate16-pressure, labels: {app: gate16-oom-recovered}}
+          spec:
+            restartPolicy: Never
+            automountServiceAccountToken: false
+            securityContext: {runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, seccompProfile: {type: RuntimeDefault}}
+            containers:
+              - name: memory-recovered
+                image: agenttrust-iq:gate16
+                imagePullPolicy: Never
+                command: [python, -c, "x=bytearray(8*1024*1024); import time; time.sleep(30)"]
+                resources: {requests: {cpu: 10m, memory: 32Mi}, limits: {cpu: 100m, memory: 128Mi}}
+                securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          YAML
+          recovery_started="$(date +%s)"
+          kubectl apply -f artifacts/gate16/oom-recovery.yaml
+          kubectl wait -n gate16-pressure --for=jsonpath='{.status.phase}'=Running pod/gate16-oom --timeout=90s
+          recovery_ended="$(date +%s)"
+          printf '{"recovery_seconds":%s}\n' "$((recovery_ended-recovery_started))" | tee artifacts/gate16/oom-recovery-timing.json
+          curl -fsS http://127.0.0.1:18080/healthz | tee artifacts/gate16/health-after-oom.json
+          curl -fsS -X POST http://127.0.0.1:18080/v1/chat/completions -H 'Content-Type: application/json' -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Return one short OOM recovery status."}],"max_tokens":16}' | tee artifacts/gate16/inference-after-oom.json
+
+      - name: Demonstrate scheduler request failure versus runtime cgroup enforcement
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > artifacts/gate16/unschedulable.yaml <<'YAML'
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: gate16-unschedulable, namespace: gate16-pressure}
+          spec:
+            containers: [{name: probe, image: agenttrust-iq:gate16, imagePullPolicy: Never, command: [python, -c, "import time; time.sleep(60)"], resources: {requests: {cpu: "4", memory: 4Gi}, limits: {cpu: "4", memory: 4Gi}}}]
+            nodeSelector: {agenttrust.io/nonexistent: "true"}
+          YAML
+          kubectl apply -f artifacts/gate16/unschedulable.yaml
+          sleep 5
+          kubectl get pod -n gate16-pressure gate16-unschedulable -o wide | tee artifacts/gate16/unschedulable.txt
+          kubectl describe pod -n gate16-pressure gate16-unschedulable | tee artifacts/gate16/unschedulable-describe.txt
+          grep -Eiq 'Pending|did not match|Insufficient' artifacts/gate16/unschedulable-describe.txt
+          echo 'SCHEDULER_VS_CGROUP: PASS' | tee artifacts/gate16/scheduler-vs-cgroup.txt
+
+      - name: Generate resource diagnostics and validate security
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl get events -A --sort-by=.lastTimestamp > artifacts/gate16/all-events.txt
+          python scripts/gate16_resource_diagnostics.py report --output artifacts/gate16/resource-diagnostics.json --oom-path artifacts/gate16/oom-pod.json --pending-path artifacts/gate16/unschedulable-describe.txt --events-path artifacts/gate16/all-events.txt --cpu-before-path artifacts/gate16/cpu-stat-before.txt --cpu-after-path artifacts/gate16/cpu-stat-after.txt
+          python - <<'PY' | tee artifacts/gate16/security.txt
+          import json
+          d=json.load(open('artifacts/gate16/baseline-deployment.json'))
+          pod=d['spec']['template']['spec']; c=pod['containers'][0]
+          assert pod['automountServiceAccountToken'] is False
+          assert pod['securityContext']=={'runAsNonRoot':True,'runAsUser':10001,'runAsGroup':10001,'seccompProfile':{'type':'RuntimeDefault'}}
+          assert c['securityContext']=={'allowPrivilegeEscalation':False,'readOnlyRootFilesystem':True,'capabilities':{'drop':['ALL']}}
+          assert c['resources']['requests'] and c['resources']['limits']
+          print('SECURITY: PASS')
+          PY
+
+      - name: Run full regression suite
+        shell: bash
+        run: timeout 300s python -m pytest -q | tee artifacts/gate16/full-regression.txt
+
+      - name: Collect final evidence and cleanup
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          kubectl get nodes -o wide > artifacts/gate16/final-nodes.txt 2>&1
+          kubectl get pods -A -o wide > artifacts/gate16/final-pods.txt 2>&1
+          kubectl get events -A --sort-by=.lastTimestamp > artifacts/gate16/final-events.txt 2>&1
+          kubectl get pod -n gate16 -l app=agenttrust-gate16 -o json > artifacts/gate16/final-agenttrust-pod.json 2>&1
+          kubectl top pods -A > artifacts/gate16/final-top.txt 2>&1
+          if [ -f artifacts/gate16/port-forward.pid ]; then kill "$(cat artifacts/gate16/port-forward.pid)" 2>/dev/null || true; fi
+          git diff --check > artifacts/gate16/diff-check.txt 2>&1
+          if kind get clusters | grep -qx "$CLUSTER_NAME"; then kind delete cluster --name "$CLUSTER_NAME" > artifacts/gate16/cluster-cleanup.txt 2>&1; fi
+          set -e
+
+      - name: Upload Gate 16 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate16-linux-resource-pressure-evidence
+          path: artifacts/gate16
+          if-no-files-found: error
