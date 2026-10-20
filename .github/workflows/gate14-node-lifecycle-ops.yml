@@ -156,7 +156,15 @@ jobs:
           echo "$WORKER_B" > artifacts/gate14/worker-b.txt
           kubectl cordon "$WORKER_A" | tee artifacts/gate14/cordon.txt
           kubectl get node "$WORKER_A" -o json | tee artifacts/gate14/cordoned-node.json
-          grep -q 'SchedulingDisabled' artifacts/gate14/cordon.txt
+          kubectl get node "$WORKER_A" | tee artifacts/gate14/cordoned-node-status.txt
+          grep -q 'SchedulingDisabled' artifacts/gate14/cordoned-node-status.txt
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          node=json.loads(Path("artifacts/gate14/cordoned-node.json").read_text())
+          assert node["spec"].get("unschedulable") is True, node["spec"]
+          print("CORDON: SchedulingDisabled")
+          PY
           kubectl run gate14-scheduling-probe -n "$NAMESPACE" --image="$IMAGE" --image-pull-policy=Never \
             --restart=Never --command -- python -c 'import time; time.sleep(30)' \
             --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":10001,"runAsGroup":10001,"seccompProfile":{"type":"RuntimeDefault"}},"containers":[{"name":"gate14-scheduling-probe","image":"agenttrust-iq:gate14","imagePullPolicy":"Never","command":["python","-c","import time; time.sleep(30)"],"securityContext":{"allowPrivilegeEscalation":false,"readOnlyRootFilesystem":true,"capabilities":{"drop":["ALL"]}},"resources":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"cpu":"50m","memory":"64Mi"}}}]}}' \
