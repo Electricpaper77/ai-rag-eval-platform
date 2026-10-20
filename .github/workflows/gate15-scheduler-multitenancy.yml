@@ -207,6 +207,7 @@ jobs:
           set -e
           test "$limit_rc" -ne 0
           grep -Eiq 'limit|forbidden|maximum' artifacts/gate15/limitrange-violating.txt
+          echo 'RESOURCE_QUOTA_ENFORCEMENT: PASS' | tee artifacts/gate15/resource-quota-enforcement.txt
 
       - name: Verify affinity, taints, and tolerations
         shell: bash
