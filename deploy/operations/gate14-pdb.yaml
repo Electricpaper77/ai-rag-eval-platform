@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: agenttrust-gate14
+  labels:
+    app: agenttrust-gate14
+    app.kubernetes.io/part-of: agenttrust-iq
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: agenttrust-gate14

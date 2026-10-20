@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agenttrust-gate14
+  labels:
+    app: agenttrust-gate14
+    app.kubernetes.io/part-of: agenttrust-iq
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: agenttrust-gate14
+  template:
+    metadata:
+      labels:
+        app: agenttrust-gate14
+        app.kubernetes.io/part-of: agenttrust-iq
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: agenttrust-gate14
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: agenttrust
+          image: agenttrust-iq:gate14
+          imagePullPolicy: Never
+          command: ["python", "-m", "scripts.gate1_inference"]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: INFERENCE_ARTIFACTS_ROOT
+              value: /tmp/inference_events
+            - name: INFERENCE_LOG_PATH
+              value: /tmp/inference_runs.jsonl
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agenttrust-gate14
+  labels:
+    app: agenttrust-gate14
+    app.kubernetes.io/part-of: agenttrust-iq
+spec:
+  selector:
+    app: agenttrust-gate14
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agenttrust-gate14
+spec:
+  podSelector:
+    matchLabels:
+      app: agenttrust-gate14
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: agenttrust-iq
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
