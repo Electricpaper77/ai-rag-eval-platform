@@ -14,6 +14,8 @@ AgentTrust IQ is a model-agnostic AI reliability and evaluation platform. It tur
 
 The [Gate 17 evidence registry](evidence/infrastructure/gates.json) is the source of truth for capability status and evidence level. The [case study](docs/INFRASTRUCTURE_CASE_STUDY.md) and [evidence summary](docs/INFRASTRUCTURE_EVIDENCE_SUMMARY.md) provide recruiter-facing context. The canonical deterministic evaluation pack remains [`docs/artifacts/eval_runs/hiring_eval_summary.json`](docs/artifacts/eval_runs/hiring_eval_summary.json).
 
+Canonical controlled evaluation result: **6 / 6 cases passed**, **100.0%** eval pass rate, **0.0%** hallucination rate, and **0.159 ms** evaluator p95. These are deterministic fixture measurements, not production or model-provider performance.
+
 ## Architecture
 
 See the concise [system architecture](docs/ARCHITECTURE.md), including the FastAPI surface, evaluation layer, serving/router components, Kubernetes workloads, CI, observability, and evidence artifacts.
