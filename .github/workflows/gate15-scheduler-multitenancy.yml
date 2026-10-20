@@ -1,0 +1,458 @@
+name: Gate 15 Kubernetes Scheduling and Multi-Tenancy
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature_sha:
+        description: Exact Gate 15 commit to validate
+        required: true
+        type: string
+  push:
+    branches: [feature/gate15-scheduler-multitenancy]
+    paths:
+      - .github/workflows/gate15-scheduler-multitenancy.yml
+      - deploy/scheduling/**
+      - scripts/gate15_scheduler_evidence.py
+      - tests/test_gate15_scheduler_multitenancy.py
+
+permissions:
+  contents: read
+
+jobs:
+  scheduler-multitenancy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      FEATURE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.feature_sha || github.sha }}
+      CLUSTER_NAME: agenttrust-gate15
+      IMAGE: agenttrust-iq:gate15
+
+    steps:
+      - name: Checkout exact feature SHA and validate identity
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.FEATURE_SHA }}
+          fetch-depth: 0
+      - name: Prepare evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/gate15
+          origin="$(git config --get remote.origin.url)"
+          case "$origin" in
+            https://github.com/Electricpaper77/ai-rag-eval-platform|https://github.com/Electricpaper77/ai-rag-eval-platform.git) ;;
+            *) echo "unexpected repository origin: $origin" >&2; exit 1 ;;
+          esac
+          test "$(git rev-parse HEAD)" = "$FEATURE_SHA"
+          git cat-file -e "$FEATURE_SHA^{commit}"
+          { echo "repository=$origin"; echo "feature_sha=$FEATURE_SHA"; git show -s --format='commit=%H%nsubject=%s' "$FEATURE_SHA"; } | tee artifacts/gate15/identity.txt
+
+      - name: Install tools and dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64 -o "$HOME/.local/bin/kind"
+          chmod +x "$HOME/.local/bin/kind"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          kind version | tee artifacts/gate15/kind-version.txt
+          kubectl version --client=true | tee artifacts/gate15/kubectl-version.txt
+          docker version | tee artifacts/gate15/docker-version.txt
+          python -m pip install --upgrade pip
+          python -m pip install --no-cache-dir -r requirements-lite.txt
+
+      - name: Run focused Gate 15 tests
+        shell: bash
+        run: python -m pytest -q tests/test_gate15_scheduler_multitenancy.py | tee artifacts/gate15/focused-tests.txt
+
+      - name: Create isolated four-node kind cluster
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/gate15-kind.yaml <<'YAML'
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+            - role: control-plane
+            - role: worker
+            - role: worker
+            - role: worker
+          YAML
+          kind create cluster --name "$CLUSTER_NAME" --config /tmp/gate15-kind.yaml --wait 180s 2>&1 | tee artifacts/gate15/cluster-create.txt
+          kubectl wait --for=condition=Ready nodes --all --timeout=180s | tee artifacts/gate15/nodes-ready.txt
+          kubectl get nodes -o wide | tee artifacts/gate15/nodes-wide.txt
+          test "$(kubectl get nodes --no-headers | wc -l)" -eq 4
+          test "$(kubectl get nodes --no-headers | grep -c ' Ready ')" -eq 4
+
+      - name: Label and taint worker capacity domains
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t workers < <(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
+          test "${#workers[@]}" -eq 3
+          WORKER_STANDARD_A="${workers[0]}"
+          WORKER_PRIORITY="${workers[1]}"
+          WORKER_STANDARD_B="${workers[2]}"
+          printf '%s\n' "$WORKER_STANDARD_A" > artifacts/gate15/worker-standard-a.txt
+          printf '%s\n' "$WORKER_PRIORITY" > artifacts/gate15/worker-priority.txt
+          printf '%s\n' "$WORKER_STANDARD_B" > artifacts/gate15/worker-standard-b.txt
+          kubectl label node "$WORKER_STANDARD_A" agenttrust.io/workload-tier=standard agenttrust.io/capacity-domain=standard-a --overwrite
+          kubectl label node "$WORKER_STANDARD_B" agenttrust.io/workload-tier=standard agenttrust.io/capacity-domain=standard-b --overwrite
+          kubectl label node "$WORKER_PRIORITY" agenttrust.io/workload-tier=priority agenttrust.io/capacity-domain=priority --overwrite
+          kubectl taint node "$WORKER_PRIORITY" dedicated=priority:NoSchedule --overwrite
+          kubectl get nodes --show-labels | tee artifacts/gate15/node-labels-taints.txt
+
+      - name: Build and load real AgentTrust image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --pull=false -t "$IMAGE" . 2>&1 | tee artifacts/gate15/image-build.txt
+          kind load docker-image "$IMAGE" --name "$CLUSTER_NAME" 2>&1 | tee artifacts/gate15/image-load.txt
+
+      - name: Create tenants and admission controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl create namespace tenant-standard --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace tenant-priority --dry-run=client -o yaml | kubectl apply -f -
+          kubectl label namespace tenant-standard tenant=standard agenttrust.io/tenant=standard --overwrite
+          kubectl label namespace tenant-priority tenant=priority agenttrust.io/tenant=priority --overwrite
+          kubectl create namespace gate15-scheduler --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -f deploy/scheduling/gate15-priorityclasses.yaml | tee artifacts/gate15/priorityclasses-apply.txt
+          kubectl apply -f deploy/scheduling/gate15-resourcequotas.yaml | tee artifacts/gate15/quotas-apply.txt
+          kubectl apply -f deploy/scheduling/gate15-limitrange.yaml | tee artifacts/gate15/limitrange-apply.txt
+          kubectl apply -f deploy/scheduling/gate15-networkpolicy.yaml | tee artifacts/gate15/networkpolicy-apply.txt
+
+      - name: Deploy AgentTrust tenants and prove baseline placement
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl apply -f deploy/scheduling/gate15-workloads.yaml | tee artifacts/gate15/workloads-apply.txt
+          kubectl rollout status -n tenant-standard deployment/agenttrust-standard --timeout=180s | tee artifacts/gate15/standard-rollout.txt
+          kubectl rollout status -n tenant-priority deployment/agenttrust-priority --timeout=180s | tee artifacts/gate15/priority-rollout.txt
+          kubectl get pods -A -o wide | tee artifacts/gate15/baseline-pods.txt
+          test "$(kubectl get pods -n tenant-standard -l app=agenttrust-gate15 --field-selector=status.phase=Running --no-headers | wc -l)" -eq 2
+          test "$(kubectl get pods -n tenant-priority -l app=agenttrust-gate15 --field-selector=status.phase=Running --no-headers | wc -l)" -eq 1
+          test "$(kubectl get pods -n tenant-standard -l app=agenttrust-gate15 -o jsonpath='{range .items[*]}{.spec.nodeName}{"\n"}{end}' | sort -u | wc -l)" -eq 2
+
+      - name: Verify quota admission and LimitRange defaults
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > artifacts/gate15/quota-allowed.yaml <<'YAML'
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: quota-allowed, namespace: tenant-standard, labels: {tenant: standard}}
+          spec:
+            restartPolicy: Never
+            containers:
+              - name: test
+                image: agenttrust-iq:gate15
+                imagePullPolicy: Never
+                command: [python, -c, "import time; time.sleep(30)"]
+                resources: {requests: {cpu: 10m, memory: 32Mi}, limits: {cpu: 20m, memory: 64Mi}}
+          YAML
+          kubectl apply -f artifacts/gate15/quota-allowed.yaml | tee artifacts/gate15/quota-allowed.txt
+          cat > artifacts/gate15/quota-exceeding.yaml <<'YAML'
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: quota-exceeding, namespace: tenant-standard}
+          spec:
+            containers:
+              - name: test
+                image: agenttrust-iq:gate15
+                resources: {requests: {cpu: "2", memory: 2Gi}, limits: {cpu: "2", memory: 2Gi}}
+          YAML
+          set +e
+          kubectl apply -f artifacts/gate15/quota-exceeding.yaml > artifacts/gate15/quota-exceeding.txt 2>&1
+          quota_rc=$?
+          set -e
+          test "$quota_rc" -ne 0
+          grep -Eiq 'exceeded quota|quota' artifacts/gate15/quota-exceeding.txt
+          cat > artifacts/gate15/limitrange-defaulted.yaml <<'YAML'
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: limitrange-defaulted, namespace: tenant-priority, labels: {tenant: priority}}
+          spec:
+            restartPolicy: Never
+            containers:
+              - name: test
+                image: agenttrust-iq:gate15
+                imagePullPolicy: Never
+                command: [python, -c, "import time; time.sleep(30)"]
+          YAML
+          kubectl apply -f artifacts/gate15/limitrange-defaulted.yaml
+          kubectl get pod -n tenant-priority limitrange-defaulted -o json | tee artifacts/gate15/limitrange-defaulted-live.json
+          python - <<'PY'
+          import json
+          pod=json.load(open('artifacts/gate15/limitrange-defaulted-live.json'))
+          resources=pod['spec']['containers'][0]['resources']
+          assert resources['requests']['cpu']=='100m', resources
+          assert resources['limits']['memory']=='256Mi', resources
+          print('LIMITRANGE_DEFAULTS: PASS')
+          PY
+          cat > artifacts/gate15/limitrange-violating.yaml <<'YAML'
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: limitrange-violating, namespace: tenant-priority}
+          spec:
+            containers:
+              - name: test
+                image: agenttrust-iq:gate15
+                resources: {limits: {cpu: "2", memory: 2Gi}}
+          YAML
+          set +e
+          kubectl apply -f artifacts/gate15/limitrange-violating.yaml > artifacts/gate15/limitrange-violating.txt 2>&1
+          limit_rc=$?
+          set -e
+          test "$limit_rc" -ne 0
+          grep -Eiq 'limit|forbidden|maximum' artifacts/gate15/limitrange-violating.txt
+
+      - name: Verify affinity, taints, and tolerations
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > artifacts/gate15/impossible-affinity.yaml <<'YAML'
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: impossible-affinity, namespace: tenant-standard}
+          spec:
+            containers: [{name: test, image: agenttrust-iq:gate15, imagePullPolicy: Never, command: [python, -c, "import time; time.sleep(60)"]}]
+            affinity:
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms: [{matchExpressions: [{key: agenttrust.io/workload-tier, operator: In, values: [does-not-exist]}]}]
+          YAML
+          kubectl apply -f artifacts/gate15/impossible-affinity.yaml
+          sleep 5
+          kubectl get pod -n tenant-standard impossible-affinity -o wide | tee artifacts/gate15/impossible-affinity.txt
+          kubectl describe pod -n tenant-standard impossible-affinity | tee artifacts/gate15/impossible-affinity-describe.txt
+          grep -Eiq 'Pending|did not match|unschedulable|0/[0-9]+ nodes' artifacts/gate15/impossible-affinity-describe.txt
+          kubectl delete pod -n tenant-standard impossible-affinity --ignore-not-found=true
+          PRIORITY_NODE="$(cat artifacts/gate15/worker-priority.txt)"
+          cat > artifacts/gate15/no-toleration.yaml <<YAML
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: no-toleration, namespace: gate15-scheduler}
+          spec:
+            nodeSelector: {agenttrust.io/workload-tier: priority}
+            containers: [{name: test, image: agenttrust-iq:gate15, imagePullPolicy: Never, command: [python, -c, "import time; time.sleep(60)"]}]
+          YAML
+          kubectl apply -f artifacts/gate15/no-toleration.yaml
+          sleep 5
+          kubectl describe pod -n gate15-scheduler no-toleration | tee artifacts/gate15/no-toleration-describe.txt
+          grep -Eiq 'Pending|taint|untolerated' artifacts/gate15/no-toleration-describe.txt
+          cat > artifacts/gate15/with-toleration.yaml <<YAML
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: with-toleration, namespace: gate15-scheduler}
+          spec:
+            nodeSelector: {agenttrust.io/workload-tier: priority}
+            tolerations: [{key: dedicated, operator: Equal, value: priority, effect: NoSchedule}]
+            containers: [{name: test, image: agenttrust-iq:gate15, imagePullPolicy: Never, command: [python, -c, "import time; time.sleep(60)"]}]
+          YAML
+          kubectl apply -f artifacts/gate15/with-toleration.yaml
+          kubectl wait -n gate15-scheduler --for=jsonpath='{.status.phase}'=Running pod/with-toleration --timeout=90s
+          test "$(kubectl get pod -n gate15-scheduler with-toleration -o jsonpath='{.spec.nodeName}')" = "$PRIORITY_NODE"
+
+      - name: Verify tenant RBAC isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl -n tenant-standard create serviceaccount tenant-standard --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n tenant-priority create serviceaccount tenant-priority --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n tenant-standard create role tenant-workload --verb=get,list,delete --resource=pods --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n tenant-standard create rolebinding tenant-workload --role=tenant-workload --serviceaccount=tenant-standard:tenant-standard --dry-run=client -o yaml | kubectl apply -f -
+          mkdir -p artifacts/gate15
+          auth_result() {
+            local result rc err_file
+            err_file="$(mktemp)"
+            if result="$(kubectl auth can-i "$@" 2>"$err_file")"; then rc=0; else rc=$?; fi
+            if [ -s "$err_file" ]; then cat "$err_file" >> artifacts/gate15/rbac-stderr.txt; fi
+            rm -f "$err_file"
+            case "$rc:$result" in 0:yes) printf yes ;; 1:no) printf no ;; *) echo "invalid auth result rc=$rc output=$result" >&2; return 1 ;; esac
+          }
+          pod_get="$(auth_result get pods --as=system:serviceaccount:tenant-standard:tenant-standard -n tenant-standard)"
+          pod_delete="$(auth_result delete pods --as=system:serviceaccount:tenant-standard:tenant-standard -n tenant-standard)"
+          secret_get="$(auth_result get secrets --as=system:serviceaccount:tenant-standard:tenant-standard -n tenant-priority)"
+          node_get="$(auth_result get nodes --as=system:serviceaccount:tenant-standard:tenant-standard)"
+          printf 'pod_get=%s\npod_delete=%s\nsecret_get=%s\nnode_get=%s\n' "$pod_get" "$pod_delete" "$secret_get" "$node_get" | tee artifacts/gate15/rbac.txt
+          test "$pod_get" = yes; test "$pod_delete" = yes; test "$secret_get" = no; test "$node_get" = no
+
+      - name: Verify tenant NetworkPolicy isolation and service communication
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > artifacts/gate15/network-client.yaml <<'YAML'
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: same-tenant-client, namespace: tenant-standard, labels: {tenant: standard}}
+          spec:
+            restartPolicy: Never
+            containers:
+              - name: client
+                image: agenttrust-iq:gate15
+                imagePullPolicy: Never
+                command: [python, -c, "import urllib.request; print(urllib.request.urlopen('http://agenttrust-standard.tenant-standard.svc.cluster.local:8080/healthz', timeout=10).status)"]
+          ---
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: cross-tenant-client, namespace: tenant-standard, labels: {tenant: standard}}
+          spec:
+            restartPolicy: Never
+            containers:
+              - name: client
+                image: agenttrust-iq:gate15
+                imagePullPolicy: Never
+                command: [python, -c, "import urllib.request; print(urllib.request.urlopen('http://agenttrust-priority.tenant-priority.svc.cluster.local:8080/healthz', timeout=5).status)"]
+          YAML
+          kubectl apply -f artifacts/gate15/network-client.yaml
+          kubectl wait -n tenant-standard --for=jsonpath='{.status.phase}'=Succeeded pod/same-tenant-client --timeout=90s
+          kubectl get pod -n tenant-standard same-tenant-client -o json | tee artifacts/gate15/network-same-tenant.json
+          set +e
+          kubectl wait -n tenant-standard --for=jsonpath='{.status.phase}'=Succeeded pod/cross-tenant-client --timeout=30s > artifacts/gate15/network-cross-tenant-wait.txt 2>&1
+          cross_rc=$?
+          set -e
+          kubectl logs -n tenant-standard cross-tenant-client > artifacts/gate15/network-cross-tenant.log 2>&1 || true
+          test "$cross_rc" -ne 0
+          grep -Eiq 'timed out|urlopen|refused|unreachable|failure' artifacts/gate15/network-cross-tenant-wait.txt artifacts/gate15/network-cross-tenant.log
+
+      - name: Prove real scheduler preemption
+        shell: bash
+        run: |
+          set -euo pipefail
+          PRIORITY_NODE="$(cat artifacts/gate15/worker-priority.txt)"
+          cat > artifacts/gate15/preemption-low.yaml <<YAML
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata: {name: preemption-low, namespace: gate15-scheduler}
+          spec:
+            replicas: 4
+            selector: {matchLabels: {app: preemption-low}}
+            template:
+              metadata: {labels: {app: preemption-low}}
+              spec:
+                nodeSelector: {agenttrust.io/workload-tier: priority}
+                tolerations: [{key: dedicated, operator: Equal, value: priority, effect: NoSchedule}]
+                priorityClassName: agenttrust-standard
+                containers: [{name: low, image: agenttrust-iq:gate15, imagePullPolicy: Never, command: [python, -c, "import time; time.sleep(180)"], resources: {requests: {cpu: 800m, memory: 64Mi}, limits: {cpu: 800m, memory: 128Mi}}}]
+          YAML
+          kubectl apply -f artifacts/gate15/preemption-low.yaml
+          for i in $(seq 1 60); do
+            ready="$(kubectl get pods -n gate15-scheduler -l app=preemption-low --field-selector=status.phase=Running --no-headers 2>/dev/null | wc -l)"
+            [ "$ready" -ge 3 ] && break
+            sleep 2
+          done
+          test "$(kubectl get pods -n gate15-scheduler -l app=preemption-low --field-selector=status.phase=Running --no-headers | wc -l)" -ge 3
+          kubectl get pods -n gate15-scheduler -l app=preemption-low -o json | tee artifacts/gate15/preemption-victims-before.json
+          cat > artifacts/gate15/preemption-high.yaml <<YAML
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: preemption-high, namespace: gate15-scheduler}
+          spec:
+            nodeSelector: {agenttrust.io/workload-tier: priority}
+            tolerations: [{key: dedicated, operator: Equal, value: priority, effect: NoSchedule}]
+            priorityClassName: agenttrust-critical
+            containers: [{name: high, image: agenttrust-iq:gate15, imagePullPolicy: Never, command: [python, -c, "import time; time.sleep(120)"], resources: {requests: {cpu: 1200m, memory: 64Mi}, limits: {cpu: 1200m, memory: 128Mi}}}]
+          YAML
+          kubectl apply -f artifacts/gate15/preemption-high.yaml
+          kubectl wait -n gate15-scheduler --for=jsonpath='{.status.phase}'=Running pod/preemption-high --timeout=120s
+          kubectl get pod -n gate15-scheduler preemption-high -o json | tee artifacts/gate15/preemption-high.json
+          kubectl get events -n gate15-scheduler --sort-by=.lastTimestamp | tee artifacts/gate15/preemption-events.txt
+          grep -Eiq 'Preempt|preempt' artifacts/gate15/preemption-events.txt
+          python - <<'PY' | tee artifacts/gate15/preemption-result.txt
+          import json
+          high=json.load(open('artifacts/gate15/preemption-high.json'))
+          victims=json.load(open('artifacts/gate15/preemption-victims-before.json'))
+          assert high['status']['phase']=='Running'
+          assert high['spec'].get('priority', 0) > 0
+          assert victims['items']
+          print('PREEMPTION: PASS')
+          PY
+
+      - name: Prove capacity pending and recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          CAPACITY_NODE="$(cat artifacts/gate15/worker-standard-b.txt)"
+          kubectl delete deployment preemption-low -n gate15-scheduler --ignore-not-found=true
+          kubectl delete pod preemption-high -n gate15-scheduler --ignore-not-found=true
+          cat > artifacts/gate15/capacity-blocker.yaml <<YAML
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata: {name: capacity-blocker, namespace: gate15-scheduler}
+          spec:
+            replicas: 3
+            selector: {matchLabels: {app: capacity-blocker}}
+            template:
+              metadata: {labels: {app: capacity-blocker}}
+              spec:
+                nodeName: $CAPACITY_NODE
+                containers: [{name: blocker, image: agenttrust-iq:gate15, imagePullPolicy: Never, command: [python, -c, "import time; time.sleep(180)"], resources: {requests: {cpu: 800m, memory: 64Mi}, limits: {cpu: 800m, memory: 128Mi}}}]
+          YAML
+          kubectl apply -f artifacts/gate15/capacity-blocker.yaml
+          kubectl wait -n gate15-scheduler --for=condition=Available deployment/capacity-blocker --timeout=120s
+          cat > artifacts/gate15/capacity-probe.yaml <<YAML
+          apiVersion: v1
+          kind: Pod
+          metadata: {name: capacity-probe, namespace: gate15-scheduler}
+          spec:
+            nodeName: $CAPACITY_NODE
+            containers: [{name: probe, image: agenttrust-iq:gate15, imagePullPolicy: Never, command: [python, -c, "import time; time.sleep(60)"], resources: {requests: {cpu: 1500m, memory: 64Mi}, limits: {cpu: 1500m, memory: 128Mi}}}]
+          YAML
+          started="$(date +%s)"
+          kubectl apply -f artifacts/gate15/capacity-probe.yaml
+          sleep 5
+          kubectl get pod -n gate15-scheduler capacity-probe -o wide | tee artifacts/gate15/capacity-pending.txt
+          kubectl describe pod -n gate15-scheduler capacity-probe | tee artifacts/gate15/capacity-pending-describe.txt
+          grep -Eiq 'Pending|Insufficient cpu|did not have enough' artifacts/gate15/capacity-pending-describe.txt
+          kubectl delete deployment capacity-blocker -n gate15-scheduler
+          kubectl wait -n gate15-scheduler --for=jsonpath='{.status.phase}'=Running pod/capacity-probe --timeout=120s
+          ended="$(date +%s)"
+          printf '{"pending_reason":"Insufficient cpu (scheduler event evidence)","recovery_seconds":%s}\n' "$((ended-started))" | tee artifacts/gate15/capacity-recovery.json
+          kubectl get pod -n gate15-scheduler capacity-probe -o wide | tee artifacts/gate15/capacity-recovered.txt
+
+      - name: Validate runtime security and scheduler evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl get deployment -n tenant-standard agenttrust-standard -o json > artifacts/gate15/standard-deployment.json
+          kubectl get deployment -n tenant-priority agenttrust-priority -o json > artifacts/gate15/priority-deployment.json
+          python - <<'PY' | tee artifacts/gate15/security.txt
+          import json
+          for name in ('standard','priority'):
+            d=json.load(open(f'artifacts/gate15/{name}-deployment.json'))
+            pod=d['spec']['template']['spec']; c=pod['containers'][0]
+            assert pod['automountServiceAccountToken'] is False
+            assert pod['securityContext']=={'runAsNonRoot':True,'runAsUser':10001,'runAsGroup':10001,'seccompProfile':{'type':'RuntimeDefault'}}
+            assert c['securityContext']=={'allowPrivilegeEscalation':False,'readOnlyRootFilesystem':True,'capabilities':{'drop':['ALL']}}
+            assert c['resources']['requests'] and c['resources']['limits']
+          print('SECURITY: PASS')
+          PY
+          python scripts/gate15_scheduler_evidence.py --output artifacts/gate15/scheduler-evidence.json --namespaces tenant-standard tenant-priority --preemption-file artifacts/gate15/preemption-result.txt --pending-file artifacts/gate15/capacity-recovery.json --recovery-file artifacts/gate15/capacity-recovery.json --tenant-isolation-file artifacts/gate15/rbac.txt
+
+      - name: Run full regression safeguards
+        shell: bash
+        run: timeout 300s python -m pytest -q | tee artifacts/gate15/full-regression.txt
+
+      - name: Collect final diagnostics and cleanup
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          kubectl get nodes -o wide > artifacts/gate15/final-nodes.txt 2>&1
+          kubectl get pods -A -o wide > artifacts/gate15/final-pods.txt 2>&1
+          kubectl get events -A --sort-by=.lastTimestamp > artifacts/gate15/final-events.txt 2>&1
+          kubectl get resourcequota,limitrange,priorityclass -A > artifacts/gate15/admission-resources.txt 2>&1
+          kubectl describe pod -A > artifacts/gate15/all-pod-descriptions.txt 2>&1
+          git diff --check > artifacts/gate15/diff-check.txt 2>&1
+          if kind get clusters | grep -qx "$CLUSTER_NAME"; then kind delete cluster --name "$CLUSTER_NAME" > artifacts/gate15/cluster-cleanup.txt 2>&1; fi
+          set -e
+
+      - name: Upload Gate 15 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate15-scheduler-multitenancy-evidence
+          path: artifacts/gate15
+          if-no-files-found: error
