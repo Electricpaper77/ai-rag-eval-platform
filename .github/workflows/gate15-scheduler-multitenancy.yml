@@ -161,7 +161,7 @@ jobs:
             containers:
               - name: test
                 image: agenttrust-iq:gate15
-                resources: {requests: {cpu: "2", memory: 2Gi}, limits: {cpu: "2", memory: 2Gi}}
+                resources: {requests: {cpu: "3", memory: 3Gi}, limits: {cpu: "3", memory: 3Gi}}
           YAML
           set +e
           kubectl apply -f artifacts/gate15/quota-exceeding.yaml > artifacts/gate15/quota-exceeding.txt 2>&1
