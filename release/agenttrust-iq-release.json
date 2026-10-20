@@ -1,0 +1,12 @@
+{
+  "name": "AgentTrust IQ",
+  "baseline_sha": "a79c62b8576a565ee7c11c197b072dfac8f5eff8",
+  "release_sha": "",
+  "test_total": 0,
+  "xfailed": 0,
+  "evidence_registry": "evidence/infrastructure/gates.json",
+  "case_study": "docs/INFRASTRUCTURE_CASE_STUDY.md",
+  "architecture": "docs/ARCHITECTURE.md",
+  "blocked_items": ["Gate 13: qualifying AMD ROCm hardware unavailable"],
+  "limitations": ["Release candidate only; no production deployment or real AMD GPU execution is claimed."]
+}

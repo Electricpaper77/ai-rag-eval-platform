@@ -1,0 +1,171 @@
+name: Gate 18 Portfolio Release Candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature_sha:
+        description: Exact Gate 18 commit to validate
+        required: true
+        type: string
+  push:
+    branches: [feature/gate18-portfolio-release]
+    paths:
+      - README.md
+      - docs/ARCHITECTURE.md
+      - docs/INFRASTRUCTURE_CASE_STUDY.md
+      - docs/INFRASTRUCTURE_EVIDENCE_SUMMARY.md
+      - evidence/infrastructure/gates.json
+      - evidence/project-capabilities.json
+      - release/agenttrust-iq-release.json
+      - scripts/gate17_claims_audit.py
+      - scripts/gate18_*.py
+      - scripts/verify_portfolio.py
+      - tests/test_gate18_portfolio_release.py
+      - .github/workflows/gate18-portfolio-release.yml
+
+permissions:
+  contents: read
+
+jobs:
+  portfolio-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      FEATURE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.feature_sha || github.sha }}
+      BASELINE_SHA: a79c62b8576a565ee7c11c197b072dfac8f5eff8
+
+    steps:
+      - name: Checkout exact feature SHA and verify repository identity
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.FEATURE_SHA }}
+          fetch-depth: 0
+
+      - name: Prepare evidence and verify identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/gate18
+          origin="$(git config --get remote.origin.url)"
+          case "$origin" in
+            https://github.com/Electricpaper77/ai-rag-eval-platform|https://github.com/Electricpaper77/ai-rag-eval-platform.git) ;;
+            *) echo "unexpected repository origin: $origin" >&2; exit 1 ;;
+          esac
+          test "$(git rev-parse HEAD)" = "$FEATURE_SHA"
+          git cat-file -e "$FEATURE_SHA^{commit}"
+          { echo "repository=$origin"; echo "baseline_sha=$BASELINE_SHA"; echo "feature_sha=$FEATURE_SHA"; git show -s --format='commit=%H%nsubject=%s' "$FEATURE_SHA"; } | tee artifacts/gate18/identity.txt
+
+      - name: Install validation dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --no-cache-dir -r requirements-lite.txt
+
+      - name: Validate JSON YAML Markdown and patch hygiene
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import yaml
+          for path in (Path('evidence/infrastructure/gates.json'), Path('evidence/project-capabilities.json'), Path('release/agenttrust-iq-release.json')):
+              json.loads(path.read_text())
+          for pattern in ('*.yml', '*.yaml'):
+              for path in Path('.github/workflows').glob(pattern):
+                  yaml.safe_load(path.read_text())
+          for path in (Path('README.md'), Path('docs/ARCHITECTURE.md'), Path('docs/INFRASTRUCTURE_CASE_STUDY.md'), Path('docs/INFRASTRUCTURE_EVIDENCE_SUMMARY.md')):
+              assert path.read_text().strip()
+          print('FORMAT_VALIDATION: PASS')
+          PY
+          git diff --check
+
+      - name: Run Gate 18 focused tests
+        shell: bash
+        run: python -m pytest -q tests/test_gate18_portfolio_release.py | tee artifacts/gate18/focused-tests.txt
+
+      - name: Verify portfolio package
+        shell: bash
+        run: python scripts/verify_portfolio.py | tee artifacts/gate18/portfolio-verification.txt
+
+      - name: Run repository link audit
+        shell: bash
+        run: python scripts/gate18_link_audit.py --output artifacts/gate18/link-audit.json | tee artifacts/gate18/link-audit.txt
+
+      - name: Generate Gate 17 recruiter bullets for consistency audit
+        shell: bash
+        run: python scripts/gate17_resume_bullets.py --output artifacts/gate17/resume-bullets.md
+
+      - name: Run Gate 17 claims audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/gate17_claims_audit.py \
+            --claims-file README.md \
+            --claims-file docs/INFRASTRUCTURE_CASE_STUDY.md \
+            --claims-file docs/INFRASTRUCTURE_EVIDENCE_SUMMARY.md \
+            --claims-file docs/ARCHITECTURE.md \
+            --claims-file artifacts/gate17/resume-bullets.md \
+            --output artifacts/gate18/claims-audit.json | tee artifacts/gate18/claims-audit.txt
+
+      - name: Verify Gate 13 remains blocked
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' | tee artifacts/gate18/gate13-status.txt
+          import json
+          data=json.load(open('evidence/infrastructure/gates.json'))
+          gate13=next(item for item in data['gates'] if item['gate']=='13')
+          assert gate13['status']=='BLOCKED'
+          assert gate13['evidence_level']=='BLOCKED'
+          assert not gate13['executed_evidence']
+          print('GATE13: BLOCKED')
+          PY
+
+      - name: Start application and run lightweight runtime smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 18080 > artifacts/gate18/server.log 2>&1 &
+          server_pid=$!
+          echo "$server_pid" > artifacts/gate18/server.pid
+          cleanup() { kill "$server_pid" 2>/dev/null || true; }
+          trap cleanup EXIT
+          ready=0
+          for attempt in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:18080/healthz > /dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+          python scripts/gate18_runtime_smoke.py --base-url http://127.0.0.1:18080 --output artifacts/gate18/smoke.json | tee artifacts/gate18/smoke.txt
+
+      - name: Run complete regression
+        shell: bash
+        run: python -m pytest -q | tee artifacts/gate18/full-regression.txt
+
+      - name: Generate tested release manifest
+        shell: bash
+        run: python scripts/gate18_release_manifest.py --baseline-sha "$BASELINE_SHA" --regression artifacts/gate18/full-regression.txt --output release/agenttrust-iq-release.json | tee artifacts/gate18/release-manifest.txt
+
+      - name: Collect Gate 18 evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp README.md artifacts/gate18/README.md
+          cp docs/ARCHITECTURE.md artifacts/gate18/ARCHITECTURE.md
+          cp docs/INFRASTRUCTURE_CASE_STUDY.md artifacts/gate18/INFRASTRUCTURE_CASE_STUDY.md
+          cp docs/INFRASTRUCTURE_EVIDENCE_SUMMARY.md artifacts/gate18/INFRASTRUCTURE_EVIDENCE_SUMMARY.md
+          cp evidence/infrastructure/gates.json artifacts/gate18/gates.json
+          cp evidence/project-capabilities.json artifacts/gate18/project-capabilities.json
+          cp release/agenttrust-iq-release.json artifacts/gate18/agenttrust-iq-release.json
+          { echo "workflow_run_id=${{ github.run_id }}"; echo "feature_sha=$FEATURE_SHA"; } > artifacts/gate18/workflow.txt
+
+      - name: Upload Gate 18 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate18-portfolio-release-evidence
+          path: artifacts/gate18
+          if-no-files-found: error

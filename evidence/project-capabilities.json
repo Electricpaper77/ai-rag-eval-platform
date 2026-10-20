@@ -1,0 +1,35 @@
+{
+  "project": "AgentTrust IQ",
+  "release_candidate": true,
+  "capabilities": [
+    {"gate":"1","title":"Kubernetes developer platform","status":"PASS","evidence_level":"DISPOSABLE_CLUSTER_RUNTIME"},
+    {"gate":"2","title":"Self-service workload orchestration","status":"PASS","evidence_level":"DISPOSABLE_CLUSTER_RUNTIME"},
+    {"gate":"3A","title":"Helm packaging","status":"PASS","evidence_level":"STATIC"},
+    {"gate":"3B","title":"Helm runtime lifecycle","status":"PASS","evidence_level":"DISPOSABLE_CLUSTER_RUNTIME"},
+    {"gate":"3C","title":"Argo CD GitOps lifecycle","status":"PASS","evidence_level":"DISPOSABLE_CLUSTER_RUNTIME"},
+    {"gate":"4","title":"Infrastructure foundation","status":"PASS","evidence_level":"CI_RUNTIME"},
+    {"gate":"5","title":"Observability and SLOs","status":"PASS","evidence_level":"CI_RUNTIME"},
+    {"gate":"6","title":"AMD/ROCm and HPC readiness","status":"PASS","evidence_level":"CI_RUNTIME"},
+    {"gate":"7","title":"Distributed inference","status":"PASS","evidence_level":"DISPOSABLE_CLUSTER_RUNTIME"},
+    {"gate":"8","title":"Model serving rollout","status":"PASS","evidence_level":"DISPOSABLE_CLUSTER_RUNTIME"},
+    {"gate":"9","title":"Autoscaling and capacity","status":"PASS","evidence_level":"DISPOSABLE_CLUSTER_RUNTIME"},
+    {"gate":"10","title":"Resilience and chaos","status":"PASS","evidence_level":"DISPOSABLE_CLUSTER_RUNTIME"},
+    {"gate":"11","title":"Disaster and stateful recovery","status":"PASS","evidence_level":"DISPOSABLE_CLUSTER_RUNTIME"},
+    {"gate":"12","title":"Supply-chain and release engineering","status":"PASS","evidence_level":"CI_RUNTIME"},
+    {"gate":"14","title":"Kubernetes node lifecycle","status":"PASS","evidence_level":"DISPOSABLE_CLUSTER_RUNTIME"},
+    {"gate":"15","title":"Scheduling and multi-tenant capacity","status":"PASS","evidence_level":"DISPOSABLE_CLUSTER_RUNTIME"},
+    {"gate":"16","title":"Linux resource pressure","status":"PASS","evidence_level":"DISPOSABLE_CLUSTER_RUNTIME"}
+  ],
+  "evidence_levels": {
+    "STATIC": ["3A"],
+    "CI_RUNTIME": ["4", "5", "6", "12"],
+    "DISPOSABLE_CLUSTER_RUNTIME": ["1", "2", "3B", "3C", "7", "8", "9", "10", "11", "14", "15", "16"],
+    "REAL_HARDWARE": [],
+    "PRODUCTION": []
+  },
+  "limitations": [
+    "Gate 13 real AMD ROCm hardware execution remains blocked because no qualifying AMD runner is available.",
+    "Evidence is from CI and disposable validation environments; production ownership is not claimed."
+  ],
+  "blocked": ["13"]
+}
