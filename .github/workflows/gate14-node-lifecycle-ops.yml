@@ -90,6 +90,7 @@ jobs:
             - role: worker
           YAML
           kind create cluster --name "$CLUSTER_NAME" --config /tmp/gate14-kind.yaml --wait 180s 2>&1 | tee artifacts/gate14/cluster-create.txt
+          kubectl wait --for=condition=Ready nodes --all --timeout=180s | tee artifacts/gate14/nodes-ready-wait.txt
           kubectl get nodes -o wide | tee artifacts/gate14/nodes-ready.txt
           test "$(kubectl get nodes --no-headers | wc -l)" -eq 3
           test "$(kubectl get nodes --no-headers | grep -c ' Ready ')" -eq 3
