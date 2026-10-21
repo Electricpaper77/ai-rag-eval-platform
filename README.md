@@ -114,3 +114,7 @@ The deterministic evaluator always runs and remains the fallback if Gemini is un
 ## Resume-Safe Claim
 
 Built AgentTrust IQ, a model-agnostic FastAPI agent reliability and evaluation platform with deterministic groundedness, citation, hallucination, refusal, prompt-injection, unsafe-action, and PII checks; produced replayable JSONL audit evidence and an explicit release, block, or escalate decision, with Gemini available only as an optional evaluator integration.
+
+## Local distributed-systems evidence
+
+The isolated [distributed worker case study](docs/DISTRIBUTED_SYSTEMS_CASE_STUDY.md) adds two local Go worker containers, structured logs, bounded failure injection, and a dependency-free load test. It preserves the Python/FastAPI evaluator. Run the exact commands in [`distributed/README.md`](distributed/README.md); the resulting JSON is the source for p50/p95/p99 latency, throughput, error rate, and recovery time. No metrics are claimed until those commands are executed. GPU events are labeled simulated and are not physical DCGM measurements. See the [recruiter evidence summary](docs/RECRUITER_EVIDENCE_SUMMARY.md).
