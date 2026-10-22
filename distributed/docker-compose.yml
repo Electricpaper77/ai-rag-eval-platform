@@ -1,9 +1,18 @@
 services:
+  gateway:
+    build:
+      context: ..
+      dockerfile: distributed/Gateway.Dockerfile
+    environment: ["WORKER_A_URL=http://worker-a:8080", "WORKER_B_URL=http://worker-b:8080"]
+    ports: ["18082:8080"]
+    depends_on:
+      - worker-a
+      - worker-b
   worker-a:
     build: .
-    environment: ["PORT=8080", "FAIL_AFTER=0", "PEER_URL=http://worker-b:8080"]
+    environment: ["PORT=8080", "WORKER_ID=worker-a", "FAIL_AFTER=0", "PEER_URL=http://worker-b:8080"]
     ports: ["18080:8080"]
   worker-b:
     build: .
-    environment: ["PORT=8080", "FAIL_AFTER=20"]
+    environment: ["PORT=8080", "WORKER_ID=worker-b", "FAIL_AFTER=20"]
     ports: ["18081:8080"]
