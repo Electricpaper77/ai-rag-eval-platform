@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "registry_kind": "gate19_incident_replay",
+  "repository": "Electricpaper77/ai-rag-eval-platform",
+  "canonical_registry": "evidence/infrastructure/gates.json",
+  "feature_sha": "7a0169cb7b4470ea8f5ec46a093ed9ed54d46218",
+  "workflow_run_id": 39708577381,
+  "job_id": 119594265975,
+  "artifact_id": 12396491128,
+  "artifact_digest": "sha256:6568a056e75c26a46fe131e15a12d93cd4b8b45c56de1ad0444372bd9fc59405",
+  "workflow_url": "https://github.com/Electricpaper77/ai-rag-eval-platform/actions/runs/39708577381",
+  "artifact_url": "https://github.com/Electricpaper77/ai-rag-eval-platform/actions/runs/39708577381/artifacts/12396491128",
+  "status": "PASS",
+  "environment": {"runner": "ubuntu-24.04", "go": "1.22.12", "docker": "28.0.4", "topology": "local Docker Compose"},
+  "trace_continuity_rate": 1.0,
+  "recovery_probe_duration_ms": 7.018291,
+  "scenarios": [
+    {"name":"healthy_baseline","target":"worker-a","sample_count":40,"concurrency":4,"duration_s":0.312288709,"p50_ms":28.925169,"p95_ms":34.424467,"p99_ms":34.569113,"throughput_rps":128.086603,"error_rate":0.0},
+    {"name":"injected_failure","target":"worker-b","sample_count":40,"concurrency":4,"duration_s":0.284924977,"p50_ms":28.134216,"p95_ms":32.654879,"p99_ms":37.045323,"throughput_rps":140.387833,"error_rate":0.075,"errors":3},
+    {"name":"recovered","target":"worker-a","sample_count":20,"concurrency":4,"duration_s":0.139516410,"p50_ms":27.157565,"p95_ms":29.427741,"p99_ms":29.427741,"throughput_rps":143.352312,"error_rate":0.0}
+  ],
+  "validation": {"go_build": 0, "go_test": 0, "go_vet": 0, "go_race_cgo_enabled": 0, "evaluator_regression": "7 passed", "compose_replay": 0},
+  "permitted_claim": "Gate 19 incident detection, trace continuity, bounded failure, and recovery were validated in local Docker Compose CI.",
+  "limitations": ["GPU telemetry is simulated labels only, not physical NVIDIA DCGM measurement.", "Local containers are not production infrastructure.", "Gate 13 real AMD GPU validation remains BLOCKED in the canonical registry."]
+}
