@@ -1,0 +1,9 @@
+services:
+  worker-a:
+    build: .
+    environment: ["PORT=8080", "FAIL_AFTER=0", "PEER_URL=http://worker-b:8080"]
+    ports: ["18080:8080"]
+  worker-b:
+    build: .
+    environment: ["PORT=8080", "FAIL_AFTER=20"]
+    ports: ["18081:8080"]

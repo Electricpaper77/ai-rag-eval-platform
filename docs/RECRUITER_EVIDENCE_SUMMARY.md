@@ -1,0 +1,9 @@
+# Recruiter evidence summary
+
+- Preserved the existing Python/FastAPI evaluation engine and its deterministic evidence contract.
+- Added a minimal Go concurrent worker with structured logs, bounded failure injection, two-container local topology, and a reproducible load-test command.
+- Gate 15B observed run: [workflow 39566204592](https://github.com/Electricpaper77/ai-rag-eval-platform/actions/runs/39566204592), SHA `d51d31f8921a251667f3a923e3a026a3349747eb`, [evidence artifact](https://github.com/Electricpaper77/ai-rag-eval-platform/actions/runs/39566204592/artifacts/12329722630).
+- Measured local Compose results: normal 200 requests / concurrency 1 = p50 0.468716 ms, p95 0.525459 ms, p99 0.590638 ms, 1943.702466 req/s, 0% errors; concurrent 200 / 20 = p50 4.710589 ms, p95 10.804165 ms, p99 12.593503 ms, 2880.954481 req/s, 0% errors; injected-failure 40 / 10 = p50 2.583072 ms, p95 4.126963 ms, p99 4.218759 ms, 2108.914355 req/s, 7.5% errors (3/40), 5 ms observed recovery.
+- Go build/test/vet and `CGO_ENABLED=1 go test -race ./...` all exited 0; evaluator regression exited 0 with 7 passed.
+- GPU honesty: events are explicitly labeled simulated; no physical DCGM measurement is claimed.
+- Cost boundary: local containers only; no paid cloud deployment.
