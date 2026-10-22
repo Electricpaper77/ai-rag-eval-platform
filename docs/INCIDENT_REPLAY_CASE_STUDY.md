@@ -6,4 +6,14 @@ Run from `distributed/` with Docker Compose: `docker compose up --build -d`, the
 
 CI is `.github/workflows/gate19-incident-replay.yml`. It has bounded timeouts, explicit exit-code files, Compose logs, Go build/test/vet/race checks, evaluator regression, and `if: always()` artifact upload. Results must be linked only after an observed workflow run.
 
+Observed run: [workflow 39708262903](https://github.com/Electricpaper77/ai-rag-eval-platform/actions/runs/39708262903), commit `56b082829bfd41aff13fbee8ee6aefaf1fc0a6d0`, [evidence artifact 12396151472](https://github.com/Electricpaper77/ai-rag-eval-platform/actions/runs/39708262903/artifacts/12396151472). Ubuntu 24.04 runner, Go 1.22.12, Docker Engine 28.0.4. All recorded exit codes were `0`; evaluator regression was `7 passed`.
+
+| Scenario | Sample / concurrency | p50 ms | p95 ms | p99 ms | Throughput req/s | Error rate | Duration s |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Healthy worker-a | 40 / 4 | 28.925169 | 34.424467 | 34.569113 | 128.086603 | 0% | 0.312289 |
+| Injected worker-b | 40 / 4 | 28.134216 | 32.654879 | 37.045323 | 140.387833 | 7.5% (3/40) | 0.284925 |
+| Recovered worker-a | 20 / 4 | 27.157565 | 29.427741 | 29.427741 | 143.352312 | 0% | 0.139516 |
+
+Trace continuity was 100% in all three scenarios. Observed recovery probe duration was 7.018291 ms. The injected incident was exactly three HTTP 503 responses after the worker-b threshold.
+
 Limits: this is local disposable container evidence, not production infrastructure. GPU fields are simulated labels only; they are not physical NVIDIA DCGM measurements and make no GPU-performance claim.
