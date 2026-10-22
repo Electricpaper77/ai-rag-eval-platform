@@ -45,6 +45,7 @@ from .serving.router import router as serving_router
 from .capacity import router as capacity_router
 from .resilience.controller import router as resilience_router
 from .recovery.service import recovery_router
+from saas.router import router as saas_router
 
 from urllib.parse import urlparse
 
@@ -199,6 +200,7 @@ app.include_router(serving_router)
 app.include_router(capacity_router)
 app.include_router(resilience_router)
 app.include_router(recovery_router)
+app.include_router(saas_router)
 
 
 PUBLIC_PRODUCTION_PATHS = {"/health"}
