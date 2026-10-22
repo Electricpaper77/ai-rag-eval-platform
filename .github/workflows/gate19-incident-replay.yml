@@ -1,0 +1,66 @@
+name: Gate 19 Incident Replay Lab
+on:
+  workflow_dispatch:
+  push:
+    paths: ["distributed/**", ".github/workflows/gate19-incident-replay.yml", "docs/INCIDENT_REPLAY_CASE_STUDY.md", "docs/RECRUITER_EVIDENCE_SUMMARY.md", "evidence/infrastructure/gates.json"]
+permissions:
+  contents: read
+jobs:
+  incident-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-go@v5
+        with: {go-version: "1.22"}
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install regression dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-lite.txt
+      - name: Record environment
+        run: |
+          mkdir -p distributed/evidence
+          git rev-parse HEAD | tee distributed/evidence/git_sha.txt
+          go version | tee distributed/evidence/go_version.txt
+          docker version | tee distributed/evidence/docker_version.txt
+      - name: Go validation
+        shell: bash
+        run: |
+          set +e
+          go -C distributed build ./... > distributed/evidence/go_build.txt 2>&1; echo $? > distributed/evidence/go_build.exit
+          go -C distributed test ./... > distributed/evidence/go_test.txt 2>&1; echo $? > distributed/evidence/go_test.exit
+          go -C distributed vet ./... > distributed/evidence/go_vet.txt 2>&1; echo $? > distributed/evidence/go_vet.exit
+          CGO_ENABLED=1 go -C distributed test -race ./... > distributed/evidence/go_race.txt 2>&1; echo $? > distributed/evidence/go_race.exit
+          test "$(cat distributed/evidence/go_build.exit)" = 0 && test "$(cat distributed/evidence/go_test.exit)" = 0 && test "$(cat distributed/evidence/go_vet.exit)" = 0 && test "$(cat distributed/evidence/go_race.exit)" = 0
+      - name: Compose incident replay
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p distributed/evidence
+          trap 'docker compose -f distributed/docker-compose.yml logs --no-color > distributed/evidence/compose_logs.log 2>&1 || true; docker compose -f distributed/docker-compose.yml down -v || true' EXIT
+          timeout 180s docker compose -f distributed/docker-compose.yml up --build -d 2>&1 | tee distributed/evidence/compose_up.log
+          for attempt in $(seq 1 60); do curl -fsS http://127.0.0.1:18082/healthz > distributed/evidence/gateway_health.json && break; test "$attempt" = 60 && exit 1; sleep 1; done
+          curl -fsS -H 'X-Trace-ID: gate19-fanout' http://127.0.0.1:18080/fanout > distributed/evidence/worker_fanout.json
+          timeout 120s python distributed/incident_replay.py | tee distributed/evidence/incident_replay_stdout.json
+          echo $? > distributed/evidence/incident_replay.exit
+      - name: Evaluator regression with bounded timeout
+        shell: bash
+        run: |
+          set +e
+          timeout 240s python -m pytest -q tests/test_agenttrust_demo.py tests/test_eval_harness.py tests/test_recruiter_evidence.py > distributed/evidence/evaluator_regression.txt 2>&1
+          echo $? > distributed/evidence/evaluator_regression.exit
+      - name: Enforce validation result
+        run: |
+          test "$(cat distributed/evidence/go_build.exit)" = 0
+          test "$(cat distributed/evidence/go_test.exit)" = 0
+          test "$(cat distributed/evidence/go_vet.exit)" = 0
+          test "$(cat distributed/evidence/go_race.exit)" = 0
+          test "$(cat distributed/evidence/incident_replay.exit)" = 0
+          test "$(cat distributed/evidence/evaluator_regression.exit)" = 0
+      - name: Upload Gate 19 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate19-incident-replay-evidence
+          path: distributed/evidence/
