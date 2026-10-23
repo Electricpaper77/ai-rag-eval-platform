@@ -7,7 +7,7 @@ from typing import Any
 import psycopg
 from cryptography.fernet import Fernet, InvalidToken
 
-MIGRATIONS = [Path(__file__).with_name("migrations") / "002_postgres.sql"]
+MIGRATIONS = [Path(__file__).with_name("migrations") / name for name in ("002_postgres.sql", "003_lifecycle.sql")]
 def now(): return datetime.now(timezone.utc)
 def migrate():
     """Apply the versioned PostgreSQL baseline once, outside request paths."""

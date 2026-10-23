@@ -3,6 +3,7 @@
 - [ ] Configure and independently attest `AGENTTRUST_DEPLOYMENT_POLICY=staging|production`; startup must reject SQLite, process-local sessions, local/test identities, missing PostgreSQL, and missing shared-session configuration.
 - [x] Replace process-local OIDC login state with shared expiring PostgreSQL storage and validate cross-instance callback routing in disposable CI.
 - [ ] Complete production migration recovery, backup/restore, retention, deletion, and export controls. Gate 22B validates an isolated disposable-PostgreSQL dump/restore only; it does not exercise production data or managed backup retention.
+- [x] Gate 22C defines tenant export/deletion authorization, transactional tombstones, bounded retention dry-run, redaction, and disposable PostgreSQL tests. Scheduled execution and backup reconciliation remain blocked.
 
 - [ ] Managed OIDC with verified identities, short-lived sessions, logout, and reset.
 - [ ] Production startup must reject `AGENTTRUST_SAAS_IDENTITIES_LOCAL_TEST_ONLY`; only explicit isolated local/test mode may use it.

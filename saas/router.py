@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from .repository import create_org, create_project, create_run, get_run
 from .oidc import OIDCConfig, MemorySessionStore, begin_login, consume_login_state, exchange_code, internal_user_key, verify_id_token
 from .deployment import validate_deployment_configuration
+from .lifecycle import export_tenant, delete_tenant
 
 router=APIRouter(prefix="/saas",tags=["saas"])
 LOGIN_STATES: dict[str, dict[str, object]] = {}
@@ -71,6 +72,10 @@ def require_cookie_csrf(request: Request) -> None:
         allowed = os.getenv("AGENTTRUST_PUBLIC_ORIGIN", "").rstrip("/")
         token = request.headers.get("x-csrf-token")
         if not origin or not allowed or origin != allowed or not token: raise HTTPException(403, "CSRF validation failed")
+def lifecycle_connection():
+    validate_deployment_configuration()
+    from .postgres_repository import connect
+    return connect()
 @router.get("/auth/login")
 def login(response: Response):
     config=OIDCConfig.from_env(); store=login_state_store(); local={}; url,state=begin_login(config, local)
@@ -130,3 +135,19 @@ def evaluation(run_id: str, request: Request, authorization: str|None=Header(def
     if isinstance(row["result_json"], str): row["result_json"]=json.loads(row["result_json"])
     if isinstance(row["evidence_metadata_json"], str): row["evidence_metadata_json"]=json.loads(row["evidence_metadata_json"])
     return row
+@router.get("/organizations/{organization_id}/export")
+def organization_export(organization_id: str, request: Request, authorization: str|None=Header(default=None)):
+    user = identity(authorization, request)
+    try:
+        with lifecycle_connection() as conn:
+            return export_tenant(conn, organization_id, user["user_id"])
+    except PermissionError as exc: raise HTTPException(403, str(exc))
+    except KeyError as exc: raise HTTPException(404, str(exc))
+@router.delete("/organizations/{organization_id}")
+def organization_delete(organization_id: str, request: Request, confirmation: str|None=Header(default=None, alias="X-Deletion-Confirmation"), authorization: str|None=Header(default=None)):
+    require_cookie_csrf(request); user = identity(authorization, request)
+    try:
+        with lifecycle_connection() as conn:
+            return delete_tenant(conn, organization_id, user["user_id"], confirmation or "")
+    except PermissionError as exc: raise HTTPException(403, str(exc))
+    except KeyError as exc: raise HTTPException(404, str(exc))
