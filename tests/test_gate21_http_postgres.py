@@ -34,9 +34,8 @@ def test_authenticated_customer_journey_uses_postgres(monkeypatch):
     csrf = callback.json()["csrf_token"]
     # Pin the callback-issued secure cookies into the HTTPS test client jar;
     # this keeps the assertion about the real Set-Cookie values deterministic.
-    client.cookies.set("agenttrust_session", callback.cookies["agenttrust_session"])
-    client.cookies.set("agenttrust_csrf", callback.cookies["agenttrust_csrf"])
-    headers = {"Origin":"https://testserver", "X-CSRF-Token":csrf}
+    callback_cookie = f"agenttrust_session={callback.cookies['agenttrust_session']}; agenttrust_csrf={callback.cookies['agenttrust_csrf']}"
+    headers = {"Origin":"https://testserver", "X-CSRF-Token":csrf, "Cookie":callback_cookie}
     org_response = client.post("/saas/organizations", json={"name":"Customer A"}, headers=headers)
     assert org_response.status_code == 200, org_response.text
     org = org_response.json()
