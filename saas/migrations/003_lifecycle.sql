@@ -9,3 +9,8 @@ CREATE TABLE IF NOT EXISTS tenant_lifecycle_audit (
     created_at TIMESTAMPTZ NOT NULL
 );
 CREATE INDEX IF NOT EXISTS tenant_lifecycle_audit_org_idx ON tenant_lifecycle_audit (organization_id, created_at);
+CREATE TABLE IF NOT EXISTS tenant_restore_reconciliation (
+    organization_id TEXT PRIMARY KEY,
+    journal_digest TEXT NOT NULL,
+    reconciled_at TIMESTAMPTZ NOT NULL
+);

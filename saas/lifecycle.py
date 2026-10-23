@@ -1,6 +1,6 @@
 """Tenant export, retention, and deletion primitives for PostgreSQL only."""
 from __future__ import annotations
-import json, os, uuid
+import hashlib, json, os, uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -15,6 +15,43 @@ def _member(conn, org_id: str, user_id: str, roles: tuple[str, ...]) -> str:
     row = conn.execute("SELECT role FROM memberships WHERE organization_id=%s AND user_id=%s AND active=TRUE", (org_id, user_id)).fetchone()
     if not row or row[0] not in roles: raise PermissionError("active organization membership required")
     return row[0]
+
+class DeletionJournal:
+    """Append-only independent deletion evidence; contains no tenant payload or secrets."""
+    def __init__(self, path): self.path = path
+    def append(self, organization_id: str, actor_user_id: str) -> dict[str, str]:
+        previous = ""
+        if self.path.exists():
+            lines = [line for line in self.path.read_text(encoding="utf-8").splitlines() if line]
+            if lines: previous = json.loads(lines[-1])["digest"]
+        event = {"event_id": f"del_{uuid.uuid4().hex}", "organization_id": organization_id, "actor_user_id": actor_user_id, "occurred_at": _now().isoformat(), "previous_digest": previous}
+        event["digest"] = hashlib.sha256(json.dumps(event, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a", encoding="utf-8", newline="\n") as handle: handle.write(json.dumps(event, sort_keys=True) + "\n")
+        return event
+    def events(self) -> list[dict[str, str]]:
+        if not self.path.exists(): raise RuntimeError("independent deletion journal unavailable")
+        events, previous = [], ""
+        for line in self.path.read_text(encoding="utf-8").splitlines():
+            event = json.loads(line); digest = event.pop("digest", None)
+            if event.get("previous_digest", "") != previous or hashlib.sha256(json.dumps(event, sort_keys=True, separators=(",", ":")).encode()).hexdigest() != digest: raise RuntimeError("deletion journal integrity failure")
+            event["digest"] = digest; events.append(event); previous = digest
+        return events
+
+def reconcile_restored_tenant(conn, journal: DeletionJournal, organization_id: str) -> dict[str, Any]:
+    events = [event for event in journal.events() if event.get("organization_id") == organization_id]
+    if not events: raise RuntimeError("no independent deletion evidence for restored tenant")
+    event = events[-1]
+    with conn.transaction():
+        existing = conn.execute("SELECT journal_digest FROM tenant_restore_reconciliation WHERE organization_id=%s", (organization_id,)).fetchone()
+        if existing and existing[0] == event["digest"]: return {"organization_id": organization_id, "reconciled": True, "already_reconciled": True}
+        for table in ("evaluation_results", "usage_events", "evaluation_runs", "projects", "memberships"): conn.execute(f"DELETE FROM {table} WHERE organization_id=%s", (organization_id,))
+        conn.execute("UPDATE organizations SET name='[deleted tenant]', deleted_at=now() WHERE id=%s", (organization_id,))
+        conn.execute("INSERT INTO tenant_restore_reconciliation VALUES (%s,%s,now()) ON CONFLICT (organization_id) DO UPDATE SET journal_digest=EXCLUDED.journal_digest,reconciled_at=EXCLUDED.reconciled_at", (organization_id, event["digest"]))
+    return {"organization_id": organization_id, "reconciled": True, "already_reconciled": False}
+
+def restore_access_allowed(conn, organization_id: str) -> bool:
+    return conn.execute("SELECT 1 FROM tenant_restore_reconciliation WHERE organization_id=%s", (organization_id,)).fetchone() is not None
 
 def export_tenant(conn, org_id: str, actor: str, *, elevated: bool = False) -> dict[str, Any]:
     role = _member(conn, org_id, actor, ("owner", "admin"))
