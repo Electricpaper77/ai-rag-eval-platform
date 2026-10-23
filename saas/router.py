@@ -11,7 +11,11 @@ LOGIN_STATES: dict[str, dict[str, object]] = {}
 SESSIONS = MemorySessionStore()
 class OrgIn(BaseModel): name: str = Field(min_length=1,max_length=100)
 class ProjectIn(BaseModel): organization_id: str; name: str = Field(min_length=1,max_length=100)
-def identity(authorization: str | None) -> dict[str,Any]:
+def identity(authorization: str | None, request: Request | None = None) -> dict[str,Any]:
+    if request is not None:
+        sid = request.cookies.get("agenttrust_session")
+        session = SESSIONS.get(sid) if sid else None
+        if session is not None: return session | {"auth_source": "oidc-session", "session_id": sid}
     if not authorization or not authorization.lower().startswith("bearer "): raise HTTPException(401,"authentication required")
     mode=os.getenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production").strip().lower()
     raw=authorization[7:].strip(); configured_raw=os.getenv("AGENTTRUST_SAAS_IDENTITIES_LOCAL_TEST_ONLY", "{}")
@@ -33,6 +37,11 @@ def org_id(user: dict[str,Any], requested: str | None) -> str:
     value=requested or user.get("organization_id")
     if not value: raise HTTPException(400,"organization_id required")
     return str(value)
+def require_cookie_csrf(request: Request) -> None:
+    if request.cookies.get("agenttrust_session"):
+        origin = request.headers.get("origin", "").rstrip("/")
+        allowed = os.getenv("AGENTTRUST_PUBLIC_ORIGIN", "").rstrip("/")
+        if not origin or not allowed or origin != allowed: raise HTTPException(403, "CSRF origin rejected")
 @router.get("/auth/login")
 def login(response: Response):
     config=OIDCConfig.from_env(); url,state=begin_login(config,LOGIN_STATES); response.status_code=307; response.headers["location"]=url; return {"state":state}
@@ -45,19 +54,21 @@ def callback(code: str, state: str, response: Response):
     response.set_cookie("agenttrust_session",sid,httponly=True,secure=True,samesite="lax",max_age=3600); return {"authenticated":True}
 @router.post("/auth/logout")
 def logout(request: Request, response: Response):
+    require_cookie_csrf(request)
     sid=request.cookies.get("agenttrust_session")
     if sid: SESSIONS.delete(sid)
     response.delete_cookie("agenttrust_session"); return {"logged_out":True}
 @router.post("/organizations")
-def organizations(body: OrgIn, authorization: str|None=Header(default=None)): return create_org(identity(authorization)["user_id"],body.name)
+def organizations(body: OrgIn, request: Request, authorization: str|None=Header(default=None)):
+    require_cookie_csrf(request); return create_org(identity(authorization, request)["user_id"],body.name)
 @router.post("/projects")
-def projects(body: ProjectIn, authorization: str|None=Header(default=None)):
-    user=identity(authorization)
+def projects(body: ProjectIn, request: Request, authorization: str|None=Header(default=None)):
+    require_cookie_csrf(request); user=identity(authorization, request)
     try: return create_project(body.organization_id,user["user_id"],body.name)
     except PermissionError: raise HTTPException(403,"organization admin permission required")
 @router.post("/projects/{project_id}/evaluations")
 async def evaluations(project_id: str, request: Request, authorization: str|None=Header(default=None), x_organization_id: str|None=Header(default=None), idempotency_key: str|None=Header(default=None)):
-    user=identity(authorization); org=org_id(user,x_organization_id)
+    require_cookie_csrf(request); user=identity(authorization, request); org=org_id(user,x_organization_id)
     if not idempotency_key or len(idempotency_key)>100: raise HTTPException(400,"Idempotency-Key header required")
     raw=await request.body()
     if len(raw)>2_000_000: raise HTTPException(413,"dataset exceeds 2MB limit")
@@ -75,8 +86,8 @@ async def evaluations(project_id: str, request: Request, authorization: str|None
         if str(exc) == "organization membership required": raise HTTPException(403,"organization membership required")
         raise HTTPException(402,str(exc))
 @router.get("/evaluations/{run_id}")
-def evaluation(run_id: str, authorization: str|None=Header(default=None), x_organization_id: str|None=Header(default=None)):
-    user=identity(authorization)
+def evaluation(run_id: str, request: Request, authorization: str|None=Header(default=None), x_organization_id: str|None=Header(default=None)):
+    user=identity(authorization, request)
     try: row=get_run(org_id(user,x_organization_id),user["user_id"],run_id)
     except PermissionError: raise HTTPException(403,"organization membership required")
     if row is None: raise HTTPException(404,"evaluation not found")
