@@ -1,0 +1,121 @@
+name: Gate 13 AMD ROCm Hardware Proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature_sha:
+        description: Exact commit to validate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  amd-rocm-hardware:
+    # This label is intentional: a normal GitHub-hosted CPU runner must never
+    # be treated as AMD hardware evidence.
+    runs-on: [self-hosted, linux, x64, amd-gpu]
+    timeout-minutes: 45
+    env:
+      FEATURE_SHA: ${{ inputs.feature_sha }}
+
+    steps:
+      - name: Checkout exact feature SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.feature_sha }}
+          fetch-depth: 0
+
+      - name: Validate repository identity and SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/gate13
+          repository_url="$(git config --get remote.origin.url)"
+          case "$repository_url" in
+            https://github.com/Electricpaper77/ai-rag-eval-platform|https://github.com/Electricpaper77/ai-rag-eval-platform.git) ;;
+            *) echo "unexpected repository origin: $repository_url" >&2; exit 1 ;;
+          esac
+          test "$(git rev-parse HEAD)" = "$FEATURE_SHA"
+          git cat-file -e "$FEATURE_SHA^{commit}"
+          {
+            echo "repository=$repository_url"
+            echo "feature_sha=$FEATURE_SHA"
+            git show -s --format='commit=%H%nsubject=%s' "$FEATURE_SHA"
+          } | tee artifacts/gate13/identity.txt
+
+      - name: Capture host and ROCm diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/gate13
+          uname -a | tee artifacts/gate13/kernel.txt
+          lspci -nn | tee artifacts/gate13/lspci.txt
+          test -e /dev/kfd
+          test -e /dev/dri
+          rocminfo | tee artifacts/gate13/rocminfo.txt
+          rocm-smi --showproductname --json | tee artifacts/gate13/rocm-smi.json
+          hipconfig --full | tee artifacts/gate13/hipconfig.txt
+          ls -l /dev/kfd /dev/dri | tee artifacts/gate13/device-nodes.txt
+
+      - name: Install Python dependencies without CPU GPU substitution
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 --version | tee artifacts/gate13/python-version.txt
+          python3 -m pip install --upgrade pip
+          python3 -m pip install --no-cache-dir -r requirements-lite.txt
+          python3 - <<'PY' | tee artifacts/gate13/pytorch-rocm-version.txt
+          import torch
+          assert torch.version.hip, "the runner must provide a HIP-enabled PyTorch build"
+          assert torch.cuda.is_available(), "PyTorch cannot see an AMD ROCm device"
+          print(f"torch={torch.__version__}")
+          print(f"hip={torch.version.hip}")
+          print(f"device={torch.cuda.get_device_name(0)}")
+          PY
+
+      - name: Execute strict AMD hardware and model proof
+        shell: bash
+        run: python3 -m scripts.gate13_rocm_hardware --output-dir artifacts/gate13
+
+      - name: Run GPU benchmark proof
+        shell: bash
+        run: python3 -m scripts.gate13_gpu_benchmark --warmups 3 --iterations 10 --output artifacts/gate13/benchmark.json
+
+      - name: Run Gate 13 and Gate 6 focused tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pytest -q tests/test_gate13_rocm_hardware.py tests/test_gate6_gpu.py | tee artifacts/gate13/focused-tests.txt
+
+      - name: Run full regression suite
+        shell: bash
+        run: python3 -m pytest -q | tee artifacts/gate13/full-regression.txt
+
+      - name: Collect Gate 13 evidence
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          {
+            echo "feature_sha=$FEATURE_SHA"
+            git status --short --branch
+            git log -1 --format='%H %s'
+            python3 --version
+            command -v rocminfo || true
+            command -v rocm-smi || true
+            command -v hipconfig || true
+            test -e /dev/kfd && echo '/dev/kfd=present' || echo '/dev/kfd=missing'
+            test -e /dev/dri && echo '/dev/dri=present' || echo '/dev/dri=missing'
+            git diff --check
+          } > artifacts/gate13/summary.txt 2>&1
+          set -e
+
+      - name: Upload Gate 13 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate13-amd-rocm-hardware-evidence
+          path: artifacts/gate13
+          if-no-files-found: error

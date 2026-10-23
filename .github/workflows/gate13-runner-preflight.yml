@@ -1,0 +1,78 @@
+name: Gate 13 AMD Runner Preflight
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature_sha:
+        description: Exact Gate 13 commit to qualify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  runner-preflight:
+    runs-on: [self-hosted, linux, x64, amd-gpu]
+    timeout-minutes: 15
+    env:
+      FEATURE_SHA: ${{ inputs.feature_sha }}
+
+    steps:
+      - name: Checkout exact requested SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.feature_sha }}
+          fetch-depth: 0
+
+      - name: Verify repository identity and SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/gate13-runner-preflight
+          repository_url="$(git config --get remote.origin.url)"
+          case "$repository_url" in
+            https://github.com/Electricpaper77/ai-rag-eval-platform|https://github.com/Electricpaper77/ai-rag-eval-platform.git) ;;
+            *) echo "unexpected repository origin: $repository_url" >&2; exit 1 ;;
+          esac
+          test "$(git rev-parse HEAD)" = "$FEATURE_SHA"
+          git cat-file -e "$FEATURE_SHA^{commit}"
+          {
+            echo "repository=$repository_url"
+            echo "feature_sha=$FEATURE_SHA"
+            git show -s --format='commit=%H%nsubject=%s' "$FEATURE_SHA"
+          } | tee artifacts/gate13-runner-preflight/identity.txt
+
+      - name: Run AMD ROCm host preflight
+        shell: bash
+        run: bash scripts/gate13_runner_preflight.sh artifacts/gate13-runner-preflight
+
+      - name: Run PyTorch ROCm preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/gate13_pytorch_preflight.py artifacts/gate13-runner-preflight/pytorch.json \
+            | tee artifacts/gate13-runner-preflight/pytorch-output.txt
+
+      - name: Capture required runtime commands and runner labels
+        shell: bash
+        run: |
+          set -euo pipefail
+          rocminfo | tee artifacts/gate13-runner-preflight/rocminfo-final.txt
+          rocm-smi | tee artifacts/gate13-runner-preflight/rocm-smi-final.txt
+          hipconfig --full | tee artifacts/gate13-runner-preflight/hipconfig-final.txt
+          ls -l /dev/kfd /dev/dri | tee artifacts/gate13-runner-preflight/device-nodes-final.txt
+          {
+            echo "runner_name=${RUNNER_NAME:-unavailable}"
+            echo "runner_labels=${RUNNER_LABELS:-unavailable}"
+            echo "runner_os=${RUNNER_OS:-unavailable}"
+            echo "runner_arch=${RUNNER_ARCH:-unavailable}"
+          } | tee artifacts/gate13-runner-preflight/runner-labels.txt
+
+      - name: Upload runner preflight evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate13-runner-preflight-evidence
+          path: artifacts/gate13-runner-preflight
+          if-no-files-found: error
