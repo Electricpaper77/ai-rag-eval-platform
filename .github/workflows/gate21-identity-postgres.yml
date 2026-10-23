@@ -26,11 +26,27 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: "3.11"}
       - run: python -m pip install --disable-pip-version-check -r requirements.txt
-      - name: Apply PostgreSQL migrations
+      - name: Apply versioned PostgreSQL migrations
         run: python -c "from saas.postgres_repository import migrate; migrate()"
+      - name: Migration and backup/restore validation
+        timeout-minutes: 5
+        env:
+          RESTORE_URL: postgresql://postgres:gate21@localhost:5432/agenttrust_restore
+        run: |
+          PGPASSWORD=gate21 createdb -h localhost -U postgres agenttrust_restore
+          python scripts/postgres_backup_restore.py --backup artifacts/agenttrust.dump --restore-url "$RESTORE_URL"
+          PGPASSWORD=gate21 psql "$RESTORE_URL" -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) > 0 AS schema_restored FROM pg_tables WHERE schemaname='public' AND tablename='agenttrust_schema_migrations';"
+          sha256sum artifacts/agenttrust.dump
       - name: Security and PostgreSQL tests
         run: timeout 180s python -m pytest -vv -s tests/test_gate21_deployment_boundary.py tests/test_gate21_identity_postgres.py tests/test_gate21_postgres_integration.py tests/test_gate21_http_postgres.py tests/test_saas_vertical_slice.py
       - name: Portfolio verification
         run: python scripts/verify_portfolio.py
       - name: Full Linux regression
         run: python -m pytest -q -m 'not postgres_integration'
+      - name: Upload migration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate21-migration-evidence
+          path: artifacts/
+          if-no-files-found: ignore

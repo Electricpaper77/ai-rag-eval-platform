@@ -7,13 +7,35 @@ from typing import Any
 import psycopg
 from cryptography.fernet import Fernet, InvalidToken
 
-MIGRATION = Path(__file__).with_name("migrations") / "002_postgres.sql"
+MIGRATIONS = [Path(__file__).with_name("migrations") / "002_postgres.sql"]
 def now(): return datetime.now(timezone.utc)
 def migrate():
+    """Apply the versioned PostgreSQL baseline once, outside request paths."""
     url = os.getenv("AGENTTRUST_POSTGRES_URL", "").strip()
     if not url: raise RuntimeError("AGENTTRUST_POSTGRES_URL is required for the PostgreSQL adapter")
     with psycopg.connect(url) as conn:
-        conn.execute(MIGRATION.read_text(encoding="utf-8")); conn.commit()
+        conn.execute("SET lock_timeout = '5s'")
+        conn.execute("SET statement_timeout = '30s'")
+        with conn.transaction():
+            conn.execute("SELECT pg_advisory_xact_lock(hashtext('agenttrust:migrations'))")
+            conn.execute("""CREATE TABLE IF NOT EXISTS agenttrust_schema_migrations (
+                version INTEGER PRIMARY KEY, checksum TEXT NOT NULL, applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )""")
+            applied = {row[0]: row[1] for row in conn.execute(
+                "SELECT version, checksum FROM agenttrust_schema_migrations ORDER BY version"
+            )}
+            expected_versions = [int(path.stem.split("_")[0]) for path in MIGRATIONS]
+            if sorted(applied) != list(range(min(applied or expected_versions), max(applied or expected_versions) + 1)):
+                raise RuntimeError("PostgreSQL migration history is missing or out of order")
+            for path in MIGRATIONS:
+                version = int(path.stem.split("_")[0])
+                checksum = hashlib.sha256(path.read_bytes()).hexdigest()
+                if version in applied:
+                    if applied[version] != checksum:
+                        raise RuntimeError(f"PostgreSQL migration checksum mismatch: {version}")
+                    continue
+                conn.execute(path.read_text(encoding="utf-8"))
+                conn.execute("INSERT INTO agenttrust_schema_migrations(version, checksum) VALUES (%s,%s)", (version, checksum))
 
 def connect():
     url = os.getenv("AGENTTRUST_POSTGRES_URL", "").strip()
