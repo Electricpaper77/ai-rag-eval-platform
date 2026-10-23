@@ -25,7 +25,7 @@ def migrate():
                 "SELECT version, checksum FROM agenttrust_schema_migrations ORDER BY version"
             )}
             expected_versions = [int(path.stem.split("_")[0]) for path in MIGRATIONS]
-            if sorted(applied) != list(range(min(applied or expected_versions), max(applied or expected_versions) + 1)):
+            if applied and sorted(applied) != list(range(min(applied), max(applied) + 1)):
                 raise RuntimeError("PostgreSQL migration history is missing or out of order")
             for path in MIGRATIONS:
                 version = int(path.stem.split("_")[0])
