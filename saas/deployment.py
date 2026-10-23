@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+from cryptography.fernet import Fernet, InvalidToken
 
 
 DEPLOYMENT_POLICIES = {"production", "staging"}
@@ -34,8 +35,13 @@ def validate_deployment_configuration() -> None:
         raise RuntimeError("SQLite is forbidden by deployment policy")
     if os.getenv("AGENTTRUST_SHARED_SESSION_STORE", "").strip().lower() != "postgres":
         raise RuntimeError("PostgreSQL shared session storage is required")
-    if not os.getenv("AGENTTRUST_OIDC_STATE_ENCRYPTION_KEY", "").strip():
+    encryption_key = os.getenv("AGENTTRUST_OIDC_STATE_ENCRYPTION_KEY", "").strip().encode()
+    if not encryption_key:
         raise RuntimeError("OIDC state encryption key is required")
+    try:
+        Fernet(encryption_key)
+    except (ValueError, TypeError, InvalidToken) as exc:
+        raise RuntimeError("OIDC state encryption key is not a valid Fernet key") from exc
     if identities not in {"", "{}"}:
         try:
             configured = json.loads(identities)
