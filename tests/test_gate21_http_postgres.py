@@ -6,12 +6,14 @@ from fastapi.testclient import TestClient
 
 from backend.app.main import app
 import saas.router as saas_router
+from saas.postgres_repository import migrate
 
 
 def test_authenticated_customer_journey_uses_postgres(monkeypatch):
     if not os.getenv("AGENTTRUST_POSTGRES_URL"):
         pytest.fail("Gate 21E requires disposable PostgreSQL; refusing to skip")
     monkeypatch.delenv("AGENTTRUST_SAAS_DB", raising=False)
+    migrate()
     monkeypatch.setenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production")
     monkeypatch.setenv("AGENTTRUST_PUBLIC_ORIGIN", "https://testserver")
     for key, value in {

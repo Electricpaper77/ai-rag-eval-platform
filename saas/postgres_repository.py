@@ -8,10 +8,16 @@ import psycopg
 
 MIGRATION = Path(__file__).with_name("migrations") / "002_postgres.sql"
 def now(): return datetime.now(timezone.utc)
+def migrate():
+    url = os.getenv("AGENTTRUST_POSTGRES_URL", "").strip()
+    if not url: raise RuntimeError("AGENTTRUST_POSTGRES_URL is required for the PostgreSQL adapter")
+    with psycopg.connect(url) as conn:
+        conn.execute(MIGRATION.read_text(encoding="utf-8")); conn.commit()
+
 def connect():
     url = os.getenv("AGENTTRUST_POSTGRES_URL", "").strip()
     if not url: raise RuntimeError("AGENTTRUST_POSTGRES_URL is required for the PostgreSQL adapter")
-    conn = psycopg.connect(url); conn.execute(MIGRATION.read_text(encoding="utf-8")); return conn
+    return psycopg.connect(url)
 def user_id(conn, issuer: str, subject: str) -> str:
     value = f"usr_{uuid.uuid5(uuid.NAMESPACE_URL, issuer + '|' + subject).hex}"
     conn.execute("INSERT INTO users (id,issuer,subject,created_at) VALUES (%s,%s,%s,%s) ON CONFLICT (issuer,subject) DO NOTHING", (value, issuer, subject, now())); return value
@@ -21,17 +27,18 @@ def hash_secret(value: str) -> str: return hashlib.sha256(value.encode()).hexdig
 class PostgresSessionStore:
     def __init__(self, connection_factory): self.connection_factory = connection_factory
     def put(self, sid: str, user: dict[str, str], expires_at: float, csrf: str) -> None:
-        conn = self.connection_factory()
-        with conn.transaction():
-            uid = user_id(conn, user["issuer"], user["subject"])
-            conn.execute("INSERT INTO sessions VALUES (%s,%s,%s,%s,%s,to_timestamp(%s),NULL,%s)", (hash_secret(sid), uid, user["issuer"], user["subject"], hash_secret(csrf), expires_at, now()))
+        with self.connection_factory() as conn:
+            with conn.transaction():
+                uid = user_id(conn, user["issuer"], user["subject"])
+                conn.execute("INSERT INTO sessions VALUES (%s,%s,%s,%s,%s,to_timestamp(%s),NULL,%s)", (hash_secret(sid), uid, user["issuer"], user["subject"], hash_secret(csrf), expires_at, now()))
     def get(self, sid: str, csrf: str | None = None) -> dict[str, str] | None:
-        conn = self.connection_factory()
-        row = conn.execute("SELECT user_id,issuer,subject,expires_at,csrf_hash FROM sessions WHERE session_hash=%s AND revoked_at IS NULL AND expires_at>now()", (hash_secret(sid),)).fetchone()
+        with self.connection_factory() as conn:
+            row = conn.execute("SELECT user_id,issuer,subject,expires_at,csrf_hash FROM sessions WHERE session_hash=%s AND revoked_at IS NULL AND expires_at>now()", (hash_secret(sid),)).fetchone()
         if not row or (csrf is not None and not secrets_equal(hash_secret(csrf), row[4])): return None
         return {"user_id": row[0], "issuer": row[1], "subject": row[2], "csrf": csrf or ""}
     def revoke(self, sid: str) -> None:
-        conn = self.connection_factory(); conn.execute("UPDATE sessions SET revoked_at=now() WHERE session_hash=%s", (hash_secret(sid),)); conn.commit()
+        with self.connection_factory() as conn:
+            conn.execute("UPDATE sessions SET revoked_at=now() WHERE session_hash=%s", (hash_secret(sid),)); conn.commit()
 
 def secrets_equal(a: str, b: str) -> bool:
     import hmac

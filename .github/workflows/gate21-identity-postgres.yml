@@ -26,6 +26,8 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: "3.11"}
       - run: python -m pip install --disable-pip-version-check -r requirements.txt
+      - name: Apply PostgreSQL migrations
+        run: python -c "from saas.postgres_repository import migrate; migrate()"
       - name: Security and PostgreSQL tests
         run: python -m pytest -q tests/test_gate21_identity_postgres.py tests/test_gate21_postgres_integration.py tests/test_gate21_http_postgres.py tests/test_saas_vertical_slice.py
       - name: Portfolio verification
