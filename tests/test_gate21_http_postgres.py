@@ -33,7 +33,9 @@ def test_authenticated_customer_journey_uses_postgres(monkeypatch):
     assert callback.status_code == 200 and callback.json()["authenticated"] is True
     csrf = callback.json()["csrf_token"]
     headers = {"Origin":"https://testserver", "X-CSRF-Token":csrf}
-    org = client.post("/saas/organizations", json={"name":"Customer A"}, headers=headers).json()
+    org_response = client.post("/saas/organizations", json={"name":"Customer A"}, headers=headers)
+    assert org_response.status_code == 200, org_response.text
+    org = org_response.json()
     project = client.post("/saas/projects", json={"organization_id":org["id"],"name":"Eval"}, headers=headers)
     assert project.status_code == 200
     payload = "{\"prompt\":\"hello\"}\n"
