@@ -59,9 +59,13 @@ class RecoveryOrchestrator:
             self.conn.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (f"recovery-promote:{self.target_database}:{organization_id}",))
             row = self.conn.execute("SELECT journal_digest,reconciled_at FROM tenant_restore_reconciliation WHERE organization_id=%s", (organization_id,)).fetchone()
             if not row or row[0] != journal_digest or row[1] is None: raise RuntimeError("restored database is quarantined until reconciliation")
+            try:
+                raw = json.loads(self.approval_path.read_text(encoding="utf-8")); signed_payload = raw["payload"]
+                if not hmac.compare_digest(str(raw["signature"]), _sign(signed_payload)): raise RuntimeError("restore approval signature invalid")
+            except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc: raise RuntimeError("restore approval unavailable") from exc
+            existing = self.conn.execute("SELECT status FROM recovery_promotions WHERE operation_id=%s", (signed_payload.get("operation_id"),)).fetchone()
+            if existing and existing[0] == "promoted": return {"promoted": True, "already_promoted": True, "operation_id": signed_payload["operation_id"]}
             approval = validate_approval(self.approval_path, backup_digest, journal_digest, target_database=self.target_database)
-            existing = self.conn.execute("SELECT status FROM recovery_promotions WHERE operation_id=%s", (approval["operation_id"],)).fetchone()
-            if existing and existing[0] == "promoted": return {"promoted": True, "already_promoted": True, "operation_id": approval["operation_id"]}
             self.conn.execute("INSERT INTO recovery_promotions(operation_id,backup_digest,journal_digest,approved_by,expires_at,status,promoted_at) VALUES (%s,%s,%s,%s,to_timestamp(%s),'promoted',now()) ON CONFLICT (operation_id) DO NOTHING", (approval["operation_id"], backup_digest, journal_digest, approval["approved_by"], approval["expires_at"]))
             if not self.conn.execute("SELECT 1 FROM recovery_promotions WHERE operation_id=%s AND status='promoted'", (approval["operation_id"],)).fetchone(): raise RuntimeError("recovery promotion was not recorded")
         validate_approval(self.approval_path, backup_digest, journal_digest, target_database=self.target_database, consume=True)

@@ -25,7 +25,7 @@ def test_export_retention_delete_and_retry_are_tenant_scoped():
         assert delete_tenant(conn, org, uid, f"DELETE {org}")["deleted"] is True
         assert delete_tenant(conn, org, uid, f"DELETE {org}")["deleted"] is True
         assert conn.execute("SELECT COUNT(*) FROM tenant_lifecycle_audit WHERE organization_id=%s", (org,)).fetchone()[0] >= 3
-import os, subprocess, uuid
+import json, os, subprocess, uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import psycopg
@@ -33,6 +33,8 @@ import pytest
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from saas.postgres_repository import connect, migrate, user_id
 from saas.lifecycle import DeletionJournal, delete_tenant, reconcile_restored_tenant, restore_access_allowed
+from saas.recovery import RecoveryOrchestrator, write_approval, validate_approval
+from scripts.secure_backup import create_backup, decrypt_for_restore
 
 pytestmark = pytest.mark.postgres_integration
 
@@ -87,3 +89,38 @@ def test_concurrent_reconciliation_is_idempotent_and_fail_closed(tmp_path: Path)
     with connect() as conn:
         with pytest.raises(RuntimeError, match="no independent deletion evidence"): reconcile_restored_tenant(conn, journal, org_b)
         assert conn.execute("SELECT COUNT(*) FROM projects WHERE organization_id=%s", (org_b,)).fetchone()[0] == 1
+
+def test_gate22d_end_to_end_backup_reconcile_authorize_promote(tmp_path: Path):
+    if not os.getenv("AGENTTRUST_POSTGRES_URL"): pytest.fail("Gate 22D requires disposable PostgreSQL; refusing to skip")
+    migrate(); suffix = uuid.uuid4().hex[:8]; org_a, org_b = f"org_e2e_a_{suffix}", f"org_e2e_b_{suffix}"; journal = DeletionJournal(tmp_path / "deletions.jsonl")
+    with connect() as conn:
+        with conn.transaction():
+            uid = user_id(conn, f"issuer/e2e/{suffix}", "owner")
+            for org in (org_a, org_b):
+                conn.execute("INSERT INTO organizations(id,name,created_at) VALUES (%s,%s,now())", (org, org)); conn.execute("INSERT INTO memberships(organization_id,user_id,role,active,created_at) VALUES (%s,%s,'owner',TRUE,now())", (org, uid)); conn.execute("INSERT INTO projects(id,organization_id,name,created_at) VALUES (%s,%s,'Synthetic',now())", (f"prj_{org}", org))
+    key = b"b" * 32; backup = tmp_path / "tenant.enc"; os.environ["AGENTTRUST_BACKUP_ENCRYPTION_KEY"] = key.decode(); create_backup(os.environ["AGENTTRUST_POSTGRES_URL"], backup, key)
+    journal_event = journal.append(org_a, uid)
+    with connect() as conn: assert delete_tenant(conn, org_a, uid, f"DELETE {org_a}")["deleted"]
+    admin = conninfo_to_dict(os.environ["AGENTTRUST_POSTGRES_URL"]); admin["dbname"] = "postgres"; admin_url = make_conninfo(**admin); restore_name = f"restore_e2e_{suffix}"
+    with psycopg.connect(admin_url, autocommit=True) as conn: conn.execute(f'CREATE DATABASE "{restore_name}"')
+    restore_url = _url_for_db(restore_name); plain = tmp_path / "restore.dump"
+    try:
+        decrypt_for_restore(backup, backup.with_suffix(backup.suffix + ".json"), key, plain)
+        subprocess.run(["pg_restore", "--clean", "--if-exists", "--no-owner", "--dbname", restore_url, str(plain)], check=True, timeout=120, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        os.environ["AGENTTRUST_RECOVERY_APPROVAL_KEY"] = "r" * 32; os.environ["AGENTTRUST_RECOVERY_APPROVERS"] = "synthetic-operator"
+        with psycopg.connect(restore_url) as restored:
+            assert restored.execute("SELECT COUNT(*) FROM projects WHERE organization_id=%s", (org_a,)).fetchone()[0] == 1
+            assert not restore_access_allowed(restored, org_a)
+            assert reconcile_restored_tenant(restored, journal, org_a)["reconciled"]
+            assert not restore_access_allowed(restored, org_a)
+            approval = tmp_path / "approval.json"; payload = write_approval(approval, "backup-digest", journal_event["digest"], "synthetic-operator", target_database=restore_name)
+            orchestrator = RecoveryOrchestrator(restored, journal, approval, restore_name)
+            result = orchestrator.promote(org_a, "backup-digest", journal_event["digest"])
+            assert result["promoted"] and restore_access_allowed(restored, org_a)
+            assert restored.execute("SELECT COUNT(*) FROM projects WHERE organization_id=%s", (org_a,)).fetchone()[0] == 0
+            assert restored.execute("SELECT COUNT(*) FROM projects WHERE organization_id=%s", (org_b,)).fetchone()[0] == 1
+            with pytest.raises(RuntimeError, match="replayed"): validate_approval(approval, "backup-digest", journal_event["digest"], target_database=restore_name)
+            assert orchestrator.promote(org_a, "backup-digest", journal_event["digest"])["already_promoted"]
+        evidence = Path("artifacts/gate22d"); evidence.mkdir(parents=True, exist_ok=True); (evidence / "e2e-recovery.json").write_text(json.dumps({"schema":"gate22d-e2e-v1","backup_restore":"passed","tenant_a_quarantined":"passed","tenant_a_reconciled":"passed","tenant_b_intact":"passed","authenticated_promotion":"passed","secrets_included":False}) + "\n", encoding="utf-8")
+    finally:
+        with psycopg.connect(admin_url, autocommit=True) as conn: conn.execute(f'DROP DATABASE IF EXISTS "{restore_name}"')
