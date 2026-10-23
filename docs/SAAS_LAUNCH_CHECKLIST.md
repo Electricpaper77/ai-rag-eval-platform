@@ -1,5 +1,8 @@
 # SaaS launch checklist
 
+- [ ] Configure and independently attest `AGENTTRUST_DEPLOYMENT_POLICY=staging|production`; startup must reject SQLite, process-local sessions, local/test identities, missing PostgreSQL, and missing shared-session configuration.
+- [ ] Replace process-local OIDC login state with shared expiring storage and validate multi-worker callback routing.
+
 - [ ] Managed OIDC with verified identities, short-lived sessions, logout, and reset.
 - [ ] Production startup must reject `AGENTTRUST_SAAS_IDENTITIES_LOCAL_TEST_ONLY`; only explicit isolated local/test mode may use it.
 - [ ] Verify active-membership authorization for every organization, project, evaluation, result, and evidence read/write; treat organization headers as untrusted.

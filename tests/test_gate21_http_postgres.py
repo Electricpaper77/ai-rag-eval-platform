@@ -16,6 +16,9 @@ def test_authenticated_customer_journey_uses_postgres(monkeypatch):
         pytest.fail("Gate 21E requires disposable PostgreSQL; refusing to skip")
     monkeypatch.delenv("AGENTTRUST_SAAS_DB", raising=False)
     migrate()
+    monkeypatch.setenv("AGENTTRUST_DEPLOYMENT_POLICY", "production")
+    monkeypatch.setenv("AGENTTRUST_MANAGED_DEPLOYMENT", "true")
+    monkeypatch.setenv("AGENTTRUST_SHARED_SESSION_STORE", "postgres")
     monkeypatch.setenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production")
     monkeypatch.setenv("AGENTTRUST_PUBLIC_ORIGIN", "https://testserver")
     for key, value in {
@@ -57,7 +60,9 @@ def test_authenticated_customer_journey_uses_postgres(monkeypatch):
     result_json = json.loads(result_body["result_json"]) if isinstance(result_body["result_json"], str) else result_body["result_json"]
     assert result.status_code == 200 and result_json["provider"] == "mock"
     assert client.post("/saas/organizations", json={"name":"blocked"}).status_code == 403
-    assert client.post("/saas/auth/logout", headers=headers).status_code == 200
+    logout = client.post("/saas/auth/logout", headers=headers)
+    assert logout.status_code == 200
+    assert "agenttrust_csrf=;" in logout.headers.get("set-cookie", "")
     assert client.get(f"/saas/evaluations/{run.json()['id']}", headers={"X-Organization-Id":org["id"]}).status_code == 401
     with connect() as conn:
         assert conn.execute("SELECT 1 FROM organizations WHERE id=%s", (org["id"],)).fetchone()

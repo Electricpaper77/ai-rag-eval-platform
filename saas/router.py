@@ -5,11 +5,17 @@ from fastapi import APIRouter, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from .repository import create_org, create_project, create_run, get_run
 from .oidc import OIDCConfig, MemorySessionStore, begin_login, consume_login_state, exchange_code, internal_user_key, verify_id_token
+from .deployment import validate_deployment_configuration
 
 router=APIRouter(prefix="/saas",tags=["saas"])
 LOGIN_STATES: dict[str, dict[str, object]] = {}
 SESSIONS = MemorySessionStore()
 def session_store():
+    validate_deployment_configuration()
+    policy = os.getenv("AGENTTRUST_DEPLOYMENT_POLICY", "").strip().lower()
+    if policy in ("production", "staging"):
+        from .postgres_repository import PostgresSessionStore, connect
+        return PostgresSessionStore(connect)
     if os.getenv("AGENTTRUST_SAAS_DB", "").strip() or not os.getenv("AGENTTRUST_POSTGRES_URL", "").strip() or os.getenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production").strip().lower() in ("local", "test"):
         return SESSIONS
     from .postgres_repository import PostgresSessionStore, connect
@@ -68,7 +74,7 @@ def logout(request: Request, response: Response):
     sid=request.cookies.get("agenttrust_session")
     if sid:
         store=session_store(); store.revoke(sid) if hasattr(store, "revoke") else store.delete(sid)
-    response.delete_cookie("agenttrust_session"); return {"logged_out":True}
+    response.delete_cookie("agenttrust_session"); response.delete_cookie("agenttrust_csrf"); return {"logged_out":True}
 @router.post("/organizations")
 def organizations(body: OrgIn, request: Request, authorization: str|None=Header(default=None)):
     require_cookie_csrf(request); return create_org(identity(authorization, request)["user_id"],body.name)
