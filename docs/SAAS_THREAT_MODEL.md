@@ -8,3 +8,4 @@
 - Secret/payment risk: no password cryptography, raw cards, or live Stripe credentials are implemented or stored.
 - Provider confusion: results say `provider=mock` and include an explicit limitation.
 - Persistence boundary: SQLite transaction serialization is local-test correctness only; managed PostgreSQL, locking, backups, restore, and multi-instance validation remain blocked.
+- OIDC boundary: production-mode identity accepts only a verified JWT from the configured issuer/audience and JWKS; internal identity is issuer+subject, never email. Authorization Code + PKCE state and nonce are single-use and five-minute bounded. Production session storage and provider-specific callback deployment remain required.

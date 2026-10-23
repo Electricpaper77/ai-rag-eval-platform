@@ -4,6 +4,7 @@ from typing import Any
 from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 from .repository import create_org, create_project, create_run, get_run
+from .oidc import OIDCConfig, internal_user_key, verify_id_token
 
 router=APIRouter(prefix="/saas",tags=["saas"])
 class OrgIn(BaseModel): name: str = Field(min_length=1,max_length=100)
@@ -12,14 +13,20 @@ def identity(authorization: str | None) -> dict[str,Any]:
     if not authorization or not authorization.lower().startswith("bearer "): raise HTTPException(401,"authentication required")
     mode=os.getenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production").strip().lower()
     raw=authorization[7:].strip(); configured_raw=os.getenv("AGENTTRUST_SAAS_IDENTITIES_LOCAL_TEST_ONLY", "{}")
-    if mode not in ("local", "test") and configured_raw.strip() not in ("", "{}"):
+    if mode in ("local", "test"):
+        try: configured=json.loads(configured_raw)
+        except json.JSONDecodeError: raise HTTPException(503,"invalid local/test identity configuration")
+        if not isinstance(configured,dict): raise HTTPException(503,"invalid local/test identity configuration")
+        item=configured.get(raw)
+        if not isinstance(item,dict) or not item.get("user_id"): raise HTTPException(401,"invalid identity")
+        return item | {"token": raw, "auth_source": "local-test-only"}
+    if configured_raw.strip() not in ("", "{}"):
         raise HTTPException(503,"local/test identities are disabled outside local/test runtime")
-    try: configured=json.loads(configured_raw)
-    except json.JSONDecodeError: raise HTTPException(503,"invalid local/test identity configuration")
-    if not isinstance(configured,dict): raise HTTPException(503,"invalid local/test identity configuration")
-    item=configured.get(raw)
-    if not isinstance(item,dict) or not item.get("user_id"): raise HTTPException(401,"invalid identity")
-    return item | {"token": raw}
+    try:
+        claims=verify_id_token(raw, OIDCConfig.from_env())
+    except Exception as exc:
+        raise HTTPException(401,"invalid OIDC identity") from exc
+    return {"user_id": internal_user_key(claims), "issuer": claims["issuer"], "subject": claims["subject"], "auth_source": "oidc"}
 def org_id(user: dict[str,Any], requested: str | None) -> str:
     value=requested or user.get("organization_id")
     if not value: raise HTTPException(400,"organization_id required")
