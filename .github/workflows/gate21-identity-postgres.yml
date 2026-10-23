@@ -1,0 +1,36 @@
+name: Gate 21 Identity PostgreSQL Foundation
+on:
+  workflow_dispatch:
+  push:
+    paths: ["saas/**", "tests/test_gate21_*.py", "tests/conftest.py", "docs/SAAS_*.md", "requirements*.txt", ".env.example", ".github/workflows/**"]
+permissions:
+  contents: read
+jobs:
+  gate21:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: gate21
+          POSTGRES_DB: agenttrust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U postgres -d agenttrust"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      AGENTTRUST_POSTGRES_URL: postgresql://postgres:gate21@localhost:5432/agenttrust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - run: python -m pip install --disable-pip-version-check -r requirements.txt
+      - name: Apply PostgreSQL migrations
+        run: python -c "from saas.postgres_repository import migrate; migrate()"
+      - name: Security and PostgreSQL tests
+        run: timeout 180s python -m pytest -vv -s tests/test_gate21_identity_postgres.py tests/test_gate21_postgres_integration.py tests/test_gate21_http_postgres.py tests/test_saas_vertical_slice.py
+      - name: Portfolio verification
+        run: python scripts/verify_portfolio.py
+      - name: Full Linux regression
+        run: python -m pytest -q -m 'not postgres_integration'

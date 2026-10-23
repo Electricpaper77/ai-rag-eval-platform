@@ -46,6 +46,7 @@ from .capacity import router as capacity_router
 from .resilience.controller import router as resilience_router
 from .recovery.service import recovery_router
 from saas.router import router as saas_router
+from saas.deployment import validate_deployment_configuration
 
 from urllib.parse import urlparse
 
@@ -141,6 +142,11 @@ AGENT_EVALUATOR = AgentReliabilityEvaluator()
 GPU_OBSERVABILITY_PROVIDER = SimulatedGPUObservabilityProvider()
 
 app = FastAPI(title="AI RAG Eval Platform")
+
+
+@app.on_event("startup")
+async def validate_saas_deployment() -> None:
+    validate_deployment_configuration()
 app.state.backends = [
     RuntimeBackend(
         config=BackendConfig(
