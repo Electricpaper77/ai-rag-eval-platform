@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from backend.app.main import app
 import saas.router as saas_router
-from saas.postgres_repository import migrate
+from saas.postgres_repository import migrate, PostgresSessionStore, connect, hash_secret
 
 pytestmark = pytest.mark.postgres_integration
 
@@ -55,3 +55,26 @@ def test_authenticated_customer_journey_uses_postgres(monkeypatch):
     assert client.post("/saas/organizations", json={"name":"blocked"}).status_code == 403
     assert client.post("/saas/auth/logout", headers=headers).status_code == 200
     assert client.get(f"/saas/evaluations/{run.json()['id']}", headers={"X-Organization-Id":org["id"]}).status_code == 401
+    with connect() as conn:
+        assert conn.execute("SELECT 1 FROM organizations WHERE id=%s", (org["id"],)).fetchone()
+        assert conn.execute("SELECT 1 FROM projects WHERE id=%s", (project.json()["id"],)).fetchone()
+        assert conn.execute("SELECT 1 FROM evaluation_runs WHERE id=%s", (run.json()["id"],)).fetchone()
+    sqlite_path = os.getenv("AGENTTRUST_SAAS_DB", "")
+    assert not sqlite_path or not os.path.exists(sqlite_path)
+
+@pytest.mark.postgres_integration
+def test_two_independent_postgres_session_stores_expiry_and_revocation(monkeypatch):
+    if not os.getenv("AGENTTRUST_POSTGRES_URL"):
+        pytest.fail("Gate 21I requires disposable PostgreSQL; refusing to skip")
+    monkeypatch.delenv("AGENTTRUST_SAAS_DB", raising=False); migrate()
+    first, second = PostgresSessionStore(connect), PostgresSessionStore(connect)
+    import secrets, time
+    sid, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
+    user = {"issuer":"https://issuer.example", "subject":"two-instance"}
+    first.put(sid, user, time.time()+60, csrf)
+    assert second.get(sid, csrf)["subject"] == "two-instance"
+    first.revoke(sid); assert second.get(sid, csrf) is None
+    sid2 = secrets.token_urlsafe(32); first.put(sid2, user, time.time()-1, csrf)
+    assert second.get(sid2, csrf) is None
+    with connect() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM sessions WHERE session_hash=%s", (hash_secret(sid),)).fetchone()[0] == 1
