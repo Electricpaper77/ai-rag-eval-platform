@@ -2,7 +2,7 @@ name: Gate 21 Identity PostgreSQL Foundation
 on:
   workflow_dispatch:
   push:
-    paths: ["saas/**", "tests/test_gate21_*.py", "tests/conftest.py", "docs/SAAS_*.md", "requirements*.txt", ".env.example", ".github/workflows/**"]
+    paths: ["saas/**", "scripts/postgres_backup_restore.py", "tests/test_gate21_*.py", "tests/test_gate22c_*.py", "tests/conftest.py", "docs/SAAS_*.md", "docs/GATE22C_EVIDENCE_MATRIX.md", "requirements*.txt", ".env.example", ".github/workflows/**"]
 permissions:
   contents: read
 jobs:
@@ -38,7 +38,7 @@ jobs:
           PGPASSWORD=gate21 psql "$RESTORE_URL" -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) > 0 AS schema_restored FROM pg_tables WHERE schemaname='public' AND tablename='agenttrust_schema_migrations';"
           sha256sum artifacts/agenttrust.dump
       - name: Security and PostgreSQL tests
-        run: timeout 180s python -m pytest -vv -s tests/test_gate21_deployment_boundary.py tests/test_gate21_identity_postgres.py tests/test_gate21_postgres_integration.py tests/test_gate21_http_postgres.py tests/test_saas_vertical_slice.py
+        run: timeout 180s python -m pytest -vv -s tests/test_gate21_deployment_boundary.py tests/test_gate21_identity_postgres.py tests/test_gate21_postgres_integration.py tests/test_gate21_http_postgres.py tests/test_gate22c_lifecycle.py tests/test_gate22c_postgres_lifecycle.py tests/test_saas_vertical_slice.py
       - name: Portfolio verification
         run: python scripts/verify_portfolio.py
       - name: Full Linux regression
