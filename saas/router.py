@@ -9,12 +9,19 @@ from .oidc import OIDCConfig, MemorySessionStore, begin_login, consume_login_sta
 router=APIRouter(prefix="/saas",tags=["saas"])
 LOGIN_STATES: dict[str, dict[str, object]] = {}
 SESSIONS = MemorySessionStore()
+def session_store():
+    if os.getenv("AGENTTRUST_SAAS_DB", "").strip() or not os.getenv("AGENTTRUST_POSTGRES_URL", "").strip() or os.getenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production").strip().lower() in ("local", "test"):
+        return SESSIONS
+    from .postgres_repository import PostgresSessionStore, connect
+    return PostgresSessionStore(connect)
 class OrgIn(BaseModel): name: str = Field(min_length=1,max_length=100)
 class ProjectIn(BaseModel): organization_id: str; name: str = Field(min_length=1,max_length=100)
 def identity(authorization: str | None, request: Request | None = None) -> dict[str,Any]:
     if request is not None:
         sid = request.cookies.get("agenttrust_session")
-        session = SESSIONS.get(sid) if sid else None
+        csrf = request.headers.get("x-csrf-token") if sid else None
+        store = session_store()
+        session = store.get(sid, csrf=csrf) if sid and isinstance(store, MemorySessionStore) else (store.get(sid, csrf) if sid else None)
         if session is not None: return session | {"auth_source": "oidc-session", "session_id": sid}
     if not authorization or not authorization.lower().startswith("bearer "): raise HTTPException(401,"authentication required")
     mode=os.getenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production").strip().lower()
@@ -41,7 +48,8 @@ def require_cookie_csrf(request: Request) -> None:
     if request.cookies.get("agenttrust_session"):
         origin = request.headers.get("origin", "").rstrip("/")
         allowed = os.getenv("AGENTTRUST_PUBLIC_ORIGIN", "").rstrip("/")
-        if not origin or not allowed or origin != allowed: raise HTTPException(403, "CSRF origin rejected")
+        token = request.headers.get("x-csrf-token")
+        if not origin or not allowed or origin != allowed or not token: raise HTTPException(403, "CSRF validation failed")
 @router.get("/auth/login")
 def login(response: Response):
     config=OIDCConfig.from_env(); url,state=begin_login(config,LOGIN_STATES); response.status_code=307; response.headers["location"]=url; return {"state":state}
@@ -50,13 +58,16 @@ def callback(code: str, state: str, response: Response):
     item=consume_login_state(LOGIN_STATES,state)
     config=OIDCConfig.from_env(); token=exchange_code(config,code,str(item["verifier"]))
     claims=verify_id_token(token,config,expected_nonce=str(item["nonce"]))
-    sid=secrets.token_urlsafe(32); SESSIONS.put(sid,{"user_id":internal_user_key(claims),"issuer":claims["issuer"],"subject":claims["subject"]},time.time()+3600)
-    response.set_cookie("agenttrust_session",sid,httponly=True,secure=True,samesite="lax",max_age=3600); return {"authenticated":True}
+    sid=secrets.token_urlsafe(32); csrf=secrets.token_urlsafe(32); store=session_store(); user={"user_id":internal_user_key(claims),"issuer":claims["issuer"],"subject":claims["subject"]}
+    if isinstance(store, MemorySessionStore): store.put(sid,user | {"csrf":csrf},time.time()+3600)
+    else: store.put(sid,user,time.time()+3600,csrf)
+    response.set_cookie("agenttrust_session",sid,httponly=True,secure=True,samesite="lax",max_age=3600); response.set_cookie("agenttrust_csrf",csrf,httponly=False,secure=True,samesite="lax",max_age=3600); return {"authenticated":True,"csrf_token":csrf}
 @router.post("/auth/logout")
 def logout(request: Request, response: Response):
     require_cookie_csrf(request)
     sid=request.cookies.get("agenttrust_session")
-    if sid: SESSIONS.delete(sid)
+    if sid:
+        store=session_store(); store.revoke(sid) if hasattr(store, "revoke") else store.delete(sid)
     response.delete_cookie("agenttrust_session"); return {"logged_out":True}
 @router.post("/organizations")
 def organizations(body: OrgIn, request: Request, authorization: str|None=Header(default=None)):

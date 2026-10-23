@@ -1,6 +1,6 @@
 """Small PostgreSQL adapter; SQLite remains the deterministic local-test adapter."""
 from __future__ import annotations
-import json, os, uuid
+import hashlib, json, os, uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -15,6 +15,27 @@ def connect():
 def user_id(conn, issuer: str, subject: str) -> str:
     value = f"usr_{uuid.uuid5(uuid.NAMESPACE_URL, issuer + '|' + subject).hex}"
     conn.execute("INSERT INTO users (id,issuer,subject,created_at) VALUES (%s,%s,%s,%s) ON CONFLICT (issuer,subject) DO NOTHING", (value, issuer, subject, now())); return value
+
+def hash_secret(value: str) -> str: return hashlib.sha256(value.encode()).hexdigest()
+
+class PostgresSessionStore:
+    def __init__(self, connection_factory): self.connection_factory = connection_factory
+    def put(self, sid: str, user: dict[str, str], expires_at: float, csrf: str) -> None:
+        conn = self.connection_factory()
+        with conn.transaction():
+            uid = user_id(conn, user["issuer"], user["subject"])
+            conn.execute("INSERT INTO sessions VALUES (%s,%s,%s,%s,%s,to_timestamp(%s),NULL,%s)", (hash_secret(sid), uid, user["issuer"], user["subject"], hash_secret(csrf), expires_at, now()))
+    def get(self, sid: str, csrf: str | None = None) -> dict[str, str] | None:
+        conn = self.connection_factory()
+        row = conn.execute("SELECT issuer,subject,expires_at,csrf_hash FROM sessions WHERE session_hash=%s AND revoked_at IS NULL AND expires_at>now()", (hash_secret(sid),)).fetchone()
+        if not row or (csrf is not None and not secrets_equal(hash_secret(csrf), row[3])): return None
+        return {"user_id": f"{row[0]}|{row[1]}", "issuer": row[0], "subject": row[1], "csrf": csrf or ""}
+    def revoke(self, sid: str) -> None:
+        conn = self.connection_factory(); conn.execute("UPDATE sessions SET revoked_at=now() WHERE session_hash=%s", (hash_secret(sid),)); conn.commit()
+
+def secrets_equal(a: str, b: str) -> bool:
+    import hmac
+    return hmac.compare_digest(a, b)
 def require_membership(conn, organization_id: str, user: str, roles: tuple[str, ...] = ("owner","admin","member")) -> None:
     row = conn.execute("SELECT role FROM memberships WHERE organization_id=%s AND user_id=%s AND active=TRUE", (organization_id,user)).fetchone()
     if not row or row[0] not in roles: raise PermissionError("active organization membership required")

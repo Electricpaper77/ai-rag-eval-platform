@@ -96,9 +96,10 @@ class MemorySessionStore:
     """Deterministic test store; production must provide a shared encrypted store."""
     def __init__(self): self._items: dict[str, tuple[dict[str, str], float]] = {}
     def put(self, sid, user, expires_at): self._items[sid] = (dict(user), expires_at)
-    def get(self, sid, now=None):
+    def get(self, sid, now=None, csrf=None):
         item=self._items.get(sid)
         if not item or item[1] <= (time.time() if now is None else now): self._items.pop(sid, None); return None
+        if csrf is not None and item[0].get("csrf") != csrf: return None
         return dict(item[0])
     def delete(self, sid): self._items.pop(sid, None)
 
