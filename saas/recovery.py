@@ -19,10 +19,10 @@ def _key() -> bytes:
 def _sign(payload: dict[str, Any]) -> str:
     body = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return base64.urlsafe_b64encode(hmac.new(_key(), body, hashlib.sha256).digest()).decode()
-def write_approval(path: Path, backup_digest: str, journal_digest: str, approved_by: str, ttl_seconds: int = 900, target_database: str = "", required_role: str = "recovery_operator") -> dict[str, Any]:
+def write_approval(path: Path, backup_digest: str, journal_digest: str, approved_by: str, ttl_seconds: int = 900, target_database: str = "", required_role: str = "recovery_operator", not_before: float | None = None) -> dict[str, Any]:
     approvers = {x.strip() for x in os.getenv("AGENTTRUST_RECOVERY_APPROVERS", "").split(",") if x.strip()}
     if approved_by not in approvers or not target_database or required_role != "recovery_operator" or ttl_seconds < 1 or ttl_seconds > 3600: raise RuntimeError("trusted recovery approval required")
-    payload = {"operation_id": secrets.token_urlsafe(24), "backup_digest": backup_digest, "journal_digest": journal_digest, "approved_by": approved_by, "target_database": target_database, "required_role": required_role, "expires_at": datetime.now(timezone.utc).timestamp() + ttl_seconds, "consumed": False}
+    payload = {"operation_id": secrets.token_urlsafe(24), "backup_digest": backup_digest, "journal_digest": journal_digest, "approved_by": approved_by, "target_database": target_database, "required_role": required_role, "not_before": not_before, "expires_at": datetime.now(timezone.utc).timestamp() + ttl_seconds, "consumed": False}
     record = {"payload": payload, "signature": _sign(payload)}
     tmp = path.with_suffix(path.suffix + ".tmp"); tmp.write_text(json.dumps(record, sort_keys=True) + "\n", encoding="utf-8"); os.replace(tmp, path)
     return payload
@@ -32,10 +32,13 @@ def validate_approval(path: Path, backup_digest: str, journal_digest: str, now_e
     except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc: raise RuntimeError("restore approval unavailable") from exc
     if not hmac.compare_digest(str(signature), _sign(payload)): raise RuntimeError("restore approval signature invalid")
     if payload.get("consumed"): raise RuntimeError("restore approval replayed")
+    if payload.get("approved_by") not in {x.strip() for x in os.getenv("AGENTTRUST_RECOVERY_APPROVERS", "").split(",") if x.strip()}: raise RuntimeError("restore approver is unauthorized or revoked")
     if payload.get("backup_digest") != backup_digest or payload.get("journal_digest") != journal_digest: raise RuntimeError("restore approval digest mismatch")
     if target_database and payload.get("target_database") != target_database: raise RuntimeError("restore approval target mismatch")
     if payload.get("required_role") != "recovery_operator": raise RuntimeError("restore approval role invalid")
-    if float(payload.get("expires_at", 0)) <= (now_epoch if now_epoch is not None else datetime.now(timezone.utc).timestamp()): raise RuntimeError("restore approval expired")
+    current = now_epoch if now_epoch is not None else datetime.now(timezone.utc).timestamp()
+    if payload.get("not_before") is not None and current < float(payload["not_before"]): raise RuntimeError("restore approval not yet valid")
+    if float(payload.get("expires_at", 0)) <= current: raise RuntimeError("restore approval expired")
     if consume:
         payload["consumed"] = True; path.write_text(json.dumps({"payload": payload, "signature": _sign(payload)}, sort_keys=True) + "\n", encoding="utf-8")
     return payload

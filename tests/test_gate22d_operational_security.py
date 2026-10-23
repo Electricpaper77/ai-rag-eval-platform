@@ -27,3 +27,15 @@ def test_encrypted_backup_manifest_detects_tampering(tmp_path):
     decrypt_for_restore(artifact, manifest, key, out); assert out.read_bytes() == b"disposable dump"
     artifact.write_bytes(artifact.read_bytes() + b"tamper")
     with pytest.raises(RuntimeError, match="integrity"): decrypt_for_restore(artifact, manifest, key, out)
+
+def test_approval_validity_matrix_and_revocation(tmp_path):
+    import time
+    os.environ["AGENTTRUST_RECOVERY_APPROVAL_KEY"] = "z" * 32; os.environ["AGENTTRUST_RECOVERY_APPROVERS"] = "operator"
+    path = tmp_path / "approval.json"; now = time.time()
+    write_approval(path, "b", "j", "operator", target_database="db", not_before=now + 60)
+    with pytest.raises(RuntimeError, match="not yet valid"): validate_approval(path, "b", "j", target_database="db", now_epoch=now)
+    os.environ["AGENTTRUST_RECOVERY_APPROVERS"] = "other"
+    with pytest.raises(RuntimeError, match="unauthorized"): validate_approval(path, "b", "j", target_database="db", now_epoch=now + 61)
+    os.environ["AGENTTRUST_RECOVERY_APPROVERS"] = "operator"
+    record = json.loads(path.read_text()); record["payload"]["required_role"] = "viewer"; path.write_text(json.dumps(record))
+    with pytest.raises(RuntimeError, match="signature"): validate_approval(path, "b", "j", target_database="db", now_epoch=now + 61)
