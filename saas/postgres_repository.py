@@ -46,6 +46,17 @@ def connect():
     conn.execute("SET statement_timeout = '15s'")
     conn.commit()
     return conn
+def protected_connect():
+    """Acquire a normal SaaS connection, enforcing restore-target quarantine."""
+    conn = connect()
+    target = os.getenv("AGENTTRUST_RESTORE_TARGET_DB", "").strip()
+    if not target:
+        return conn
+    actual = conn.execute("SELECT current_database()").fetchone()[0]
+    if actual != target or not conn.execute("SELECT 1 FROM recovery_promotions WHERE status='promoted' AND expires_at>now() LIMIT 1").fetchone():
+        conn.close()
+        raise PermissionError("restore target is quarantined or unauthorized")
+    return conn
 def user_id(conn, issuer: str, subject: str) -> str:
     value = f"usr_{uuid.uuid5(uuid.NAMESPACE_URL, issuer + '|' + subject).hex}"
     conn.execute("INSERT INTO users (id,issuer,subject,created_at) VALUES (%s,%s,%s,%s) ON CONFLICT (issuer,subject) DO NOTHING", (value, issuer, subject, now())); return value

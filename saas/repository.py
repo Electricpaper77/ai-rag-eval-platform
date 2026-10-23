@@ -21,7 +21,7 @@ def audit(conn, org_id: str, user_id: str, action: str, resource_type: str, reso
 def create_org(user_id: str, name: str) -> dict[str, Any]:
     if use_postgres():
         from . import postgres_repository as pg
-        return pg.create_org(pg.connect(), user_id, name)
+        return pg.create_org(pg.protected_connect(), user_id, name)
     org_id=new_id("org"); conn=connect(); conn.execute("INSERT INTO organizations VALUES (?,?,?)",(org_id,name,now())); conn.execute("INSERT INTO memberships VALUES (?,?,?,?)",(org_id,user_id,"owner",now())); audit(conn,org_id,user_id,"organization.created","organization",org_id); conn.commit(); return {"id":org_id,"name":name,"role":"owner"}
 def membership(conn, org_id: str, user_id: str): return conn.execute("SELECT * FROM memberships WHERE organization_id=? AND user_id=?",(org_id,user_id)).fetchone()
 def require_membership(conn, org_id: str, user_id: str, roles: tuple[str, ...] | None = None):
@@ -32,13 +32,13 @@ def require_membership(conn, org_id: str, user_id: str, roles: tuple[str, ...] |
 def create_project(org_id: str, user_id: str, name: str) -> dict[str, Any]:
     if use_postgres():
         from . import postgres_repository as pg
-        return pg.create_project(pg.connect(), org_id, user_id, name)
+        return pg.create_project(pg.protected_connect(), org_id, user_id, name)
     conn=connect(); require_membership(conn,org_id,user_id,("owner","admin")); project_id=new_id("prj"); conn.execute("INSERT INTO projects VALUES (?,?,?,?)",(project_id,org_id,name,now())); audit(conn,org_id,user_id,"project.created","project",project_id); conn.commit(); return {"id":project_id,"organization_id":org_id,"name":name}
 def project_for(conn, org_id: str, project_id: str): return conn.execute("SELECT * FROM projects WHERE id=? AND organization_id=?",(project_id,org_id)).fetchone()
 def create_run(org_id: str, user_id: str, project_id: str, idem: str, rows: list[dict[str,Any]], quota: int) -> dict[str,Any]:
     if use_postgres():
         from . import postgres_repository as pg
-        return pg.create_run(pg.connect(), org_id, user_id, project_id, idem, rows, quota)
+        return pg.create_run(pg.protected_connect(), org_id, user_id, project_id, idem, rows, quota)
     conn=connect(); conn.execute("BEGIN IMMEDIATE"); require_membership(conn,org_id,user_id); project=project_for(conn,org_id,project_id)
     if project is None: raise KeyError("project not found")
     existing=conn.execute("SELECT * FROM evaluation_runs WHERE organization_id=? AND idempotency_key=?",(org_id,idem)).fetchone()
@@ -49,5 +49,5 @@ def create_run(org_id: str, user_id: str, project_id: str, idem: str, rows: list
 def get_run(org_id: str, user_id: str, run_id: str) -> dict[str,Any] | None:
     if use_postgres():
         from . import postgres_repository as pg
-        return pg.get_run(pg.connect(), org_id, user_id, run_id)
+        return pg.get_run(pg.protected_connect(), org_id, user_id, run_id)
     conn=connect(); require_membership(conn,org_id,user_id); row=conn.execute("SELECT r.*, e.result_json, e.evidence_metadata_json FROM evaluation_runs r LEFT JOIN evaluation_results e ON e.run_id=r.id WHERE r.id=? AND r.organization_id=?",(run_id,org_id)).fetchone(); return dict(row) if row else None

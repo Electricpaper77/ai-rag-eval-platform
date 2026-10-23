@@ -16,12 +16,12 @@ def session_store():
     validate_deployment_configuration()
     policy = os.getenv("AGENTTRUST_DEPLOYMENT_POLICY", "").strip().lower()
     if policy in ("production", "staging"):
-        from .postgres_repository import PostgresSessionStore, connect
-        return PostgresSessionStore(connect)
+        from .postgres_repository import PostgresSessionStore, protected_connect
+        return PostgresSessionStore(protected_connect)
     if os.getenv("AGENTTRUST_SAAS_DB", "").strip() or not os.getenv("AGENTTRUST_POSTGRES_URL", "").strip() or os.getenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production").strip().lower() in ("local", "test"):
         return SESSIONS
-    from .postgres_repository import PostgresSessionStore, connect
-    return PostgresSessionStore(connect)
+    from .postgres_repository import PostgresSessionStore, protected_connect
+    return PostgresSessionStore(protected_connect)
 
 def login_state_store():
     policy = os.getenv("AGENTTRUST_DEPLOYMENT_POLICY", "").strip().lower()
@@ -74,8 +74,8 @@ def require_cookie_csrf(request: Request) -> None:
         if not origin or not allowed or origin != allowed or not token: raise HTTPException(403, "CSRF validation failed")
 def lifecycle_connection():
     validate_deployment_configuration()
-    from .postgres_repository import connect
-    return connect()
+    from .postgres_repository import protected_connect
+    return protected_connect()
 @router.get("/auth/login")
 def login(response: Response):
     config=OIDCConfig.from_env(); store=login_state_store(); local={}; url,state=begin_login(config, local)

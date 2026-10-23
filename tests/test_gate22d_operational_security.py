@@ -39,3 +39,16 @@ def test_approval_validity_matrix_and_revocation(tmp_path):
     os.environ["AGENTTRUST_RECOVERY_APPROVERS"] = "operator"
     record = json.loads(path.read_text()); record["payload"]["required_role"] = "viewer"; path.write_text(json.dumps(record))
     with pytest.raises(RuntimeError, match="signature"): validate_approval(path, "b", "j", target_database="db", now_epoch=now + 61)
+
+def test_protected_connection_fails_closed_for_quarantined_target(monkeypatch):
+    import saas.postgres_repository as pg
+    class Cursor:
+        def __init__(self, value): self.value = value
+        def fetchone(self): return self.value
+    class Conn:
+        def __init__(self): self.closed = False
+        def execute(self, sql): return Cursor(("restore_db",) if "current_database" in sql else None)
+        def close(self): self.closed = True
+    conn = Conn(); monkeypatch.setattr(pg, "connect", lambda: conn); monkeypatch.setenv("AGENTTRUST_RESTORE_TARGET_DB", "restore_db")
+    with pytest.raises(PermissionError, match="quarantined"): pg.protected_connect()
+    assert conn.closed
