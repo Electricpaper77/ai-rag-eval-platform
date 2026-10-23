@@ -61,7 +61,7 @@ def callback(code: str, state: str, response: Response):
     sid=secrets.token_urlsafe(32); csrf=secrets.token_urlsafe(32); store=session_store(); user={"user_id":internal_user_key(claims),"issuer":claims["issuer"],"subject":claims["subject"]}
     if isinstance(store, MemorySessionStore): store.put(sid,user | {"csrf":csrf},time.time()+3600)
     else: store.put(sid,user,time.time()+3600,csrf)
-    response.set_cookie("agenttrust_session",sid,httponly=True,secure=True,samesite="lax",max_age=3600); response.set_cookie("agenttrust_csrf",csrf,httponly=False,secure=True,samesite="lax",max_age=3600); return {"authenticated":True,"csrf_token":csrf}
+    response.set_cookie("agenttrust_session",sid,path="/",httponly=True,secure=True,samesite="lax",max_age=3600); response.set_cookie("agenttrust_csrf",csrf,path="/",httponly=False,secure=True,samesite="lax",max_age=3600); return {"authenticated":True,"csrf_token":csrf}
 @router.post("/auth/logout")
 def logout(request: Request, response: Response):
     require_cookie_csrf(request)
