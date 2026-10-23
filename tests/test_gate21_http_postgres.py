@@ -40,14 +40,18 @@ def test_authenticated_customer_journey_uses_postgres(monkeypatch):
     # this keeps the assertion about the real Set-Cookie values deterministic.
     callback_cookie = f"agenttrust_session={callback.cookies['agenttrust_session']}; agenttrust_csrf={callback.cookies['agenttrust_csrf']}"
     headers = {"Origin":"https://testserver", "X-CSRF-Token":csrf, "Cookie":callback_cookie}
+    assert client.post("/saas/organizations", json={"name":"missing-csrf"}, headers={"Cookie":callback_cookie,"Origin":"https://testserver"}).status_code == 403
+    assert client.post("/saas/organizations", json={"name":"bad-origin"}, headers={**headers,"Origin":"https://evil.example"}).status_code == 403
     org_response = client.post("/saas/organizations", json={"name":"Customer A"}, headers=headers)
     assert org_response.status_code == 200, org_response.text
     org = org_response.json()
     project = client.post("/saas/projects", json={"organization_id":org["id"],"name":"Eval"}, headers=headers)
     assert project.status_code == 200
+    assert client.post("/saas/projects", json={"organization_id":org["id"],"name":"bad"}, headers={"Cookie":callback_cookie,"Origin":"https://testserver"}).status_code == 403
     payload = "{\"prompt\":\"hello\"}\n"
     run = client.post(f"/saas/projects/{project.json()['id']}/evaluations", content=payload, headers={**headers,"X-Organization-Id":org["id"],"Idempotency-Key":"journey-1"})
     assert run.status_code == 200 and run.json()["provider"] == "mock"
+    assert client.post(f"/saas/projects/{project.json()['id']}/evaluations", content=payload, headers={"Cookie":callback_cookie,"Origin":"https://testserver","X-Organization-Id":org["id"],"Idempotency-Key":"csrf-1"}).status_code == 403
     result = client.get(f"/saas/evaluations/{run.json()['id']}", headers={"X-Organization-Id":org["id"]})
     result_body = result.json()
     result_json = json.loads(result_body["result_json"]) if isinstance(result_body["result_json"], str) else result_body["result_json"]

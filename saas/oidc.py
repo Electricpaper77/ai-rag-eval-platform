@@ -102,6 +102,11 @@ class MemorySessionStore:
         if csrf is not None and item[0].get("csrf") != csrf: return None
         return dict(item[0])
     def delete(self, sid): self._items.pop(sid, None)
+    def rotate(self, old_sid, new_sid, now=None):
+        item = self.get(old_sid, now)
+        if item is None: return None
+        expiry = self._items[old_sid][1]
+        self.delete(old_sid); self.put(new_sid, item, expiry); return item
 
 
 def exchange_code(config: OIDCConfig, code: str, verifier: str) -> str:
