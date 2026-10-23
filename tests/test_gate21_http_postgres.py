@@ -88,3 +88,12 @@ def test_two_independent_postgres_session_stores_expiry_and_revocation(monkeypat
     assert second.get(sid2, csrf) is None
     with connect() as conn:
         assert conn.execute("SELECT COUNT(*) FROM sessions WHERE session_hash=%s", (hash_secret(sid),)).fetchone()[0] == 1
+
+def test_authenticated_http_rejects_quarantined_postgres_target(monkeypatch):
+    if not os.getenv("AGENTTRUST_POSTGRES_URL"): pytest.fail("Gate 22D requires disposable PostgreSQL; refusing to skip")
+    monkeypatch.delenv("AGENTTRUST_SAAS_DB", raising=False); monkeypatch.setenv("AGENTTRUST_RESTORE_TARGET_DB", "agenttrust")
+    monkeypatch.setenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production")
+    monkeypatch.setattr(saas_router, "verify_id_token", lambda token, config, expected_nonce=None: {"issuer": config.issuer, "subject": "quarantine-http"})
+    for key, value in {"AGENTTRUST_OIDC_ISSUER":"https://issuer.example","AGENTTRUST_OIDC_AUDIENCE":"agenttrust","AGENTTRUST_OIDC_JWKS_URI":"https://issuer.example/jwks","AGENTTRUST_OIDC_CLIENT_ID":"client","AGENTTRUST_OIDC_REDIRECT_URI":"https://testserver/saas/auth/callback","AGENTTRUST_OIDC_TOKEN_ENDPOINT":"https://issuer.example/token"}.items(): monkeypatch.setenv(key, value)
+    response = TestClient(app, base_url="https://testserver").post("/saas/organizations", json={"name":"blocked"}, headers={"Authorization":"Bearer synthetic"})
+    assert response.status_code == 503

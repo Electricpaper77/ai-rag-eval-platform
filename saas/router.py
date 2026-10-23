@@ -101,7 +101,9 @@ def logout(request: Request, response: Response):
     response.delete_cookie("agenttrust_session"); response.delete_cookie("agenttrust_csrf"); return {"logged_out":True}
 @router.post("/organizations")
 def organizations(body: OrgIn, request: Request, authorization: str|None=Header(default=None)):
-    require_cookie_csrf(request); return create_org(identity(authorization, request)["user_id"],body.name)
+    require_cookie_csrf(request)
+    try: return create_org(identity(authorization, request)["user_id"],body.name)
+    except PermissionError as exc: raise HTTPException(503, "database target is quarantined") from exc
 @router.post("/projects")
 def projects(body: ProjectIn, request: Request, authorization: str|None=Header(default=None)):
     require_cookie_csrf(request); user=identity(authorization, request)
