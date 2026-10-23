@@ -26,6 +26,7 @@ def test_export_retention_delete_and_retry_are_tenant_scoped():
         assert delete_tenant(conn, org, uid, f"DELETE {org}")["deleted"] is True
         assert conn.execute("SELECT COUNT(*) FROM tenant_lifecycle_audit WHERE organization_id=%s", (org,)).fetchone()[0] >= 3
 import os, subprocess, uuid
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import psycopg
 import pytest
@@ -69,3 +70,20 @@ def test_predeletion_backup_reappears_and_independent_journal_reconciles(tmp_pat
             assert reconcile_restored_tenant(restored, journal, org_a)["already_reconciled"]
     finally:
         with psycopg.connect(admin_url, autocommit=True) as admin_conn: admin_conn.execute(f'DROP DATABASE IF EXISTS "{restore_name}"')
+
+def test_concurrent_reconciliation_is_idempotent_and_fail_closed(tmp_path: Path):
+    if not os.getenv("AGENTTRUST_POSTGRES_URL"): pytest.fail("Gate 22C requires disposable PostgreSQL; refusing to skip")
+    migrate(); suffix = uuid.uuid4().hex[:8]; org_a, org_b = f"org_concurrent_a_{suffix}", f"org_concurrent_b_{suffix}"; journal = DeletionJournal(tmp_path / "deletions.jsonl"); uid = None
+    with connect() as conn:
+        with conn.transaction():
+            uid = user_id(conn, f"issuer/{suffix}", "owner")
+            for org in (org_a, org_b):
+                conn.execute("INSERT INTO organizations(id,name,created_at) VALUES (%s,%s,now())", (org, org)); conn.execute("INSERT INTO memberships(organization_id,user_id,role,active,created_at) VALUES (%s,%s,'owner',TRUE,now())", (org, uid)); conn.execute("INSERT INTO projects(id,organization_id,name,created_at) VALUES (%s,%s,'P',now())", (f"prj_{org}", org))
+    journal.append(org_a, uid)
+    def worker():
+        with connect() as conn: return reconcile_restored_tenant(conn, journal, org_a)
+    with ThreadPoolExecutor(max_workers=2) as pool: results = list(pool.map(lambda _: worker(), (1, 2)))
+    assert sorted(item["already_reconciled"] for item in results) == [False, True]
+    with connect() as conn:
+        with pytest.raises(RuntimeError, match="no independent deletion evidence"): reconcile_restored_tenant(conn, journal, org_b)
+        assert conn.execute("SELECT COUNT(*) FROM projects WHERE organization_id=%s", (org_b,)).fetchone()[0] == 1

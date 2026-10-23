@@ -18,3 +18,14 @@ def test_journal_hash_chain_detects_tampering(tmp_path):
     journal.path.write_text(journal.path.read_text(encoding="utf-8").replace("org_a", "org_b"), encoding="utf-8")
     import pytest
     with pytest.raises(RuntimeError, match="integrity"): journal.events()
+
+def test_journal_rejects_conflicting_duplicate_organization(tmp_path):
+    from saas.lifecycle import DeletionJournal
+    journal = DeletionJournal(tmp_path / "deletions.jsonl")
+    first = journal.append("org_a", "owner_a")
+    second = {"event_id": "del_conflict", "organization_id": "org_a", "actor_user_id": "owner_b", "occurred_at": first["occurred_at"], "previous_digest": first["digest"]}
+    import hashlib, json
+    second["digest"] = hashlib.sha256(json.dumps(second, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    with journal.path.open("a", encoding="utf-8") as handle: handle.write(json.dumps(second, sort_keys=True) + "\n")
+    import pytest
+    with pytest.raises(RuntimeError, match="duplicate"): journal.events()

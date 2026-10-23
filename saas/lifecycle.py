@@ -31,11 +31,13 @@ class DeletionJournal:
         return event
     def events(self) -> list[dict[str, str]]:
         if not self.path.exists(): raise RuntimeError("independent deletion journal unavailable")
-        events, previous = [], ""
+        events, previous, organizations = [], "", set()
         for line in self.path.read_text(encoding="utf-8").splitlines():
             event = json.loads(line); digest = event.pop("digest", None)
             if event.get("previous_digest", "") != previous or hashlib.sha256(json.dumps(event, sort_keys=True, separators=(",", ":")).encode()).hexdigest() != digest: raise RuntimeError("deletion journal integrity failure")
+            if event.get("organization_id") in organizations: raise RuntimeError("conflicting duplicate deletion event")
             event["digest"] = digest; events.append(event); previous = digest
+            organizations.add(event.get("organization_id"))
         return events
 
 def reconcile_restored_tenant(conn, journal: DeletionJournal, organization_id: str) -> dict[str, Any]:
