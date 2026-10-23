@@ -17,7 +17,12 @@ def migrate():
 def connect():
     url = os.getenv("AGENTTRUST_POSTGRES_URL", "").strip()
     if not url: raise RuntimeError("AGENTTRUST_POSTGRES_URL is required for the PostgreSQL adapter")
-    return psycopg.connect(url)
+    conn = psycopg.connect(url)
+    # Keep integration work bounded; callers still own transaction boundaries.
+    conn.execute("SET lock_timeout = '5s'")
+    conn.execute("SET statement_timeout = '15s'")
+    conn.commit()
+    return conn
 def user_id(conn, issuer: str, subject: str) -> str:
     value = f"usr_{uuid.uuid5(uuid.NAMESPACE_URL, issuer + '|' + subject).hex}"
     conn.execute("INSERT INTO users (id,issuer,subject,created_at) VALUES (%s,%s,%s,%s) ON CONFLICT (issuer,subject) DO NOTHING", (value, issuer, subject, now())); return value
@@ -63,13 +68,14 @@ def create_project(conn, organization_id: str, user: str, name: str) -> dict[str
 def create_run(conn, organization_id: str, user: str, project_id: str, idem: str, rows: list[dict[str, Any]], quota: int) -> dict[str, Any]:
     with conn.transaction():
         require_membership(conn, organization_id, user)
+        # Serialize the idempotency lookup with quota allocation.  The lookup
+        # must be repeated under the tenant lock so two retries resolve to the
+        # same committed run instead of racing into a unique-key error.
+        conn.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (organization_id,))
         project = conn.execute("SELECT id FROM projects WHERE id=%s AND organization_id=%s FOR SHARE", (project_id,organization_id)).fetchone()
         if not project: raise KeyError("project not found")
         existing = conn.execute("SELECT id,status,provider,sample_count FROM evaluation_runs WHERE organization_id=%s AND idempotency_key=%s", (organization_id,idem)).fetchone()
         if existing: return {"id": existing[0], "status": existing[1], "provider": existing[2], "sample_count": existing[3]}
-        # Advisory lock serializes quota allocation per tenant without locking an
-        # aggregate result; the idempotency UNIQUE constraint closes retry races.
-        conn.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (organization_id,))
         used = conn.execute("SELECT COALESCE(SUM(units),0) FROM usage_events WHERE organization_id=%s", (organization_id,)).fetchone()[0]
         if used + len(rows) > quota: raise PermissionError("evaluation quota exceeded")
         run_id = f"run_{uuid.uuid4().hex}"; ts = now()
