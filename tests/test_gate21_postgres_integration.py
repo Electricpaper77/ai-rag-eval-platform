@@ -1,8 +1,11 @@
 import os
+import hashlib
 import pytest, uuid
 from concurrent.futures import ThreadPoolExecutor, wait
 import psycopg
-from saas.postgres_repository import connect, create_run, migrate, user_id
+from saas.postgres_repository import connect, create_run, migrate, user_id, PostgresLoginStateStore
+from saas.oidc import OIDCConfig
+from cryptography.fernet import Fernet
 
 pytestmark = [pytest.mark.postgres_integration, pytest.mark.skipif(not os.getenv("AGENTTRUST_POSTGRES_URL"), reason="disposable PostgreSQL URL not configured")]
 
@@ -20,6 +23,32 @@ def _assert_finished(futures, label):
     done, _ = wait(futures, timeout=20)
     if len(done) != len(futures):
         pytest.fail(f"{label} timed out; pg_stat_activity={_blocking_diagnostics()}")
+
+def test_postgres_oidc_state_is_shared_expiring_and_one_time():
+    migrate()
+    config=OIDCConfig("https://issuer.example","aud","https://issuer.example/auth","https://issuer.example/jwks","client","https://app.example/callback")
+    key=Fernet.generate_key(); first=PostgresLoginStateStore(connect,key); second=PostgresLoginStateStore(connect,key)
+    state=f"state-{uuid.uuid4().hex}"; item={"nonce":"nonce","verifier":"verifier","expires_at":__import__("time").time()+300}
+    first.put(state,item,config,item["expires_at"])
+    assert second.consume(state,config)["verifier"] == "verifier"
+    with pytest.raises(ValueError): second.consume(state,config)
+    expired=f"expired-{uuid.uuid4().hex}"; old={**item,"expires_at":__import__("time").time()-1}; first.put(expired,old,config,old["expires_at"])
+    with pytest.raises(ValueError): second.consume(expired,config)
+    mismatch=f"mismatch-{uuid.uuid4().hex}"; first.put(mismatch,item,config,item["expires_at"])
+    wrong=OIDCConfig(config.issuer,config.audience,config.authorization_endpoint,config.jwks_uri,"other-client",config.redirect_uri)
+    with pytest.raises(ValueError): second.consume(mismatch,wrong)
+    concurrent=f"concurrent-{uuid.uuid4().hex}"; first.put(concurrent,item,config,item["expires_at"])
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures=[pool.submit(store.consume, concurrent, config) for store in (first, second)]
+        done,_=wait(futures, timeout=15)
+        assert len(done) == 2
+        outcomes=[]
+        for future in futures:
+            try: outcomes.append(("ok", future.result()))
+            except ValueError: outcomes.append(("rejected", None))
+    assert sorted(kind for kind,_ in outcomes) == ["ok", "rejected"]
+    with connect() as check:
+        assert check.execute("SELECT COUNT(*) FROM oidc_login_states WHERE state_hash=%s",(hashlib.sha256(mismatch.encode()).hexdigest(),)).fetchone()[0] == 1
 
 def test_postgres_schema_membership_and_quota_transaction():
     migrate()

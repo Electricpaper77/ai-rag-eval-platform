@@ -36,5 +36,15 @@ def test_production_rejects_local_runtime_and_test_identities(monkeypatch):
 
 def test_managed_production_configuration_is_accepted(monkeypatch):
     configure(monkeypatch, AGENTTRUST_DEPLOYMENT_POLICY="production", AGENTTRUST_MANAGED_DEPLOYMENT="true",
-              AGENTTRUST_POSTGRES_URL="postgresql://test", AGENTTRUST_SHARED_SESSION_STORE="postgres")
+              AGENTTRUST_POSTGRES_URL="postgresql://test", AGENTTRUST_SHARED_SESSION_STORE="postgres",
+              AGENTTRUST_OIDC_STATE_ENCRYPTION_KEY="P7y3zWsvjYfZQTnBjqmAX8MhuXBOT3_5mBJRKeqQpI8=")
     validate_deployment_configuration()
+
+
+@pytest.mark.parametrize("key", ["not-base64", "c2hvcnQ=", "", "A" * 44])
+def test_production_rejects_missing_malformed_or_wrong_size_fernet_keys(monkeypatch, key):
+    configure(monkeypatch, AGENTTRUST_DEPLOYMENT_POLICY="production", AGENTTRUST_MANAGED_DEPLOYMENT="true",
+              AGENTTRUST_POSTGRES_URL="postgresql://test", AGENTTRUST_SHARED_SESSION_STORE="postgres",
+              AGENTTRUST_OIDC_STATE_ENCRYPTION_KEY=key)
+    with pytest.raises(RuntimeError, match="Fernet|required"):
+        validate_deployment_configuration()

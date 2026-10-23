@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 import psycopg
+from cryptography.fernet import Fernet, InvalidToken
 
 MIGRATION = Path(__file__).with_name("migrations") / "002_postgres.sql"
 def now(): return datetime.now(timezone.utc)
@@ -44,6 +45,44 @@ class PostgresSessionStore:
     def revoke(self, sid: str) -> None:
         with self.connection_factory() as conn:
             conn.execute("UPDATE sessions SET revoked_at=now() WHERE session_hash=%s", (hash_secret(sid),)); conn.commit()
+
+
+class PostgresLoginStateStore:
+    """Shared, expiring OIDC state with one-time transactional consumption."""
+    def __init__(self, connection_factory, encryption_key: bytes):
+        self.connection_factory = connection_factory
+        self.fernet = Fernet(encryption_key)
+
+    def put(self, state: str, item: dict[str, object], config, expires_at: float) -> None:
+        payload = self.fernet.encrypt(json.dumps(item, separators=(",", ":")).encode())
+        with self.connection_factory() as conn:
+            with conn.transaction():
+                conn.execute(
+                    "INSERT INTO oidc_login_states VALUES (%s,%s,%s,%s,%s,to_timestamp(%s),%s)",
+                    (hash_secret(state), config.issuer, config.client_id, config.redirect_uri, payload, expires_at, now()),
+                )
+
+    def consume(self, state: str, config, now_epoch: float | None = None) -> dict[str, object]:
+        with self.connection_factory() as conn:
+            with conn.transaction():
+                row = conn.execute(
+                    "DELETE FROM oidc_login_states WHERE state_hash=%s AND issuer=%s AND client_id=%s AND redirect_uri=%s AND expires_at>now() RETURNING payload_encrypted",
+                    (hash_secret(state), config.issuer, config.client_id, config.redirect_uri),
+                ).fetchone()
+        if not row:
+            raise ValueError("invalid, expired, or mismatched OIDC login state")
+        try:
+            item = json.loads(self.fernet.decrypt(bytes(row[0])).decode())
+        except (InvalidToken, ValueError, TypeError) as exc:
+            raise ValueError("invalid OIDC login state payload") from exc
+        if now_epoch is not None and float(item["expires_at"]) < now_epoch:
+            raise ValueError("expired OIDC login state")
+        return item
+
+    def cleanup(self) -> int:
+        with self.connection_factory() as conn:
+            with conn.transaction():
+                return conn.execute("DELETE FROM oidc_login_states WHERE expires_at<=now()").rowcount
 
 def secrets_equal(a: str, b: str) -> bool:
     import hmac
