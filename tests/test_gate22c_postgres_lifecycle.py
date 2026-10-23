@@ -124,3 +124,24 @@ def test_gate22d_end_to_end_backup_reconcile_authorize_promote(tmp_path: Path):
         evidence = Path("artifacts/gate22d"); evidence.mkdir(parents=True, exist_ok=True); (evidence / "e2e-recovery.json").write_text(json.dumps({"schema":"gate22d-e2e-v1","backup_restore":"passed","tenant_a_quarantined":"passed","tenant_a_reconciled":"passed","tenant_b_intact":"passed","authenticated_promotion":"passed","secrets_included":False}) + "\n", encoding="utf-8")
     finally:
         with psycopg.connect(admin_url, autocommit=True) as conn: conn.execute(f'DROP DATABASE IF EXISTS "{restore_name}"')
+
+def test_gate22d_concurrent_promotion_rollback_and_cross_target_denial(tmp_path: Path):
+    if not os.getenv("AGENTTRUST_POSTGRES_URL"): pytest.fail("Gate 22D requires disposable PostgreSQL; refusing to skip")
+    migrate(); suffix = uuid.uuid4().hex[:8]; org = f"org_adv_{suffix}"; journal = DeletionJournal(tmp_path / "deletions.jsonl")
+    with connect() as conn:
+        with conn.transaction():
+            uid = user_id(conn, f"issuer/adv/{suffix}", "owner")
+            conn.execute("INSERT INTO organizations(id,name,created_at) VALUES (%s,%s,now())", (org, "Adv")); conn.execute("INSERT INTO memberships(organization_id,user_id,role,active,created_at) VALUES (%s,%s,'owner',TRUE,now())", (org, uid)); conn.execute("INSERT INTO projects(id,organization_id,name,created_at) VALUES (%s,%s,'P',now())", (f"prj_{org}", org))
+    event = journal.append(org, uid); target = f"restore_adv_{suffix}"; os.environ["AGENTTRUST_RECOVERY_APPROVAL_KEY"] = "a" * 32; os.environ["AGENTTRUST_RECOVERY_APPROVERS"] = "operator"
+    with connect() as conn:
+        with pytest.raises(RuntimeError, match="interruption"): reconcile_restored_tenant(conn, journal, org, fail_before_commit=True)
+        assert not restore_access_allowed(conn, org)
+        conn.execute("INSERT INTO tenant_restore_reconciliation(organization_id,journal_digest,reconciled_at) VALUES (%s,%s,now())", (org, event["digest"])); conn.commit()
+    approval = tmp_path / "approval.json"; write_approval(approval, "backup", event["digest"], "operator", target_database=target)
+    def worker():
+        with connect() as conn: return RecoveryOrchestrator(conn, journal, approval, target).promote(org, "backup", event["digest"])
+    with ThreadPoolExecutor(max_workers=2) as pool: outcomes = list(pool.map(lambda _: worker(), (1, 2)))
+    assert sorted(bool(item["already_promoted"]) for item in outcomes) == [False, True]
+    with connect() as conn: assert restore_access_allowed(conn, org)
+    with pytest.raises(RuntimeError, match="target mismatch"): validate_approval(approval, "backup", event["digest"], target_database="other-target")
+    evidence = Path("artifacts/gate22d"); evidence.mkdir(parents=True, exist_ok=True); (evidence / "adversarial-matrix.json").write_text(json.dumps({"schema":"gate22d-adversarial-v1","concurrent_promotion":"one state change; one idempotent result","interrupted_reconciliation":"rolled back; access denied","cross_target":"rejected","secrets_included":False}) + "\n", encoding="utf-8")

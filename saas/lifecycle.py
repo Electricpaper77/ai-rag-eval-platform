@@ -40,7 +40,7 @@ class DeletionJournal:
             organizations.add(event.get("organization_id"))
         return events
 
-def reconcile_restored_tenant(conn, journal: DeletionJournal, organization_id: str) -> dict[str, Any]:
+def reconcile_restored_tenant(conn, journal: DeletionJournal, organization_id: str, *, fail_before_commit: bool = False) -> dict[str, Any]:
     events = [event for event in journal.events() if event.get("organization_id") == organization_id]
     if not events: raise RuntimeError("no independent deletion evidence for restored tenant")
     event = events[-1]
@@ -51,6 +51,7 @@ def reconcile_restored_tenant(conn, journal: DeletionJournal, organization_id: s
         for table in ("evaluation_results", "usage_events", "evaluation_runs", "projects", "memberships"): conn.execute(f"DELETE FROM {table} WHERE organization_id=%s", (organization_id,))
         conn.execute("UPDATE organizations SET name='[deleted tenant]', deleted_at=now() WHERE id=%s", (organization_id,))
         conn.execute("INSERT INTO tenant_restore_reconciliation VALUES (%s,%s,now()) ON CONFLICT (organization_id) DO UPDATE SET journal_digest=EXCLUDED.journal_digest,reconciled_at=EXCLUDED.reconciled_at", (organization_id, event["digest"]))
+        if fail_before_commit: raise RuntimeError("controlled reconciliation interruption")
     return {"organization_id": organization_id, "reconciled": True, "already_reconciled": False}
 
 def restore_access_allowed(conn, organization_id: str) -> bool:
