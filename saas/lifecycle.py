@@ -45,6 +45,7 @@ def reconcile_restored_tenant(conn, journal: DeletionJournal, organization_id: s
     if not events: raise RuntimeError("no independent deletion evidence for restored tenant")
     event = events[-1]
     with conn.transaction():
+        conn.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (f"tenant-reconcile:{organization_id}",))
         existing = conn.execute("SELECT journal_digest FROM tenant_restore_reconciliation WHERE organization_id=%s", (organization_id,)).fetchone()
         if existing and existing[0] == event["digest"]: return {"organization_id": organization_id, "reconciled": True, "already_reconciled": True}
         for table in ("evaluation_results", "usage_events", "evaluation_runs", "projects", "memberships"): conn.execute(f"DELETE FROM {table} WHERE organization_id=%s", (organization_id,))
