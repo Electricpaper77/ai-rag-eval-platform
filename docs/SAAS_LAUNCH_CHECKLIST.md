@@ -14,4 +14,10 @@
 - [ ] Production secrets/IAM, observability, incident runbooks, accessibility, and privacy review.
 - [ ] Explicit approval before production deployment or real customer data.
 
+Gate 22D status: versioned OIDC state key handling, encrypted backup integrity,
+restore quarantine/approval helpers, and the recovery-promotion ledger are
+implemented and tested against disposable/local fixtures. Managed secret
+custody, scheduled operations, independent approval, PITR, backup retention,
+and measured recovery drills remain launch blockers.
+
 Gate 20 is a tested foundation, not commercial launch approval.

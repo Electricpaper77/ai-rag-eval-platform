@@ -42,6 +42,18 @@ def validate_deployment_configuration() -> None:
         Fernet(encryption_key)
     except (ValueError, TypeError, InvalidToken) as exc:
         raise RuntimeError("OIDC state encryption key is not a valid Fernet key") from exc
+    key_id = os.getenv("AGENTTRUST_OIDC_STATE_ENCRYPTION_KEY_ID", "v1").strip()
+    if not key_id or ":" in key_id or not key_id.replace("_", "").replace("-", "").isalnum():
+        raise RuntimeError("OIDC encryption key id is invalid")
+    historical = os.getenv("AGENTTRUST_OIDC_STATE_HISTORICAL_KEYS", "{}").strip()
+    try:
+        parsed = json.loads(historical)
+        if not isinstance(parsed, dict) or key_id in parsed:
+            raise ValueError
+        for value in parsed.values():
+            Fernet(str(value).encode())
+    except (json.JSONDecodeError, TypeError, ValueError, InvalidToken) as exc:
+        raise RuntimeError("OIDC historical encryption keys are invalid") from exc
     if identities not in {"", "{}"}:
         try:
             configured = json.loads(identities)

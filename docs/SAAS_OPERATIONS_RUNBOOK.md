@@ -10,4 +10,6 @@ Gate 22B validates this procedure only against disposable PostgreSQL databases. 
 
 The application migration runner creates `agenttrust_schema_migrations`, takes a transaction-scoped advisory lock, applies each numbered migration once, and rejects checksum drift or a missing/out-of-order ledger. A failed migration transaction rolls back. If a future migration cannot be made transactional, use a reviewed forward-recovery migration and record the exact failure and remediation before retrying.
 
-Production blockers: managed backup retention, encryption/key management, restore authorization, point-in-time recovery, RPO/RTO evidence, alerting, and a scheduled recovery drill are not implemented here.
+Gate 22D adds `scripts/secure_backup.py` for authenticated encrypted disposable artifacts. Keep `AGENTTRUST_BACKUP_ENCRYPTION_KEY` in managed secret storage; manifests contain only a ciphertext digest and key id. Validate the manifest before decrypting, restore only into an isolated database, reconcile against an independently retained deletion journal, and require `saas.recovery.require_recovery_ready` before promotion. Missing, stale, mismatched or corrupt evidence leaves the restore quarantined.
+
+Production blockers: managed backup retention, external key custody and rotation, point-in-time recovery, RPO/RTO evidence, alerting, scheduled cleanup/recovery drills, and an independently operated approval workflow remain unimplemented.
