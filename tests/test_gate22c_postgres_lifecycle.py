@@ -138,10 +138,10 @@ def test_gate22d_concurrent_promotion_rollback_and_cross_target_denial(tmp_path:
         assert not restore_access_allowed(conn, org)
         conn.execute("INSERT INTO tenant_restore_reconciliation(organization_id,journal_digest,reconciled_at) VALUES (%s,%s,now())", (org, event["digest"])); conn.commit()
     approval = tmp_path / "approval.json"; write_approval(approval, "backup", event["digest"], "operator", target_database=target)
+    with pytest.raises(RuntimeError, match="target mismatch"): validate_approval(approval, "backup", event["digest"], target_database="other-target")
     def worker():
         with connect() as conn: return RecoveryOrchestrator(conn, journal, approval, target).promote(org, "backup", event["digest"])
     with ThreadPoolExecutor(max_workers=2) as pool: outcomes = list(pool.map(lambda _: worker(), (1, 2)))
     assert sorted(bool(item["already_promoted"]) for item in outcomes) == [False, True]
     with connect() as conn: assert restore_access_allowed(conn, org)
-    with pytest.raises(RuntimeError, match="target mismatch"): validate_approval(approval, "backup", event["digest"], target_database="other-target")
     evidence = Path("artifacts/gate22d"); evidence.mkdir(parents=True, exist_ok=True); (evidence / "adversarial-matrix.json").write_text(json.dumps({"schema":"gate22d-adversarial-v1","concurrent_promotion":"one state change; one idempotent result","interrupted_reconciliation":"rolled back; access denied","cross_target":"rejected","secrets_included":False}) + "\n", encoding="utf-8")
