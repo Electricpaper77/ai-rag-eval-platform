@@ -102,4 +102,6 @@ def evaluation(run_id: str, request: Request, authorization: str|None=Header(def
     try: row=get_run(org_id(user,x_organization_id),user["user_id"],run_id)
     except PermissionError: raise HTTPException(403,"organization membership required")
     if row is None: raise HTTPException(404,"evaluation not found")
-    row["result_json"]=json.loads(row["result_json"]); row["evidence_metadata_json"]=json.loads(row["evidence_metadata_json"]); return row
+    if isinstance(row["result_json"], str): row["result_json"]=json.loads(row["result_json"])
+    if isinstance(row["evidence_metadata_json"], str): row["evidence_metadata_json"]=json.loads(row["evidence_metadata_json"])
+    return row
