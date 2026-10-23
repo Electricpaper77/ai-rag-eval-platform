@@ -1,0 +1,40 @@
+name: Gate 20 SaaS Foundation
+on:
+  workflow_dispatch:
+  push:
+    paths: ["saas/**", "tests/test_saas_vertical_slice.py", "docs/SAAS_*.md", ".env.example", ".github/workflows/gate20-saas-foundation.yml"]
+permissions:
+  contents: read
+jobs:
+  saas-foundation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-lite.txt
+      - name: Focused SaaS and legacy evidence tests
+        run: |
+          mkdir -p artifacts/gate20
+          python -m pytest -q tests/test_saas_vertical_slice.py tests/test_gate17_infrastructure_evidence.py tests/test_gate18_portfolio_release.py tests/test_gate19_final_release.py | tee artifacts/gate20/focused-tests.txt
+          python scripts/verify_portfolio.py | tee artifacts/gate20/portfolio.txt
+      - name: Full regression with bounded timeout
+        shell: bash
+        run: |
+          set +e
+          timeout 300s python -m pytest -q > artifacts/gate20/full-pytest.txt 2>&1
+          echo $? > artifacts/gate20/full-pytest.exit
+          test "$(cat artifacts/gate20/full-pytest.exit)" = 0
+      - name: Record source and limitations
+        if: always()
+        run: |
+          git rev-parse HEAD > artifacts/gate20/git_sha.txt
+          printf '%s\n' 'Live billing disabled; mock provider is not real provider execution; GPU telemetry is simulated, not physical DCGM; no production deployment claimed.' > artifacts/gate20/limitations.txt
+      - name: Upload Gate 20 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate20-saas-foundation-evidence
+          path: artifacts/gate20
