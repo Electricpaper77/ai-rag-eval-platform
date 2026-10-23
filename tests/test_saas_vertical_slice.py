@@ -12,6 +12,6 @@ def test_customer_journey_and_tenant_isolation(tmp_path, monkeypatch):
     assert get_run(org_b["id"],run["id"]) is None
 
 def test_saas_identity_requires_configured_bearer(monkeypatch):
-    monkeypatch.setenv("AGENTTRUST_SAAS_IDENTITIES",json.dumps({"a":{"user_id":"user-a"}}))
+    monkeypatch.setenv("AGENTTRUST_SAAS_IDENTITIES_LOCAL_TEST_ONLY",json.dumps({"a":{"user_id":"user-a"}}))
     assert identity("Bearer a")["user_id"]=="user-a"
     with pytest.raises(Exception): identity("Bearer unknown")

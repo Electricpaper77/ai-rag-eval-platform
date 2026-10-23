@@ -20,7 +20,7 @@ def create_project(org_id: str, user_id: str, name: str) -> dict[str, Any]:
     conn=connect(); m=membership(conn,org_id,user_id); assert m is not None and m["role"] in ("owner","admin"); project_id=new_id("prj"); conn.execute("INSERT INTO projects VALUES (?,?,?,?)",(project_id,org_id,name,now())); audit(conn,org_id,user_id,"project.created","project",project_id); conn.commit(); return {"id":project_id,"organization_id":org_id,"name":name}
 def project_for(conn, org_id: str, project_id: str): return conn.execute("SELECT * FROM projects WHERE id=? AND organization_id=?",(project_id,org_id)).fetchone()
 def create_run(org_id: str, user_id: str, project_id: str, idem: str, rows: list[dict[str,Any]], quota: int) -> dict[str,Any]:
-    conn=connect(); project=project_for(conn,org_id,project_id)
+    conn=connect(); conn.execute("BEGIN IMMEDIATE"); project=project_for(conn,org_id,project_id)
     if project is None: raise KeyError("project not found")
     existing=conn.execute("SELECT * FROM evaluation_runs WHERE organization_id=? AND idempotency_key=?",(org_id,idem)).fetchone()
     if existing: return dict(existing)

@@ -10,7 +10,7 @@ class OrgIn(BaseModel): name: str = Field(min_length=1,max_length=100)
 class ProjectIn(BaseModel): organization_id: str; name: str = Field(min_length=1,max_length=100)
 def identity(authorization: str | None) -> dict[str,Any]:
     if not authorization or not authorization.lower().startswith("bearer "): raise HTTPException(401,"authentication required")
-    raw=authorization[7:].strip(); configured=json.loads(os.getenv("AGENTTRUST_SAAS_IDENTITIES","{}"))
+    raw=authorization[7:].strip(); configured=json.loads(os.getenv("AGENTTRUST_SAAS_IDENTITIES_LOCAL_TEST_ONLY","{}"))
     item=configured.get(raw)
     if not isinstance(item,dict) or not item.get("user_id"): raise HTTPException(401,"invalid identity")
     return item | {"token": raw}

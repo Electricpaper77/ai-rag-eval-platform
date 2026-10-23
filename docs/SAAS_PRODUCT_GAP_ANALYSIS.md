@@ -4,7 +4,7 @@ Baseline: Gate 19 release `e7e7185835d681876adb2116dedb09b4ae3259b1`. The reposi
 
 | Priority | Gap | Status |
 |---|---|---|
-| P0 | Tenant identity and authorization | Local opaque configured identities implemented; production OIDC blocked |
+| P0 | Tenant identity and authorization | Opaque configured identities are explicitly LOCAL/TEST ONLY; production OIDC blocked |
 | P0 | Durable tenant-owned records | SQLite migration-compatible slice implemented; managed PostgreSQL required |
 | P0 | Customer journey | Organization → project → bounded JSONL evaluation → result/evidence implemented |
 | P0 | Cross-tenant isolation | Organization-scoped project/run/result/usage queries tested |
