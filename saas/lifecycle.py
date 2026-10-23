@@ -54,7 +54,7 @@ def reconcile_restored_tenant(conn, journal: DeletionJournal, organization_id: s
     return {"organization_id": organization_id, "reconciled": True, "already_reconciled": False}
 
 def restore_access_allowed(conn, organization_id: str) -> bool:
-    return conn.execute("SELECT 1 FROM tenant_restore_reconciliation WHERE organization_id=%s", (organization_id,)).fetchone() is not None
+    return conn.execute("SELECT 1 FROM tenant_restore_reconciliation r JOIN recovery_promotions p ON p.journal_digest=r.journal_digest WHERE r.organization_id=%s AND p.status='promoted' AND p.expires_at>now()", (organization_id,)).fetchone() is not None
 
 def export_tenant(conn, org_id: str, actor: str, *, elevated: bool = False) -> dict[str, Any]:
     role = _member(conn, org_id, actor, ("owner", "admin"))

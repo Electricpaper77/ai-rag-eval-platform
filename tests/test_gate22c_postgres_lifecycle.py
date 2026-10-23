@@ -64,7 +64,7 @@ def test_predeletion_backup_reappears_and_independent_journal_reconciles(tmp_pat
             assert restored.execute("SELECT COUNT(*) FROM projects WHERE organization_id=%s", (org_b,)).fetchone()[0] == 1
             assert not restore_access_allowed(restored, org_a)
             assert reconcile_restored_tenant(restored, journal, org_a)["reconciled"]
-            assert restore_access_allowed(restored, org_a)
+            assert not restore_access_allowed(restored, org_a)
             assert restored.execute("SELECT COUNT(*) FROM projects WHERE organization_id=%s", (org_a,)).fetchone()[0] == 0
             assert restored.execute("SELECT COUNT(*) FROM projects WHERE organization_id=%s", (org_b,)).fetchone()[0] == 1
             assert reconcile_restored_tenant(restored, journal, org_a)["already_reconciled"]

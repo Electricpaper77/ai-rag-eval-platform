@@ -47,3 +47,22 @@ def require_recovery_ready(approval_path: Path, backup_digest: str, journal_dige
     row = conn.execute("SELECT reconciled_at FROM tenant_restore_reconciliation WHERE organization_id=%s", (organization_id,)).fetchone()
     if not row or row[0] is None: raise RuntimeError("restored database is quarantined until reconciliation")
     return validate_approval(approval_path, backup_digest, journal_digest, target_database=target_database, consume=True)
+
+class RecoveryOrchestrator:
+    """Promotion gate executed against the actual restored target connection."""
+    def __init__(self, conn: Any, journal: Any, approval_path: Path, target_database: str):
+        self.conn, self.journal, self.approval_path, self.target_database = conn, journal, approval_path, target_database
+    def promote(self, organization_id: str, backup_digest: str, journal_digest: str) -> dict[str, Any]:
+        events = [e for e in self.journal.events() if e.get("organization_id") == organization_id]
+        if len(events) != 1 or events[0].get("digest") != journal_digest: raise RuntimeError("independent deletion evidence is unavailable or conflicting")
+        with self.conn.transaction():
+            self.conn.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (f"recovery-promote:{self.target_database}:{organization_id}",))
+            row = self.conn.execute("SELECT journal_digest,reconciled_at FROM tenant_restore_reconciliation WHERE organization_id=%s", (organization_id,)).fetchone()
+            if not row or row[0] != journal_digest or row[1] is None: raise RuntimeError("restored database is quarantined until reconciliation")
+            approval = validate_approval(self.approval_path, backup_digest, journal_digest, target_database=self.target_database)
+            existing = self.conn.execute("SELECT status FROM recovery_promotions WHERE operation_id=%s", (approval["operation_id"],)).fetchone()
+            if existing and existing[0] == "promoted": return {"promoted": True, "already_promoted": True, "operation_id": approval["operation_id"]}
+            self.conn.execute("INSERT INTO recovery_promotions(operation_id,backup_digest,journal_digest,approved_by,expires_at,status,promoted_at) VALUES (%s,%s,%s,%s,to_timestamp(%s),'promoted',now()) ON CONFLICT (operation_id) DO NOTHING", (approval["operation_id"], backup_digest, journal_digest, approval["approved_by"], approval["expires_at"]))
+            if not self.conn.execute("SELECT 1 FROM recovery_promotions WHERE operation_id=%s AND status='promoted'", (approval["operation_id"],)).fetchone(): raise RuntimeError("recovery promotion was not recorded")
+        validate_approval(self.approval_path, backup_digest, journal_digest, target_database=self.target_database, consume=True)
+        return {"promoted": True, "already_promoted": False, "operation_id": approval["operation_id"]}
