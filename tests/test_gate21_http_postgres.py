@@ -62,7 +62,7 @@ def test_authenticated_customer_journey_uses_postgres(monkeypatch):
     assert client.post("/saas/organizations", json={"name":"blocked"}).status_code == 403
     logout = client.post("/saas/auth/logout", headers=headers)
     assert logout.status_code == 200
-    assert "agenttrust_csrf=;" in logout.headers.get("set-cookie", "")
+    assert 'agenttrust_csrf=""' in logout.headers.get("set-cookie", "")
     assert client.get(f"/saas/evaluations/{run.json()['id']}", headers={"X-Organization-Id":org["id"]}).status_code == 401
     with connect() as conn:
         assert conn.execute("SELECT 1 FROM organizations WHERE id=%s", (org["id"],)).fetchone()
