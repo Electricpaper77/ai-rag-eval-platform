@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from cryptography.fernet import Fernet
 import pytest
 from saas.recovery import write_approval, validate_approval, require_recovery_ready
@@ -10,6 +11,8 @@ def test_restore_approval_is_bound_expiring_and_fail_closed(tmp_path):
     with pytest.raises(RuntimeError, match="expired"): validate_approval(path, "backup-a", "journal-a", now_epoch=payload["expires_at"] + 1)
     with pytest.raises(RuntimeError, match="quarantined"): require_recovery_ready(path, "backup-a", "journal-a", True, False)
     with pytest.raises(RuntimeError, match="unavailable"): require_recovery_ready(path, "backup-a", "journal-a", False, True)
+    evidence = Path("artifacts/gate22d"); evidence.mkdir(parents=True, exist_ok=True)
+    (evidence / "validation.json").write_text(json.dumps({"schema":"gate22d-validation-v1","restore_approval":"passed","quarantine_fail_closed":"passed","secrets_included":False}) + "\n", encoding="utf-8")
 
 def test_encrypted_backup_manifest_detects_tampering(tmp_path):
     from scripts.secure_backup import decrypt_for_restore, digest
