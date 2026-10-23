@@ -2,7 +2,7 @@ name: Gate 21 Identity PostgreSQL Foundation
 on:
   workflow_dispatch:
   push:
-    paths: ["saas/**", "tests/test_gate21_*.py", "docs/SAAS_*.md", "requirements.txt", ".github/workflows/gate21-identity-postgres.yml"]
+    paths: ["saas/**", "tests/test_gate21_*.py", "tests/conftest.py", "docs/SAAS_*.md", "requirements*.txt", ".env.example", ".github/workflows/**"]
 permissions:
   contents: read
 jobs:

@@ -11,11 +11,13 @@ import json
 import os
 import secrets
 import time
+from typing import Protocol
 from dataclasses import dataclass
 from urllib.parse import urlencode
 
 import jwt
 from jwt import PyJWKClient
+import httpx
 
 
 @dataclass(frozen=True)
@@ -26,6 +28,7 @@ class OIDCConfig:
     jwks_uri: str
     client_id: str
     redirect_uri: str
+    token_endpoint: str = ""
 
     @classmethod
     def from_env(cls) -> "OIDCConfig":
@@ -33,6 +36,7 @@ class OIDCConfig:
             "AGENTTRUST_OIDC_ISSUER", "AGENTTRUST_OIDC_AUDIENCE",
             "AGENTTRUST_OIDC_AUTHORIZATION_ENDPOINT", "AGENTTRUST_OIDC_JWKS_URI",
             "AGENTTRUST_OIDC_CLIENT_ID", "AGENTTRUST_OIDC_REDIRECT_URI",
+            "AGENTTRUST_OIDC_TOKEN_ENDPOINT",
         )}
         if not all(values.values()):
             raise RuntimeError("OIDC configuration is incomplete")
@@ -41,6 +45,7 @@ class OIDCConfig:
             "jwks_uri": values["AGENTTRUST_OIDC_JWKS_URI"],
             "client_id": values["AGENTTRUST_OIDC_CLIENT_ID"],
             "redirect_uri": values["AGENTTRUST_OIDC_REDIRECT_URI"],
+            "token_endpoint": values.get("AGENTTRUST_OIDC_TOKEN_ENDPOINT", ""),
         })
 
 
@@ -79,3 +84,28 @@ def verify_id_token(token: str, config: OIDCConfig, jwks: PyJWKClient | None = N
 
 def internal_user_key(claims: dict[str, str]) -> str:
     return f"{claims['issuer']}|{claims['subject']}"
+
+
+class SessionStore(Protocol):
+    def put(self, sid: str, user: dict[str, str], expires_at: float) -> None: ...
+    def get(self, sid: str, now: float | None = None) -> dict[str, str] | None: ...
+    def delete(self, sid: str) -> None: ...
+
+
+class MemorySessionStore:
+    """Deterministic test store; production must provide a shared encrypted store."""
+    def __init__(self): self._items: dict[str, tuple[dict[str, str], float]] = {}
+    def put(self, sid, user, expires_at): self._items[sid] = (dict(user), expires_at)
+    def get(self, sid, now=None):
+        item=self._items.get(sid)
+        if not item or item[1] <= (time.time() if now is None else now): self._items.pop(sid, None); return None
+        return dict(item[0])
+    def delete(self, sid): self._items.pop(sid, None)
+
+
+def exchange_code(config: OIDCConfig, code: str, verifier: str) -> str:
+    if not config.token_endpoint: raise RuntimeError("OIDC token endpoint is not configured")
+    response = httpx.post(config.token_endpoint, data={"grant_type":"authorization_code","code":code,"redirect_uri":config.redirect_uri,"client_id":config.client_id,"code_verifier":verifier}, timeout=10)
+    response.raise_for_status(); token=response.json().get("id_token")
+    if not token: raise ValueError("OIDC response did not contain id_token")
+    return token
