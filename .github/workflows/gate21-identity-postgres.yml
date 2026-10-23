@@ -33,4 +33,4 @@ jobs:
       - name: Portfolio verification
         run: python scripts/verify_portfolio.py
       - name: Full Linux regression
-        run: python -m pytest -q
+        run: python -m pytest -q -m 'not postgres_integration'

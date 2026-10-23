@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          timeout 300s python -m pytest -q > artifacts/gate20/full-pytest.txt 2>&1
+          timeout 300s python -m pytest -q -m 'not postgres_integration' > artifacts/gate20/full-pytest.txt 2>&1
           echo $? > artifacts/gate20/full-pytest.exit
           test "$(cat artifacts/gate20/full-pytest.exit)" = 0
       - name: Record source and limitations

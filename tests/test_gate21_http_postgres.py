@@ -8,6 +8,8 @@ from backend.app.main import app
 import saas.router as saas_router
 from saas.postgres_repository import migrate
 
+pytestmark = pytest.mark.postgres_integration
+
 
 def test_authenticated_customer_journey_uses_postgres(monkeypatch):
     if not os.getenv("AGENTTRUST_POSTGRES_URL"):

@@ -2,7 +2,7 @@ import os
 import pytest
 from saas.postgres_repository import connect, create_run, require_membership, user_id
 
-pytestmark = pytest.mark.skipif(not os.getenv("AGENTTRUST_POSTGRES_URL"), reason="disposable PostgreSQL URL not configured")
+pytestmark = [pytest.mark.postgres_integration, pytest.mark.skipif(not os.getenv("AGENTTRUST_POSTGRES_URL"), reason="disposable PostgreSQL URL not configured")]
 
 def test_postgres_schema_membership_and_quota_transaction():
     conn=connect()
