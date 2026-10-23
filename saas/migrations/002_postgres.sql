@@ -9,3 +9,13 @@ CREATE TABLE IF NOT EXISTS usage_events (id TEXT PRIMARY KEY, organization_id TE
 CREATE TABLE IF NOT EXISTS audit_events (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL REFERENCES organizations(id), user_id TEXT NOT NULL REFERENCES users(id), action TEXT NOT NULL, resource_type TEXT NOT NULL, resource_id TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL);
 CREATE TABLE IF NOT EXISTS sessions (session_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), issuer TEXT NOT NULL, subject TEXT NOT NULL, csrf_hash TEXT NOT NULL, expires_at TIMESTAMPTZ NOT NULL, revoked_at TIMESTAMPTZ NULL, created_at TIMESTAMPTZ NOT NULL);
 CREATE INDEX IF NOT EXISTS sessions_expiry_idx ON sessions (expires_at);
+CREATE TABLE IF NOT EXISTS oidc_login_states (
+    state_hash TEXT PRIMARY KEY,
+    issuer TEXT NOT NULL,
+    client_id TEXT NOT NULL,
+    redirect_uri TEXT NOT NULL,
+    payload_encrypted BYTEA NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS oidc_login_states_expiry_idx ON oidc_login_states (expires_at);

@@ -19,6 +19,7 @@ def test_authenticated_customer_journey_uses_postgres(monkeypatch):
     monkeypatch.setenv("AGENTTRUST_DEPLOYMENT_POLICY", "production")
     monkeypatch.setenv("AGENTTRUST_MANAGED_DEPLOYMENT", "true")
     monkeypatch.setenv("AGENTTRUST_SHARED_SESSION_STORE", "postgres")
+    monkeypatch.setenv("AGENTTRUST_OIDC_STATE_ENCRYPTION_KEY", "P7y3zWsvjYfZQTnBjqmAX8MhuXBOT3_5mBJRKeqQpI8=")
     monkeypatch.setenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production")
     monkeypatch.setenv("AGENTTRUST_PUBLIC_ORIGIN", "https://testserver")
     for key, value in {

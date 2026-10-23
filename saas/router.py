@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json, os, secrets, time
+import base64
 from typing import Any
 from fastapi import APIRouter, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field
@@ -20,6 +21,20 @@ def session_store():
         return SESSIONS
     from .postgres_repository import PostgresSessionStore, connect
     return PostgresSessionStore(connect)
+
+def login_state_store():
+    policy = os.getenv("AGENTTRUST_DEPLOYMENT_POLICY", "").strip().lower()
+    if policy in ("production", "staging"):
+        from .postgres_repository import PostgresLoginStateStore, connect
+        key = os.getenv("AGENTTRUST_OIDC_STATE_ENCRYPTION_KEY", "").strip().encode()
+        if not key:
+            raise RuntimeError("OIDC state encryption key is required by deployment policy")
+        try:
+            base64.urlsafe_b64decode(key)
+        except Exception as exc:
+            raise RuntimeError("OIDC state encryption key is invalid") from exc
+        return PostgresLoginStateStore(connect, key)
+    return LOGIN_STATES
 class OrgIn(BaseModel): name: str = Field(min_length=1,max_length=100)
 class ProjectIn(BaseModel): organization_id: str; name: str = Field(min_length=1,max_length=100)
 def identity(authorization: str | None, request: Request | None = None) -> dict[str,Any]:
@@ -58,11 +73,15 @@ def require_cookie_csrf(request: Request) -> None:
         if not origin or not allowed or origin != allowed or not token: raise HTTPException(403, "CSRF validation failed")
 @router.get("/auth/login")
 def login(response: Response):
-    config=OIDCConfig.from_env(); url,state=begin_login(config,LOGIN_STATES); response.status_code=307; response.headers["location"]=url; return {"state":state}
+    config=OIDCConfig.from_env(); store=login_state_store(); local={}; url,state=begin_login(config, local)
+    if store is not LOGIN_STATES: store.put(state, local[state], config, float(local[state]["expires_at"]))
+    else: LOGIN_STATES.update(local)
+    response.status_code=307; response.headers["location"]=url; return {"state":state}
 @router.get("/auth/callback")
 def callback(code: str, state: str, response: Response):
-    item=consume_login_state(LOGIN_STATES,state)
-    config=OIDCConfig.from_env(); token=exchange_code(config,code,str(item["verifier"]))
+    config=OIDCConfig.from_env(); store=login_state_store()
+    item=store.consume(state, config) if store is not LOGIN_STATES else consume_login_state(LOGIN_STATES,state)
+    token=exchange_code(config,code,str(item["verifier"]))
     claims=verify_id_token(token,config,expected_nonce=str(item["nonce"]))
     sid=secrets.token_urlsafe(32); csrf=secrets.token_urlsafe(32); store=session_store(); user={"user_id":internal_user_key(claims),"issuer":claims["issuer"],"subject":claims["subject"]}
     if isinstance(store, MemorySessionStore): store.put(sid,user | {"csrf":csrf},time.time()+3600)

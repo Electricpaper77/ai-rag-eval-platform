@@ -34,6 +34,8 @@ def validate_deployment_configuration() -> None:
         raise RuntimeError("SQLite is forbidden by deployment policy")
     if os.getenv("AGENTTRUST_SHARED_SESSION_STORE", "").strip().lower() != "postgres":
         raise RuntimeError("PostgreSQL shared session storage is required")
+    if not os.getenv("AGENTTRUST_OIDC_STATE_ENCRYPTION_KEY", "").strip():
+        raise RuntimeError("OIDC state encryption key is required")
     if identities not in {"", "{}"}:
         try:
             configured = json.loads(identities)

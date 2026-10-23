@@ -29,7 +29,7 @@ jobs:
       - name: Apply PostgreSQL migrations
         run: python -c "from saas.postgres_repository import migrate; migrate()"
       - name: Security and PostgreSQL tests
-        run: timeout 180s python -m pytest -vv -s tests/test_gate21_identity_postgres.py tests/test_gate21_postgres_integration.py tests/test_gate21_http_postgres.py tests/test_saas_vertical_slice.py
+        run: timeout 180s python -m pytest -vv -s tests/test_gate21_deployment_boundary.py tests/test_gate21_identity_postgres.py tests/test_gate21_postgres_integration.py tests/test_gate21_http_postgres.py tests/test_saas_vertical_slice.py
       - name: Portfolio verification
         run: python scripts/verify_portfolio.py
       - name: Full Linux regression
