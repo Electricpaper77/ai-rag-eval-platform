@@ -197,11 +197,19 @@ def list_projects(conn, organization_id: str, user: str) -> list[dict[str, Any]]
     return [{"id": row[0], "organization_id": row[1], "name": row[2]} for row in rows]
 
 def list_runs(conn, organization_id: str, user: str, project_id: str | None = None) -> list[dict[str, Any]]:
+    return search_runs(conn, organization_id, user, project_id)["evaluations"]
+
+def search_runs(conn, organization_id: str, user: str, project_id: str | None = None, search: str = "", status: str = "", page: int = 1, page_size: int = 20) -> dict[str, Any]:
+    page = max(1, page); page_size = min(100, max(1, page_size)); offset = (page - 1) * page_size
     with conn.transaction():
         require_membership(conn, organization_id, user)
-        if project_id:
-            rows = conn.execute("SELECT id,project_id,status,provider,sample_count,created_at FROM evaluation_runs WHERE organization_id=%s AND project_id=%s ORDER BY created_at DESC", (organization_id, project_id)).fetchall()
-        else:
-            rows = conn.execute("SELECT id,project_id,status,provider,sample_count,created_at FROM evaluation_runs WHERE organization_id=%s ORDER BY created_at DESC", (organization_id,)).fetchall()
-    return [{"id": row[0], "project_id": row[1], "status": row[2], "provider": row[3], "sample_count": row[4], "created_at": row[5].isoformat() if hasattr(row[5], "isoformat") else row[5]} for row in rows]
+        clauses = ["organization_id=%s"]; params: list[Any] = [organization_id]
+        if project_id: clauses.append("project_id=%s"); params.append(project_id)
+        if search: clauses.append("(id ILIKE %s OR provider ILIKE %s OR status ILIKE %s)"); params.extend([f"%{search}%"] * 3)
+        if status: clauses.append("status=%s"); params.append(status)
+        where = " AND ".join(clauses)
+        total = conn.execute(f"SELECT COUNT(*) FROM evaluation_runs WHERE {where}", tuple(params)).fetchone()[0]
+        rows = conn.execute(f"SELECT id,project_id,status,provider,sample_count,created_at FROM evaluation_runs WHERE {where} ORDER BY created_at DESC LIMIT %s OFFSET %s", tuple(params + [page_size, offset])).fetchall()
+    items = [{"id": row[0], "project_id": row[1], "status": row[2], "provider": row[3], "sample_count": row[4], "created_at": row[5].isoformat() if hasattr(row[5], "isoformat") else row[5]} for row in rows]
+    return {"evaluations": items, "page": page, "page_size": page_size, "total": total, "total_pages": (total + page_size - 1) // page_size}
 
