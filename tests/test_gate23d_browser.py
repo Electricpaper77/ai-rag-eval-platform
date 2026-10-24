@@ -104,7 +104,7 @@ def test_real_case_investigation_annotation_release_review_export_and_chromium(i
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True); context = browser.new_context()
             context.add_cookies([{"name": name, "value": value, "url": origin} for name, value in cookies_a.items()])
-            page = context.new_page(); page.goto(base_url); page.wait_for_selector('select[aria-label="Organization"] option:not([disabled])', timeout=15000)
+            page = context.new_page(); page.goto(base_url); page.wait_for_selector('select[aria-label="Organization"] option:not([disabled])', state="attached", timeout=15000)
             page.get_by_role("button", name="Evaluations").click(); page.get_by_text(run_id).wait_for(timeout=15000); page.get_by_role("button", name="Inspect result").first.click()
             page.get_by_role("button", name="Investigation").click(); page.get_by_role("button", name="Load persisted cases").click(); page.get_by_text("case-1").wait_for(timeout=15000); assert "Persisted case evidence" in page.locator("#content").inner_text()
             page.screenshot(path="artifacts/gate23d/investigation-desktop.png", full_page=True)
