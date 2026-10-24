@@ -82,6 +82,8 @@ def list_cases(organization_id: str, project_id: str, run_id: str, user_id: str,
         with protected_connect() as conn:
             with conn.transaction():
                 require_membership(conn, organization_id, user_id)
+                if not conn.execute("SELECT 1 FROM evaluation_runs WHERE id=%s AND organization_id=%s AND project_id=%s", (run_id, organization_id, project_id)).fetchone():
+                    raise KeyError("evaluation not found")
                 clauses = ["organization_id=%s", "project_id=%s", "run_id=%s"]
                 params: list[Any] = [organization_id, project_id, run_id]
                 if status:
@@ -96,6 +98,8 @@ def list_cases(organization_id: str, project_id: str, run_id: str, user_id: str,
         conn = connect()
         try:
             require_membership(conn, organization_id, user_id)
+            if not conn.execute("SELECT 1 FROM evaluation_runs WHERE id=? AND organization_id=? AND project_id=?", (run_id, organization_id, project_id)).fetchone():
+                raise KeyError("evaluation not found")
             clauses = ["organization_id=?", "project_id=?", "run_id=?"]
             params = [organization_id, project_id, run_id]
             if status:

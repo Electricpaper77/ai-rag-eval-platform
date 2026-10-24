@@ -83,6 +83,11 @@ def test_real_case_investigation_annotation_release_review_export_and_chromium(i
         org_id = org.json()["id"]
         project = client.post("/saas/projects", json={"organization_id": org_id, "name": "Investigation project"}, headers=headers, cookies=cookies_a); assert project.status_code == 200, project.text
         project_id = project.json()["id"]
+        headers_b = _headers(cookies_b)
+        org_b = client.post("/saas/organizations", json={"name": "Gate 23D Tenant B"}, headers=headers_b, cookies=cookies_b); assert org_b.status_code == 200, org_b.text
+        org_b_id = org_b.json()["id"]
+        project_b = client.post("/saas/projects", json={"organization_id": org_b_id, "name": "Tenant B project"}, headers=headers_b, cookies=cookies_b); assert project_b.status_code == 200, project_b.text
+        project_b_id = project_b.json()["id"]
         run = client.post(f"/saas/projects/{project_id}/evaluations", content='{"prompt":"synthetic failed case"}\n', headers={**headers, "X-Organization-Id": org_id, "Idempotency-Key": "gate23d-run"}, cookies=cookies_a); assert run.status_code == 200, run.text
         run_id = run.json()["id"]
         policy = client.post("/saas/policies", json={"organization_id": org_id, "project_id": project_id, "name": "investigation-policy", "metrics": {"quality": {"direction": "higher_is_better", "threshold": 0.8, "accepted_provenance": ["synthetic_test"]}}, "require_baseline": False}, headers=headers, cookies=cookies_a); assert policy.status_code == 200, policy.text
@@ -96,7 +101,8 @@ def test_real_case_investigation_annotation_release_review_export_and_chromium(i
         stale = client.post(f"/saas/cases/case_gate23d/reviews?organization_id={org_id}", json={"status":"hold","comment":"stale","expected_revision":0,"idempotency_key":"gate23d-stale"}, headers=headers, cookies=cookies_a); assert stale.status_code == 409
         release = client.post(f"/saas/release-reviews?organization_id={org_id}", json={"project_id":project_id,"decision_id":decision.json()["id"],"recommendation":"hold","idempotency_key":"gate23d-release"}, headers=headers, cookies=cookies_a); assert release.status_code == 200 and release.json()["decision_status"] in {"PASS","HOLD","INSUFFICIENT_EVIDENCE"}
         exported = client.get(f"/saas/release-reviews/{release.json()['id']}/export?organization_id={org_id}&format=json", cookies=cookies_a); assert exported.status_code == 200 and "non_production_disclaimer" in exported.json()
-        cross = client.get(f"/saas/evaluations/{run_id}/cases?organization_id=org_other&project_id={project_id}", cookies=cookies_b); assert cross.status_code in {403, 404}
+        cross = client.get(f"/saas/evaluations/{run_id}/cases?organization_id={org_b_id}&project_id={project_b_id}", cookies=cookies_b); assert cross.status_code == 404
+        cross_export = client.get(f"/saas/release-reviews/{release.json()['id']}/export?organization_id={org_b_id}&format=json", cookies=cookies_b); assert cross_export.status_code == 404
         missing = client.get(f"/saas/evaluations/{run_id}/cases?organization_id={org_id}&project_id={project_id}&page_size=1000", cookies=cookies_a); assert missing.status_code == 200 and missing.json()["page_size"] == 100
         Path("artifacts/gate23d").mkdir(parents=True, exist_ok=True)
         Path("artifacts/gate23d/results.json").write_text(json.dumps({"schema":"gate23d-evidence-v1","synthetic_only":True,"steps":["authenticated_case_listing","reviewer_annotation","release_review","sanitized_export","cross_tenant_denial"],"run_id":run_id,"case_id":"case_gate23d","release_review_id":release.json()["id"]}, sort_keys=True, indent=2)+"\n", encoding="utf-8")

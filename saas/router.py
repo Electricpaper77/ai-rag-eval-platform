@@ -225,6 +225,7 @@ def evaluation_cases(run_id: str, project_id: str, request: Request, organizatio
     user = identity(authorization, request)
     try:
         return list_cases(organization_id, project_id, run_id, user["user_id"], status[:40], failure_category[:100], page, page_size)
+    except KeyError as exc: raise HTTPException(404, str(exc)) from exc
     except PermissionError as exc: raise _decision_permission_error(exc) from exc
 @router.post("/cases/{case_id}/reviews")
 def case_review_create(case_id: str, body: CaseReviewIn, request: Request, organization_id: str, authorization: str|None=Header(default=None)):
