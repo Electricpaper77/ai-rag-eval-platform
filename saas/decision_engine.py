@@ -213,6 +213,7 @@ def create_decision_pg(conn, organization_id: str, current_run_id: str, user_id:
     with conn.transaction():
         _require_membership(conn, organization_id, user_id, postgres=True)
         idem = body["idempotency_key"]
+        conn.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (f"decision-idempotency:{organization_id}:{idem}",))
         existing = conn.execute("SELECT id FROM evaluation_decisions WHERE organization_id=%s AND idempotency_key=%s", (organization_id, idem)).fetchone()
         if existing:
             return _decision(conn, existing[0], organization_id, True)

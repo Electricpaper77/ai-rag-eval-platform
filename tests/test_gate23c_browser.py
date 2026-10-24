@@ -2,6 +2,7 @@ import json
 import os
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlsplit
 from pathlib import Path
 
@@ -159,3 +160,35 @@ def test_authenticated_scorecard_pass_hold_history_export_and_isolation(decision
     evidence["steps"].append({"quarantine_denial": "passed"})
     Path("artifacts/gate23c").mkdir(parents=True, exist_ok=True)
     Path("artifacts/gate23c/results.json").write_text(json.dumps(evidence, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def test_concurrent_decision_idempotency_uses_one_committed_postgres_record(decision_environment):
+    base_url, cookies_a, _ = decision_environment
+    origin = base_url.split("/saas-workspace.html", 1)[0]
+    from backend.app.main import app
+
+    headers = {"Origin": origin, "X-CSRF-Token": cookies_a["agenttrust_csrf"]}
+    with TestClient(app, base_url=origin) as client:
+        org = client.post("/saas/organizations", json={"name": "Concurrent Decision Org"}, headers=headers, cookies=cookies_a)
+        assert org.status_code == 200
+        org_id = org.json()["id"]
+        project = client.post("/saas/projects", json={"organization_id": org_id, "name": "Concurrent Project"}, headers=headers, cookies=cookies_a)
+        assert project.status_code == 200
+        project_id = project.json()["id"]
+        run = client.post(f"/saas/projects/{project_id}/evaluations", content='{"recorded_metrics":{"quality":0.9}}\n', headers={**headers, "Content-Type": "application/json", "X-Organization-Id": org_id, "Idempotency-Key": "concurrent-run"}, cookies=cookies_a)
+        assert run.status_code == 200
+        policy = client.post("/saas/policies", json={"organization_id": org_id, "project_id": project_id, "name": "concurrent-policy", "metrics": {"quality": {"direction": "higher_is_better", "threshold": 0.8, "accepted_provenance": ["synthetic_test"]}}, "require_baseline": False}, headers=headers, cookies=cookies_a)
+        assert policy.status_code == 200
+        payload = {"policy_id": policy.json()["id"], "idempotency_key": "concurrent-decision"}
+
+        def submit_once():
+            with TestClient(app, base_url=origin) as worker:
+                response = worker.post(f"/saas/evaluations/{run.json()['id']}/decision?organization_id={org_id}", json=payload, headers=headers, cookies=cookies_a)
+                return response.status_code, response.json()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(lambda _: submit_once(), range(2)))
+        assert [status for status, _ in results] == [200, 200]
+        assert results[0][1]["id"] == results[1][1]["id"]
+        listed = client.get(f"/saas/decisions?organization_id={org_id}&project_id={project_id}", cookies=cookies_a)
+        assert listed.status_code == 200 and listed.json()["total"] == 1
