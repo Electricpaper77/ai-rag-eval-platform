@@ -10,7 +10,8 @@ pytestmark = pytest.mark.postgres_integration
 playwright = pytest.importorskip("playwright.sync_api")
 
 @pytest.fixture(scope="module")
-def browser_url(monkeypatch):
+def browser_url():
+    monkeypatch = pytest.MonkeyPatch()
     if not os.getenv("AGENTTRUST_POSTGRES_URL"):
         pytest.fail("Gate 23A browser acceptance requires disposable PostgreSQL; refusing to skip")
     import saas.router as saas_router
@@ -52,6 +53,7 @@ def browser_url(monkeypatch):
     yield "http://127.0.0.1:8765/saas-workspace.html", cookies
     server.should_exit = True
     thread.join(timeout=5)
+    monkeypatch.undo()
 
 def test_authenticated_workspace_browser_journey(browser_url, tmp_path):
     base_url, cookies = browser_url
