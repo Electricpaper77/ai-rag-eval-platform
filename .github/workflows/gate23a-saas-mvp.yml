@@ -32,6 +32,9 @@ jobs:
       - name: Product contract and authenticated browser/PostgreSQL E2E
         run: timeout 180s python -m pytest -q tests/test_gate23a_product_experience.py tests/test_gate23a_browser.py
       - name: Authenticated SaaS HTTP regression
+        env:
+          AGENTTRUST_SAAS_BACKEND: sqlite
+          AGENTTRUST_POSTGRES_URL: ""
         run: python -m pytest -q tests/test_saas_vertical_slice.py
       - name: Upload browser evidence
         if: always()
