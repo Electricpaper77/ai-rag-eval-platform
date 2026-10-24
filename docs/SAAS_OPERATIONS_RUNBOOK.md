@@ -18,3 +18,5 @@ Gate 22E adds a bounded local maintenance command (`python scripts/recovery_dril
 
 Gate 22F adds a provider-neutral key-custody contract, disposable rotation/revocation tests, a retention catalog/object-lock simulation, low-cardinality Prometheus examples, and alert-rule validation. The local provider and catalog do not prove KMS/HSM custody, physical immutability, PITR, paging, or production scheduling.
 
+Gate 22F.1 boundary status: the provider and catalog are now explicitly prototype/test components. The real promotion path fails closed in staging/production unless independently controlled requester, approver, and approver-role policy values are present and match the signed approval. Existing local fixtures do not exercise this deployment boundary and are labeled NOT TESTED for production enforcement. Catalog entries are immutable/idempotent, digest-validated, and legal-hold protected in the local provider; this does not prove cloud WORM/object-lock.
+

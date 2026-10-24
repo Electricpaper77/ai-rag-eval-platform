@@ -1,6 +1,6 @@
 """Provider-neutral encryption-key custody boundary."""
 from __future__ import annotations
-import hashlib, hmac
+import hashlib, hmac, os
 from dataclasses import dataclass
 from typing import Mapping
 @dataclass(frozen=True)
@@ -31,4 +31,12 @@ class DisposableKeyProvider(KeyProvider):
     def key_fingerprint(self, key_id: str) -> str: return hashlib.sha256(self.key_identity(key_id).key_id.encode()).hexdigest()[:16]
 def require_distinct_approval_roles(requester: str, approver: str, *, approver_role: str) -> None:
     if not requester or not approver or hmac.compare_digest(requester, approver) or approver_role != "recovery_approver": raise RuntimeError("restore approval requires separation of duties")
+
+def require_trusted_deployment_approval(requester: str, approver: str, approver_role: str) -> None:
+    trusted_requester = os.getenv("AGENTTRUST_RECOVERY_REQUESTER", "")
+    trusted_approver = os.getenv("AGENTTRUST_RECOVERY_APPROVER", "")
+    trusted_role = os.getenv("AGENTTRUST_RECOVERY_APPROVER_ROLE", "")
+    if not trusted_requester or not trusted_approver or trusted_requester != requester or trusted_approver != approver or trusted_role != approver_role:
+        raise RuntimeError("trusted recovery principal policy is unavailable or mismatched")
+    require_distinct_approval_roles(trusted_requester, trusted_approver, approver_role=trusted_role)
 

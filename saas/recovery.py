@@ -4,6 +4,7 @@ import base64, hashlib, hmac, json, os, secrets
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from .key_provider import require_trusted_deployment_approval
 
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
@@ -69,7 +70,10 @@ class RecoveryOrchestrator:
             existing = self.conn.execute("SELECT status FROM recovery_promotions WHERE operation_id=%s", (signed_payload.get("operation_id"),)).fetchone()
             if existing and existing[0] == "promoted": return {"promoted": True, "already_promoted": True, "operation_id": signed_payload["operation_id"]}
             approval = validate_approval(self.approval_path, backup_digest, journal_digest, target_database=self.target_database)
+            if os.getenv("AGENTTRUST_DEPLOYMENT_POLICY", "").strip().lower() in {"staging", "production"}:
+                require_trusted_deployment_approval(approval.get("requester_id", ""), approval["approved_by"], approval.get("required_role", ""))
             self.conn.execute("INSERT INTO recovery_promotions(operation_id,backup_digest,journal_digest,approved_by,expires_at,status,promoted_at) VALUES (%s,%s,%s,%s,to_timestamp(%s),'promoted',now()) ON CONFLICT (operation_id) DO NOTHING", (approval["operation_id"], backup_digest, journal_digest, approval["approved_by"], approval["expires_at"]))
             if not self.conn.execute("SELECT 1 FROM recovery_promotions WHERE operation_id=%s AND status='promoted'", (approval["operation_id"],)).fetchone(): raise RuntimeError("recovery promotion was not recorded")
         validate_approval(self.approval_path, backup_digest, journal_digest, target_database=self.target_database, consume=True)
         return {"promoted": True, "already_promoted": False, "operation_id": approval["operation_id"]}
+

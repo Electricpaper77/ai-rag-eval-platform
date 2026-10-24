@@ -32,3 +32,8 @@ separation-of-duties validation, retention catalog semantics, and sanitized aler
 examples are tested locally. Managed KMS/HSM, immutable object storage, PITR,
 external paging, production scheduling and operator separation remain blockers.
 
+Gate 22F.1 status: deployment-style recovery promotion fails closed without
+independently controlled requester/approver/role policy. The disposable provider
+is not integrated with the encrypted backup path; catalog protection is local
+simulation only and does not prove cloud WORM/object-lock.
+
