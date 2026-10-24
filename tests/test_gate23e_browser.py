@@ -5,6 +5,8 @@ from pathlib import Path
 
 import psycopg
 import pytest
+
+pytest.importorskip("playwright", reason="Playwright is provisioned by the mandatory Gate 23E workflow")
 from playwright.sync_api import sync_playwright
 
 from test_gate23d_browser import investigation_environment
