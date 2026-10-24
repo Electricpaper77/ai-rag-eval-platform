@@ -37,3 +37,9 @@ independently controlled requester/approver/role policy. The disposable provider
 is not integrated with the encrypted backup path; catalog protection is local
 simulation only and does not prove cloud WORM/object-lock.
 
+Gate 23A status: a responsive synthetic/non-production workspace shell and
+Playwright navigation test are implemented. Evaluation actions call the existing
+authenticated API; no client-side authentication bypass or fabricated metrics are
+used. Customer-facing hosting, managed identity, billing, and production launch
+remain blocked.
+

@@ -10,6 +10,10 @@
       "destination": "/frontend/index.html"
     },
     {
+      "source": "/workspace",
+      "destination": "/frontend/saas-workspace.html"
+    },
+    {
       "source": "/agenttrust-iq-command-center.html",
       "destination": "/frontend/agenttrust-iq-command-center.html"
     },
@@ -27,3 +31,4 @@
     }
   ]
 }
+
