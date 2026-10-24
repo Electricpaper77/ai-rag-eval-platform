@@ -31,6 +31,7 @@ jobs:
       AGENTTRUST_SAAS_BACKEND: postgres
       AGENTTRUST_DEPLOYMENT_POLICY: test
       AGENTTRUST_SAAS_RUNTIME_MODE: test
+      GATE23E_EVIDENCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -44,7 +45,7 @@ jobs:
       - name: Initialize sanitized evidence
         run: |
           mkdir -p artifacts/gate23e
-          printf '{"schema":"gate23e-evidence-v1","status":"started","synthetic_only":true,"commit_sha":"%s","integration_command":"timeout 360s python -m pytest -q tests/test_gate23e_browser.py -m postgres_integration --maxfail=1"}\n' "$GITHUB_SHA" > artifacts/gate23e/run-state.json
+          printf '{"schema":"gate23e-evidence-v1","status":"started","synthetic_only":true,"commit_sha":"%s","integration_command":"timeout 360s python -m pytest -q tests/test_gate23e_browser.py -m postgres_integration --maxfail=1"}\n' "$GATE23E_EVIDENCE_SHA" > artifacts/gate23e/run-state.json
       - name: Run Gate 23E contract tests
         run: timeout 120s python -m pytest -q tests/test_gate23e_contract.py --maxfail=1
       - name: Run mandatory PostgreSQL and Chromium UX integration
