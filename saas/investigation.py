@@ -3,6 +3,8 @@
 Case evidence is only returned when a persisted source row exists.  The API never
 derives a failed case from aggregate metrics, and a release review is an immutable
 review record rather than a deployment or promotion authorization.
+
+# Gate 23D evidence remains synthetic/disposable and is not a production release gate.
 """
 from __future__ import annotations
 

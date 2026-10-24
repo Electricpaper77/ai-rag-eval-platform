@@ -43,7 +43,7 @@ jobs:
       - name: Initialize sanitized evidence
         run: |
           mkdir -p artifacts/gate23d
-          printf '{"schema":"gate23d-evidence-v1","status":"started","synthetic_only":true}\n' > artifacts/gate23d/run-state.json
+          printf '{"schema":"gate23d-evidence-v1","status":"started","synthetic_only":true,"commit_sha":"%s","integration_command":"timeout 300s python -m pytest -q tests/test_gate23d_browser.py -m postgres_integration --maxfail=1"}\n' "$GITHUB_SHA" > artifacts/gate23d/run-state.json
       - name: Run Gate 23D contract tests
         run: timeout 120s python -m pytest -q tests/test_gate23d_contract.py --maxfail=1
       - name: Run mandatory PostgreSQL and Chromium integration
