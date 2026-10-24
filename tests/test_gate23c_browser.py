@@ -2,6 +2,7 @@ import json
 import os
 import threading
 import time
+from urllib.parse import urlsplit
 from pathlib import Path
 
 import psycopg
@@ -127,7 +128,11 @@ def test_authenticated_scorecard_pass_hold_history_export_and_isolation(decision
         browser = pw.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 390, "height": 844})
         context.add_cookies([{"name": k, "value": v, "url": base_url, "secure": False} for k, v in cookies_a.items()])
-        page = context.new_page(); page.goto(base_url)
+        page = context.new_page()
+        browser_trace = []
+        page.on("request", lambda request: browser_trace.append({"kind": "request", "url": urlsplit(request.url).path + ("?" + urlsplit(request.url).query if urlsplit(request.url).query else "")} ) if "/saas/decisions" in request.url else None)
+        page.on("response", lambda response: browser_trace.append({"kind": "response", "url": urlsplit(response.url).path + ("?" + urlsplit(response.url).query if urlsplit(response.url).query else ""), "status": response.status, "total": response.json().get("total")}) if "/saas/decisions" in response.url and response.ok else None)
+        page.goto(base_url)
         page.wait_for_function("() => Boolean(document.querySelector('[aria-label=Organization]')?.value && document.querySelector('[aria-label=Project]')?.value)")
         page.get_by_label("Organization").select_option(org_id)
         page.wait_for_function("() => Boolean(document.querySelector('[aria-label=Project]')?.value)")
@@ -139,7 +144,7 @@ def test_authenticated_scorecard_pass_hold_history_export_and_isolation(decision
         try:
             scorecard_id.wait_for(timeout=10000)
         except Exception as exc:
-            raise AssertionError(f"scorecard did not render at {page.url}: {page.locator('#content').inner_text()}") from exc
+            raise AssertionError(f"scorecard did not render at {page.url}: {page.locator('#content').inner_text()} trace={browser_trace}") from exc
         assert page.get_by_text("PASS").count() >= 1 and page.get_by_text("HOLD").count() >= 1
         page.screenshot(path="artifacts/gate23c/scorecards-mobile.png", full_page=True)
         page.reload(); page.wait_for_function("() => Boolean(document.querySelector('[aria-label=Organization]')?.value && document.querySelector('[aria-label=Project]')?.value)"); page.get_by_label("Organization").select_option(org_id); page.wait_for_function("() => Boolean(document.querySelector('[aria-label=Project]')?.value)"); page.get_by_label("Project").select_option(project_id); page.get_by_role("button", name="Scorecards").click(); assert page.get_by_text("INSUFFICIENT_EVIDENCE").count() >= 1
