@@ -77,13 +77,20 @@ def list_projects(org_id: str, user_id: str) -> list[dict[str, Any]]:
     return [dict(row) for row in conn.execute("SELECT id,organization_id,name FROM projects WHERE organization_id=? ORDER BY name", (org_id,)).fetchall()]
 
 def list_runs(org_id: str, user_id: str, project_id: str | None = None) -> list[dict[str, Any]]:
+    return search_runs(org_id, user_id, project_id)["evaluations"]
+
+def search_runs(org_id: str, user_id: str, project_id: str | None = None, search: str = "", status: str = "", page: int = 1, page_size: int = 20) -> dict[str, Any]:
+    page = max(1, page); page_size = min(100, max(1, page_size)); offset = (page - 1) * page_size
     if use_postgres():
         from . import postgres_repository as pg
-        with pg.protected_connect() as conn: return pg.list_runs(conn, org_id, user_id, project_id)
+        with pg.protected_connect() as conn: return pg.search_runs(conn, org_id, user_id, project_id, search, status, page, page_size)
     conn = connect(); require_membership(conn, org_id, user_id)
-    if project_id:
-        rows = conn.execute("SELECT id,project_id,status,provider,sample_count,created_at FROM evaluation_runs WHERE organization_id=? AND project_id=? ORDER BY created_at DESC", (org_id, project_id)).fetchall()
-    else:
-        rows = conn.execute("SELECT id,project_id,status,provider,sample_count,created_at FROM evaluation_runs WHERE organization_id=? ORDER BY created_at DESC", (org_id,)).fetchall()
-    return [dict(row) for row in rows]
+    clauses = ["organization_id=?"]; params: list[Any] = [org_id]
+    if project_id: clauses.append("project_id=?"); params.append(project_id)
+    if search: clauses.append("(id LIKE ? OR provider LIKE ? OR status LIKE ?)"); params.extend([f"%{search}%"] * 3)
+    if status: clauses.append("status=?"); params.append(status)
+    where = " AND ".join(clauses)
+    total = conn.execute(f"SELECT COUNT(*) FROM evaluation_runs WHERE {where}", tuple(params)).fetchone()[0]
+    rows = conn.execute(f"SELECT id,project_id,status,provider,sample_count,created_at FROM evaluation_runs WHERE {where} ORDER BY created_at DESC LIMIT ? OFFSET ?", tuple(params + [page_size, offset])).fetchall()
+    return {"evaluations": [dict(row) for row in rows], "page": page, "page_size": page_size, "total": total, "total_pages": (total + page_size - 1) // page_size}
 

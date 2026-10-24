@@ -1,10 +1,10 @@
 from __future__ import annotations
-import json, os, secrets, time
+import csv, io, json, os, secrets, time
 import base64
 from typing import Any
 from fastapi import APIRouter, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field
-from .repository import create_org, create_project, create_run, get_run, list_orgs, list_projects, list_runs, use_postgres
+from .repository import create_org, create_project, create_run, get_run, list_orgs, list_projects, search_runs, use_postgres
 from .oidc import OIDCConfig, MemorySessionStore, begin_login, consume_login_state, exchange_code, internal_user_key, verify_id_token
 from .deployment import validate_deployment_configuration
 from .lifecycle import export_tenant, delete_tenant
@@ -38,8 +38,11 @@ def identity(authorization: str | None, request: Request | None = None) -> dict[
     if request is not None:
         sid = request.cookies.get("agenttrust_session")
         csrf = request.headers.get("x-csrf-token") if sid else None
-        store = session_store()
-        session = store.get(sid, csrf=csrf) if sid and isinstance(store, MemorySessionStore) else (store.get(sid, csrf) if sid else None)
+        try:
+            store = session_store()
+            session = store.get(sid, csrf=csrf) if sid and isinstance(store, MemorySessionStore) else (store.get(sid, csrf) if sid else None)
+        except PermissionError as exc:
+            raise HTTPException(503, "database target is quarantined") from exc
         if session is not None: return session | {"auth_source": "oidc-session", "session_id": sid}
     if not authorization or not authorization.lower().startswith("bearer "): raise HTTPException(401,"authentication required")
     mode=os.getenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production").strip().lower()
@@ -72,6 +75,33 @@ def lifecycle_connection():
     validate_deployment_configuration()
     from .postgres_repository import protected_connect
     return protected_connect()
+def _detail_payload(row: dict[str, Any]) -> dict[str, Any]:
+    item = dict(row)
+    result = item.get("result_json")
+    evidence = item.get("evidence_metadata_json")
+    if isinstance(result, str):
+        try: result = json.loads(result)
+        except json.JSONDecodeError: result = None
+    if isinstance(evidence, str):
+        try: evidence = json.loads(evidence)
+        except json.JSONDecodeError: evidence = None
+    item["result"] = result
+    item["evidence"] = evidence
+    item["missing_evidence"] = [name for name, value in (("result", result), ("evidence", evidence)) if value in (None, {}, [])]
+    return item
+def _csv_safe_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: _csv_safe_value(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_csv_safe_value(item) for item in value]
+    if isinstance(value, str) and value[:1] in ("=", "+", "-", "@"):
+        return "'" + value
+    return value
+
+def _csv_value(value: Any) -> str:
+    value = _csv_safe_value(value)
+    text = json.dumps(value, default=str, sort_keys=True) if isinstance(value, (dict, list)) else str(value if value is not None else "")
+    return "'" + text if text[:1] in ("=", "+", "-", "@") else text
 @router.get("/auth/login")
 def login(response: Response):
     config=OIDCConfig.from_env(); store=login_state_store(); local={}; url,state=begin_login(config, local)
@@ -117,9 +147,9 @@ def projects_list(organization_id: str, request: Request, authorization: str|Non
     try: return {"projects": list_projects(organization_id, user["user_id"])}
     except PermissionError as exc: raise HTTPException(403, "organization membership required") from exc
 @router.get("/evaluations")
-def evaluations_list(organization_id: str, request: Request, authorization: str|None=Header(default=None), project_id: str|None=None):
+def evaluations_list(organization_id: str, request: Request, authorization: str|None=Header(default=None), project_id: str|None=None, search: str = "", status: str = "", page: int = 1, page_size: int = 20):
     user = identity(authorization, request)
-    try: return {"evaluations": list_runs(organization_id, user["user_id"], project_id)}
+    try: return search_runs(organization_id, user["user_id"], project_id, search[:100], status[:40], page, page_size)
     except PermissionError as exc: raise HTTPException(403, "organization membership required") from exc
 @router.post("/projects/{project_id}/evaluations")
 async def evaluations(project_id: str, request: Request, authorization: str|None=Header(default=None), x_organization_id: str|None=Header(default=None), idempotency_key: str|None=Header(default=None)):
@@ -140,15 +170,35 @@ async def evaluations(project_id: str, request: Request, authorization: str|None
     except PermissionError as exc:
         if str(exc) == "organization membership required": raise HTTPException(403,"organization membership required")
         raise HTTPException(402,str(exc))
+@router.get("/evaluations/compare")
+def evaluations_compare(organization_id: str, run_id_a: str, run_id_b: str, request: Request, authorization: str|None=Header(default=None)):
+    user = identity(authorization, request)
+    try:
+        first = get_run(organization_id, user["user_id"], run_id_a)
+        second = get_run(organization_id, user["user_id"], run_id_b)
+    except PermissionError as exc: raise HTTPException(403, "organization membership required") from exc
+    if first is None or second is None: raise HTTPException(404, "evaluation not found")
+    return {"runs": [_detail_payload(first), _detail_payload(second)], "comparison": {"same_project": first["project_id"] == second["project_id"], "sample_count_delta": first["sample_count"] - second["sample_count"], "status_match": first["status"] == second["status"]}}
 @router.get("/evaluations/{run_id}")
-def evaluation(run_id: str, request: Request, authorization: str|None=Header(default=None), x_organization_id: str|None=Header(default=None)):
+def evaluation(run_id: str, request: Request, authorization: str|None=Header(default=None), x_organization_id: str|None=Header(default=None), organization_id: str|None=None):
     user=identity(authorization, request)
-    try: row=get_run(org_id(user,x_organization_id),user["user_id"],run_id)
+    try: row=get_run(org_id(user, organization_id or x_organization_id),user["user_id"],run_id)
     except PermissionError: raise HTTPException(403,"organization membership required")
     if row is None: raise HTTPException(404,"evaluation not found")
-    if isinstance(row["result_json"], str): row["result_json"]=json.loads(row["result_json"])
-    if isinstance(row["evidence_metadata_json"], str): row["evidence_metadata_json"]=json.loads(row["evidence_metadata_json"])
-    return row
+    return _detail_payload(row)
+@router.get("/evaluations/{run_id}/export")
+def evaluation_export(run_id: str, request: Request, authorization: str|None=Header(default=None), x_organization_id: str|None=Header(default=None), organization_id: str|None=None, format: str = "json"):
+    user=identity(authorization, request)
+    try: row=get_run(org_id(user, organization_id or x_organization_id),user["user_id"],run_id)
+    except PermissionError: raise HTTPException(403,"organization membership required")
+    if row is None: raise HTTPException(404,"evaluation not found")
+    payload = _detail_payload(row)
+    if format.lower() == "json":
+        return Response(content=json.dumps(payload, default=str), media_type="application/json", headers={"Content-Disposition": f'attachment; filename="{run_id}.json"'})
+    if format.lower() != "csv": raise HTTPException(400, "format must be json or csv")
+    output=io.StringIO(); writer=csv.writer(output); writer.writerow(["field", "value"])
+    for key, value in payload.items(): writer.writerow([key, _csv_value(value)])
+    return Response(content=output.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{run_id}.csv"'})
 @router.get("/organizations/{organization_id}/export")
 def organization_export(organization_id: str, request: Request, authorization: str|None=Header(default=None)):
     user = identity(authorization, request)
