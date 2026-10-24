@@ -3,12 +3,14 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import uuid
 from datetime import datetime, timezone
 from typing import Any
 
 
 DECISIONS = ("PASS", "HOLD", "INSUFFICIENT_EVIDENCE")
+PROVENANCE = ("independently_computed", "synthetic_test", "provider_reported", "user_supplied", "unknown")
 
 
 def now():
@@ -36,19 +38,41 @@ def recorded_metrics(run: dict[str, Any]) -> dict[str, float]:
     return {key: value for key, value in values.items() if isinstance(key, str) and isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))}
 
 
+def metric_provenance(run: dict[str, Any]) -> dict[str, str]:
+    result = _json(run.get("result_json")) or {}
+    values = result.get("quality_metrics_provenance")
+    if not isinstance(values, dict):
+        return {}
+    return {key: value for key, value in values.items() if isinstance(key, str) and isinstance(value, str) and value in PROVENANCE}
+
+
 def evaluate(policy: dict[str, Any], current: dict[str, Any], baseline: dict[str, Any] | None) -> tuple[str, dict[str, Any], dict[str, Any]]:
     rules = _json(policy["metrics_json"]) or {}
     current_values = recorded_metrics(current)
     baseline_values = recorded_metrics(baseline) if baseline else {}
+    current_provenance = metric_provenance(current)
+    baseline_provenance = metric_provenance(baseline) if baseline else {}
     missing_current = sorted(set(rules) - set(current_values))
     missing_baseline = sorted(set(rules) - set(baseline_values)) if policy["require_baseline"] else []
-    if missing_current or missing_baseline:
+    untrusted_current = []
+    untrusted_baseline = []
+    for name, rule in rules.items():
+        accepted = rule.get("accepted_provenance", ["independently_computed"])
+        if name in current_values and current_provenance.get(name, "unknown") not in accepted:
+            untrusted_current.append(name)
+        if policy["require_baseline"] and name in baseline_values and baseline_provenance.get(name, "unknown") not in accepted:
+            untrusted_baseline.append(name)
+    if missing_current or missing_baseline or untrusted_current or untrusted_baseline:
         return "INSUFFICIENT_EVIDENCE", {
-            "kind": "missing_evidence",
+            "kind": "insufficient_evidence",
             "missing_current_metrics": missing_current,
             "missing_baseline_metrics": missing_baseline,
-            "message": "Configured metrics and required baseline evidence were not all recorded.",
-        }, {"current_run_id": current["id"], "baseline_run_id": baseline.get("id") if baseline else None}
+            "untrusted_current_metrics": sorted(untrusted_current),
+            "untrusted_baseline_metrics": sorted(untrusted_baseline),
+            "current_provenance": current_provenance,
+            "baseline_provenance": baseline_provenance,
+            "message": "Configured metrics were missing or did not have an explicitly authorized provenance.",
+        }, {"current_run_id": current["id"], "baseline_run_id": baseline.get("id") if baseline else None, "metric_provenance": current_provenance}
 
     observations: dict[str, Any] = {}
     regressions: list[str] = []
@@ -59,6 +83,7 @@ def evaluate(policy: dict[str, Any], current: dict[str, Any], baseline: dict[str
         direction = rule["direction"]
         threshold = float(rule["threshold"])
         tolerance = float(rule.get("tolerance", 0.0))
+        accepted = rule.get("accepted_provenance", ["independently_computed"])
         threshold_ok = value >= threshold if direction == "higher_is_better" else value <= threshold
         delta = value - baseline_value if baseline_value is not None else None
         regression = (delta < -tolerance) if direction == "higher_is_better" and delta is not None else ((delta > tolerance) if delta is not None else False)
@@ -70,6 +95,8 @@ def evaluate(policy: dict[str, Any], current: dict[str, Any], baseline: dict[str
             "threshold": threshold,
             "tolerance": tolerance,
             "unit": rule.get("unit", ""),
+            "provenance": current_provenance.get(name, "unknown"),
+            "accepted_provenance": accepted,
             "threshold_passed": threshold_ok,
             "regression": regression,
         }
@@ -130,7 +157,12 @@ def _policy_payload(conn, organization_id: str, project_id: str, user_id: str, b
             raise ValueError("metric thresholds must be numeric") from exc
         if not math.isfinite(threshold) or not math.isfinite(tolerance) or tolerance < 0:
             raise ValueError("metric thresholds must be finite and tolerance non-negative")
-        normalized[key] = {"direction": direction, "threshold": threshold, "tolerance": tolerance, "unit": str(rule.get("unit", ""))[:32]}
+        accepted = rule.get("accepted_provenance", ["independently_computed"])
+        if not isinstance(accepted, list) or not accepted or any(value not in PROVENANCE[:-1] for value in accepted):
+            raise ValueError("accepted_provenance must name at least one supported verified provenance")
+        if "synthetic_test" in accepted and os.getenv("AGENTTRUST_DEPLOYMENT_POLICY", "test").strip().lower() not in ("test", "development", "local"):
+            raise ValueError("synthetic_test provenance is restricted to isolated test deployments")
+        normalized[key] = {"direction": direction, "threshold": threshold, "tolerance": tolerance, "unit": str(rule.get("unit", ""))[:32], "accepted_provenance": sorted(set(accepted))}
     lock = f"policy:{organization_id}:{project_id}:{name}"
     if postgres:
         conn.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (lock,))
@@ -249,4 +281,3 @@ def get_decision_sqlite(conn, organization_id: str, user_id: str, decision_id: s
     result = _decision(conn, decision_id, organization_id, False)
     if not result: raise KeyError("decision not found")
     return result
-

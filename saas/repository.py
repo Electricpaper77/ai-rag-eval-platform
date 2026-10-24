@@ -68,7 +68,8 @@ def create_run(org_id: str, user_id: str, project_id: str, idem: str, rows: list
     quality = {key: sum(values) / len(values) for key, values in recorded.items() if values}
     if quality:
         result["quality_metrics"] = quality
-        result["quality_metrics_source"] = "explicitly recorded synthetic evaluation input"
+        result["quality_metrics_source"] = "synthetic_test_input"
+        result["quality_metrics_provenance"] = {key: "synthetic_test" for key in quality}
     conn.execute("INSERT INTO evaluation_results VALUES (?,?,?,?,?)",(run_id,org_id,json.dumps(result),json.dumps({"source":"saas-vertical-slice","provider":"mock","git_sha":os.getenv("GIT_COMMIT_SHA","unknown")}),ts)); conn.execute("INSERT INTO usage_events VALUES (?,?,?,?,?,?,?)",(new_id("use"),org_id,run_id,len(rows),0.0,idem,ts)); audit(conn,org_id,user_id,"evaluation.completed","evaluation_run",run_id); conn.commit(); return {"id":run_id,"status":"completed","provider":"mock","sample_count":len(rows),"outcome":"release"}
 def get_run(org_id: str, user_id: str, run_id: str) -> dict[str,Any] | None:
     if use_postgres():
@@ -154,4 +155,3 @@ def get_decision(org_id: str, user_id: str, decision_id: str) -> dict[str, Any]:
         from . import postgres_repository as pg
         with pg.protected_connect() as conn: return de.get_decision_pg(conn, org_id, user_id, decision_id)
     conn = connect(); return de.get_decision_sqlite(conn, org_id, user_id, decision_id)
-

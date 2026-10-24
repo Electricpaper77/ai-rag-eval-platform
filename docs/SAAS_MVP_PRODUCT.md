@@ -12,8 +12,10 @@ The workspace now exposes evidence-backed scorecards for synthetic evaluations. 
 organization owner or admin creates an immutable, versioned policy; an authorized
 member evaluates a persisted run against that policy and may compare it with an
 authorized baseline. Decisions are `PASS`, `HOLD`, or `INSUFFICIENT_EVIDENCE`.
-Only explicitly recorded evaluation metrics are eligible for a decision. Missing
-metrics are shown as missing evidence, not inferred or fabricated. Decision history
+Only explicitly recorded evaluation metrics with authorized provenance are eligible
+for a decision. Independently computed evidence is the secure default; synthetic
+metrics require an explicitly labeled policy and isolated test deployment. Missing,
+malformed, nonfinite, or untrusted metrics are shown as insufficient evidence, not
+inferred or fabricated. Decision history
 and JSON/CSV exports remain organization- and project-scoped and are protected by
 the existing session, CSRF, tenant, and recovery-quarantine controls.
-

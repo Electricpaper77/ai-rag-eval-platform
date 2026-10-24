@@ -185,7 +185,8 @@ def create_run(conn, organization_id: str, user: str, project_id: str, idem: str
         result={"run_id":run_id,"provider":"mock","benchmark_status":"mock","sample_count":len(rows),"evidence_note":"Local mock only; not production provider execution."}
         if quality:
             result["quality_metrics"] = quality
-            result["quality_metrics_source"] = "explicitly recorded synthetic evaluation input"
+            result["quality_metrics_source"] = "synthetic_test_input"
+            result["quality_metrics_provenance"] = {key: "synthetic_test" for key in quality}
         conn.execute("INSERT INTO evaluation_results VALUES (%s,%s,%s,%s,%s)", (run_id,organization_id,json.dumps(result),json.dumps({"provider":"mock"}),ts)); conn.execute("INSERT INTO usage_events VALUES (%s,%s,%s,%s,%s,%s,%s)",(f"use_{uuid.uuid4().hex}",organization_id,run_id,len(rows),0,idem,ts)); return {"id":run_id,"status":"completed","provider":"mock","sample_count":len(rows)}
 
 def get_run(conn, organization_id: str, user: str, run_id: str) -> dict[str, Any] | None:
@@ -223,4 +224,3 @@ def search_runs(conn, organization_id: str, user: str, project_id: str | None = 
         rows = conn.execute(f"SELECT id,project_id,status,provider,sample_count,created_at FROM evaluation_runs WHERE {where} ORDER BY created_at DESC LIMIT %s OFFSET %s", tuple(params + [page_size, offset])).fetchall()
     items = [{"id": row[0], "project_id": row[1], "status": row[2], "provider": row[3], "sample_count": row[4], "created_at": row[5].isoformat() if hasattr(row[5], "isoformat") else row[5]} for row in rows]
     return {"evaluations": items, "page": page, "page_size": page_size, "total": total, "total_pages": (total + page_size - 1) // page_size}
-

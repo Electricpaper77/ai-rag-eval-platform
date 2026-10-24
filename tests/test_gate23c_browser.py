@@ -99,14 +99,14 @@ def test_authenticated_scorecard_pass_hold_history_export_and_isolation(decision
         baseline = run("gate23c-baseline", 0.85).json()["id"]
         passing = run("gate23c-pass", 0.90).json()["id"]
         regressed = run("gate23c-hold", 0.70).json()["id"]
-        policy = client.post("/saas/policies", json={"organization_id": org_id, "project_id": project_id, "name": "quality-gate", "metrics": {"quality": {"direction": "higher_is_better", "threshold": 0.8, "tolerance": 0.05, "unit": "score"}}, "require_baseline": True}, headers=headers, cookies=cookies_a)
+        policy = client.post("/saas/policies", json={"organization_id": org_id, "project_id": project_id, "name": "quality-gate", "metrics": {"quality": {"direction": "higher_is_better", "threshold": 0.8, "tolerance": 0.05, "unit": "score", "accepted_provenance": ["synthetic_test"]}}, "require_baseline": True}, headers=headers, cookies=cookies_a)
         assert policy.status_code == 200, policy.text
         policy_id = policy.json()["id"]
         first = client.post(f"/saas/evaluations/{passing}/decision?organization_id={org_id}", json={"policy_id": policy_id, "baseline_run_id": baseline, "idempotency_key": "gate23c-decision-pass"}, headers=headers, cookies=cookies_a)
         assert first.status_code == 200 and first.json()["decision"] == "PASS"
         second = client.post(f"/saas/evaluations/{regressed}/decision?organization_id={org_id}", json={"policy_id": policy_id, "baseline_run_id": baseline, "idempotency_key": "gate23c-decision-hold"}, headers=headers, cookies=cookies_a)
         assert second.status_code == 200 and second.json()["decision"] == "HOLD"
-        missing_policy = client.post("/saas/policies", json={"organization_id": org_id, "project_id": project_id, "name": "missing-evidence", "metrics": {"groundedness": {"direction": "higher_is_better", "threshold": 0.8, "unit": "score"}}, "require_baseline": False}, headers=headers, cookies=cookies_a)
+        missing_policy = client.post("/saas/policies", json={"organization_id": org_id, "project_id": project_id, "name": "missing-evidence", "metrics": {"groundedness": {"direction": "higher_is_better", "threshold": 0.8, "unit": "score", "accepted_provenance": ["synthetic_test"]}}, "require_baseline": False}, headers=headers, cookies=cookies_a)
         assert missing_policy.status_code == 200, missing_policy.text
         insufficient = client.post(f"/saas/evaluations/{passing}/decision?organization_id={org_id}", json={"policy_id": missing_policy.json()["id"], "idempotency_key": "gate23c-decision-insufficient"}, headers=headers, cookies=cookies_a)
         assert insufficient.status_code == 200 and insufficient.json()["decision"] == "INSUFFICIENT_EVIDENCE"
@@ -159,4 +159,3 @@ def test_authenticated_scorecard_pass_hold_history_export_and_isolation(decision
     evidence["steps"].append({"quarantine_denial": "passed"})
     Path("artifacts/gate23c").mkdir(parents=True, exist_ok=True)
     Path("artifacts/gate23c/results.json").write_text(json.dumps(evidence, sort_keys=True) + "\n", encoding="utf-8")
-
