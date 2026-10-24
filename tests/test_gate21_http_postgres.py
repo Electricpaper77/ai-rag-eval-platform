@@ -106,7 +106,7 @@ def test_two_target_fastapi_http_quarantine_promotion_and_tenant_isolation(monke
     from psycopg.conninfo import conninfo_to_dict, make_conninfo
     from fastapi import FastAPI, Request
     from saas.lifecycle import DeletionJournal, reconcile_restored_tenant, restore_access_allowed
-    from saas.recovery import RecoveryOrchestrator, write_approval
+    from saas.recovery import RecoveryOrchestrator, write_approval, validate_approval
     base = conninfo_to_dict(os.environ["AGENTTRUST_POSTGRES_URL"])
     admin = dict(base, dbname="postgres")
     suffix = __import__("uuid").uuid4().hex[:8]
@@ -125,18 +125,21 @@ def test_two_target_fastapi_http_quarantine_promotion_and_tenant_isolation(monke
                     conn.execute("INSERT INTO organizations(id,name,created_at) VALUES (%s,%s,now())", (f"seed_{name}", name))
                     conn.execute("INSERT INTO memberships(organization_id,user_id,role,active,created_at) VALUES (%s,%s,'owner',TRUE,now())", (f"seed_{name}", uid))
         monkeypatch.setenv("AGENTTRUST_POSTGRES_URL", original_url)
-        journal = DeletionJournal(tmp_path / "two-target-journal.jsonl")
-        event = journal.append("seed_" + next(iter(targets)), "two-target-user")
+        promoted = next(iter(targets)); blocked = next(name for name in targets if name != promoted)
+        journal_a = DeletionJournal(tmp_path / "two-target-journal-a.jsonl")
+        journal_b = DeletionJournal(tmp_path / "two-target-journal-b.jsonl")
+        event_a = journal_a.append("seed_" + promoted, "two-target-user")
+        event_b = journal_b.append("seed_" + blocked, "two-target-user")
         monkeypatch.setenv("AGENTTRUST_RECOVERY_APPROVAL_KEY", "t" * 32)
         monkeypatch.setenv("AGENTTRUST_RECOVERY_APPROVERS", "two-target-operator")
-        promoted = next(iter(targets)); promoted_url = urls[promoted]
+        promoted_url = urls[promoted]
         monkeypatch.setenv("AGENTTRUST_POSTGRES_URL", promoted_url)
         with psycopg.connect(promoted_url) as conn:
-            conn.execute("INSERT INTO tenant_restore_reconciliation(organization_id,journal_digest,reconciled_at) VALUES (%s,%s,now())", ("seed_" + promoted, event["digest"]))
+            conn.execute("INSERT INTO tenant_restore_reconciliation(organization_id,journal_digest,reconciled_at) VALUES (%s,%s,now())", ("seed_" + promoted, event_a["digest"]))
             conn.commit()
-            approval = tmp_path / "approval.json"
-            write_approval(approval, "backup-two-target", event["digest"], "two-target-operator", target_database=promoted)
-            assert RecoveryOrchestrator(conn, journal, approval, promoted).promote("seed_" + promoted, "backup-two-target", event["digest"])["promoted"]
+            approval_a = tmp_path / "approval-a.json"
+            write_approval(approval_a, "backup-two-target-a", event_a["digest"], "two-target-operator", target_database=promoted)
+            assert RecoveryOrchestrator(conn, journal_a, approval_a, promoted).promote("seed_" + promoted, "backup-two-target-a", event_a["digest"])["promoted"]
             assert restore_access_allowed(conn, "seed_" + promoted)
         monkeypatch.setenv("AGENTTRUST_DEPLOYMENT_POLICY", "production"); monkeypatch.setenv("AGENTTRUST_MANAGED_DEPLOYMENT", "true"); monkeypatch.setenv("AGENTTRUST_SHARED_SESSION_STORE", "postgres"); monkeypatch.setenv("AGENTTRUST_OIDC_STATE_ENCRYPTION_KEY", "P7y3zWsvjYfZQTnBjqmAX8MhuXBOT3_5mBJRKeqQpI8="); monkeypatch.setenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production"); monkeypatch.setenv("AGENTTRUST_PUBLIC_ORIGIN", "https://testserver")
         for key, value in {"AGENTTRUST_OIDC_ISSUER":"https://issuer.example","AGENTTRUST_OIDC_AUDIENCE":"agenttrust","AGENTTRUST_OIDC_AUTHORIZATION_ENDPOINT":"https://issuer.example/authorize","AGENTTRUST_OIDC_JWKS_URI":"https://issuer.example/jwks","AGENTTRUST_OIDC_CLIENT_ID":"client","AGENTTRUST_OIDC_REDIRECT_URI":"https://testserver/saas/auth/callback","AGENTTRUST_OIDC_TOKEN_ENDPOINT":"https://issuer.example/token"}.items(): monkeypatch.setenv(key, value)
@@ -153,7 +156,6 @@ def test_two_target_fastapi_http_quarantine_promotion_and_tenant_isolation(monke
         def request(target, method, path, **kwargs):
             with TestClient(make_target_app(target), base_url="https://testserver") as client:
                 return getattr(client, method)(path, **kwargs)
-        blocked = next(name for name in targets if name != promoted)
         headers = {"Authorization":"Bearer controlled"}
         assert request(blocked, "post", "/saas/organizations", json={"name":"blocked"}, headers=headers).status_code == 503
         org = request(promoted, "post", "/saas/organizations", json={"name":"Promoted Tenant"}, headers=headers)
@@ -167,6 +169,32 @@ def test_two_target_fastapi_http_quarantine_promotion_and_tenant_isolation(monke
         assert result.status_code == 200
         assert request(promoted, "post", "/saas/projects", json={"organization_id":"seed_other","name":"cross"}, headers=headers).status_code == 403
         assert request(blocked, "post", "/saas/organizations", json={"name":"still blocked"}, headers=headers).status_code == 503
+        # Target A approval and journal evidence cannot authorize Target B.
+        monkeypatch.setenv("AGENTTRUST_POSTGRES_URL", urls[blocked])
+        with psycopg.connect(urls[blocked]) as conn:
+            with pytest.raises(RuntimeError):
+                RecoveryOrchestrator(conn, journal_a, approval_a, blocked).promote("seed_" + blocked, "backup-two-target-a", event_a["digest"])
+            with pytest.raises(RuntimeError): validate_approval(approval_a, "backup-two-target-b", event_a["digest"], target_database=promoted)
+            with pytest.raises(RuntimeError): validate_approval(approval_a, "backup-two-target-a", event_b["digest"], target_database=promoted)
+            assert not restore_access_allowed(conn, "seed_" + blocked)
+            conn.execute("INSERT INTO tenant_restore_reconciliation(organization_id,journal_digest,reconciled_at) VALUES (%s,%s,now())", ("seed_" + blocked, event_b["digest"]))
+            conn.commit()
+            approval_b = tmp_path / "approval-b.json"
+            write_approval(approval_b, "backup-two-target-b", event_b["digest"], "two-target-operator", target_database=blocked)
+            assert RecoveryOrchestrator(conn, journal_b, approval_b, blocked).promote("seed_" + blocked, "backup-two-target-b", event_b["digest"])["promoted"]
+            assert restore_access_allowed(conn, "seed_" + blocked)
+        org_b = request(blocked, "post", "/saas/organizations", json={"name":"Independently Promoted Tenant"}, headers=headers)
+        assert org_b.status_code == 200, org_b.text
+        project_b = request(blocked, "post", "/saas/projects", json={"organization_id":org_b.json()["id"],"name":"Project B"}, headers=headers)
+        assert project_b.status_code == 200
+        run_b = request(blocked, "post", f"/saas/projects/{project_b.json()['id']}/evaluations", content='{"prompt":"synthetic-b"}\n', headers={**headers,"X-Organization-Id":org_b.json()["id"],"Idempotency-Key":"two-target-b"})
+        assert run_b.status_code == 200
+        assert request(blocked, "get", f"/saas/evaluations/{run_b.json()['id']}", headers={**headers,"X-Organization-Id":org_b.json()["id"]}).status_code == 200
+        monkeypatch.setenv("AGENTTRUST_POSTGRES_URL", urls[blocked])
+        with psycopg.connect(urls[blocked]) as conn:
+            conn.execute("UPDATE recovery_promotions SET expires_at=now()-interval '1 second' WHERE status='promoted'")
+            conn.commit()
+        assert request(blocked, "post", "/saas/organizations", json={"name":"expired"}, headers=headers).status_code == 503
     finally:
         with psycopg.connect(make_conninfo(**admin), autocommit=True) as conn:
             for name in targets: conn.execute(f'DROP DATABASE IF EXISTS "{name}"')
