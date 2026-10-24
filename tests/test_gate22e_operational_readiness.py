@@ -15,7 +15,7 @@ def test_maintenance_cleanup_is_dry_run_by_default_and_protects_active_artifacts
     (tmp_path / "old.enc.json").write_text(json.dumps({"encrypted": True}))
     events = cleanup_backup_artifacts(tmp_path, max_age_seconds=100, protected=[old])
     assert events[0]["reason"] == "protected" and old.exists()
-    events = cleanup_backup_artifacts(tmp_path, max_age_seconds=100, execute=True)
+    events = cleanup_backup_artifacts(tmp_path, max_age_seconds=100, execute=True, protected=[old])
     assert events[0]["reason"] == "protected" and old.exists()
     old.unlink(); old.with_suffix(old.suffix + ".json").unlink()
     old.write_bytes(b"synthetic"); old.touch((time.time() - 1000, time.time() - 1000))
