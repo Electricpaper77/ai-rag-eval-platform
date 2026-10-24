@@ -18,6 +18,7 @@ pytestmark = pytest.mark.postgres_integration
 def test_authenticated_onboarding_persists_journey_across_viewports_and_tenants(investigation_environment, monkeypatch):
     base_url, cookies_a, cookies_b = investigation_environment
     origin = base_url.split("/saas-workspace.html", 1)[0]
+    base_url = origin + "/saas-workspace23e.html"
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 1440, "height": 900})

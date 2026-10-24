@@ -150,6 +150,10 @@ FRONTEND_DIR = Path(PROJECT_ROOT) / "frontend"
 def saas_workspace_page():
     return FileResponse(FRONTEND_DIR / "saas-workspace.html")
 
+@app.get("/saas-workspace23e.html", include_in_schema=False)
+def saas_workspace_gate23e_page():
+    return FileResponse(FRONTEND_DIR / "saas-workspace23e.html")
+
 @app.get("/workspace.js", include_in_schema=False)
 def saas_workspace_script():
     return FileResponse(FRONTEND_DIR / "workspace.js", media_type="application/javascript")
