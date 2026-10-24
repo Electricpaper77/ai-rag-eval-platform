@@ -19,6 +19,7 @@ def browser_url():
     from backend.app.main import app
     monkeypatch.delenv("AGENTTRUST_SAAS_DB", raising=False)
     monkeypatch.setenv("AGENTTRUST_SAAS_RUNTIME_MODE", "test")
+    monkeypatch.setenv("AGENTTRUST_DEPLOYMENT_POLICY", "test")
     monkeypatch.setenv("AGENTTRUST_OIDC_ISSUER", "https://issuer.example")
     monkeypatch.setenv("AGENTTRUST_OIDC_AUDIENCE", "agenttrust")
     monkeypatch.setenv("AGENTTRUST_OIDC_CLIENT_ID", "client")
