@@ -64,14 +64,14 @@ def test_authenticated_onboarding_persists_journey_across_viewports_and_tenants(
         for width in (320, 390, 768, 1440):
             page.set_viewport_size({"width": width, "height": 900})
             page.wait_for_timeout(100)
-                overflow = page.evaluate("""() => {
-                    const offenders = [...document.querySelectorAll('*')].map((el) => {
-                        const rect = el.getBoundingClientRect();
-                        return {tag: el.tagName, cls: typeof el.className === 'string' ? el.className : '', left: rect.left, right: rect.right, width: rect.width};
-                    }).filter((item) => item.left < -1 || item.right > window.innerWidth + 1).slice(0, 8);
-                    return {scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth, offenders};
-                }""")
-                assert overflow["scrollWidth"] <= overflow["innerWidth"], overflow
+            overflow = page.evaluate("""() => {
+                const offenders = [...document.querySelectorAll('*')].map((el) => {
+                    const rect = el.getBoundingClientRect();
+                    return {tag: el.tagName, cls: typeof el.className === 'string' ? el.className : '', left: rect.left, right: rect.right, width: rect.width};
+                }).filter((item) => item.left < -1 || item.right > window.innerWidth + 1).slice(0, 8);
+                return {scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth, offenders};
+            }""")
+            assert overflow["scrollWidth"] <= overflow["innerWidth"], overflow
             assert page.get_by_role("heading", name="Guided first run").is_visible()
             path = f"artifacts/gate23e/onboarding-{width}.png"
             page.screenshot(path=path, full_page=True)
