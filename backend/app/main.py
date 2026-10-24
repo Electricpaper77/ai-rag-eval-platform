@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Any, Dict, List
 import os
@@ -142,6 +143,16 @@ AGENT_EVALUATOR = AgentReliabilityEvaluator()
 GPU_OBSERVABILITY_PROVIDER = SimulatedGPUObservabilityProvider()
 
 app = FastAPI(title="AI RAG Eval Platform")
+
+FRONTEND_DIR = Path(PROJECT_ROOT) / "frontend"
+
+@app.get("/saas-workspace.html", include_in_schema=False)
+def saas_workspace_page():
+    return FileResponse(FRONTEND_DIR / "saas-workspace.html")
+
+@app.get("/workspace.js", include_in_schema=False)
+def saas_workspace_script():
+    return FileResponse(FRONTEND_DIR / "workspace.js", media_type="application/javascript")
 
 
 @app.on_event("startup")
@@ -573,3 +584,4 @@ def get_leaderboard():
     if not leaderboard_file.exists():
         raise HTTPException(status_code=404, detail="leaderboard.json not found. Run scripts/run_model_eval.py first.")
     return json.loads(leaderboard_file.read_text(encoding="utf-8"))
+

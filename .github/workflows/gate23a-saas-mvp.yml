@@ -9,14 +9,26 @@ jobs:
   saas-mvp:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: gate23a
+          POSTGRES_DB: agenttrust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U postgres -d agenttrust"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      AGENTTRUST_POSTGRES_URL: postgresql://postgres:gate23a@localhost:5432/agenttrust
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: "3.11"}
       - run: python -m pip install --disable-pip-version-check -r requirements-test.txt playwright
       - run: python -m playwright install --with-deps chromium
-      - name: Product contract and browser E2E
-        run: python -m pytest -q tests/test_gate23a_product_experience.py tests/test_gate23a_browser.py
+      - name: Product contract and authenticated browser/PostgreSQL E2E
+        run: timeout 180s python -m pytest -q tests/test_gate23a_product_experience.py tests/test_gate23a_browser.py
       - name: Authenticated SaaS HTTP regression
         run: python -m pytest -q tests/test_saas_vertical_slice.py
       - name: Upload browser evidence
