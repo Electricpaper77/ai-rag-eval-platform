@@ -132,6 +132,9 @@ def test_two_target_fastapi_http_quarantine_promotion_and_tenant_isolation(monke
         event_b = journal_b.append("seed_" + blocked, "two-target-user")
         monkeypatch.setenv("AGENTTRUST_RECOVERY_APPROVAL_KEY", "t" * 32)
         monkeypatch.setenv("AGENTTRUST_RECOVERY_APPROVERS", "two-target-operator")
+        monkeypatch.setenv("AGENTTRUST_RECOVERY_REQUESTER", "two-target-requester")
+        monkeypatch.setenv("AGENTTRUST_RECOVERY_APPROVER", "two-target-operator")
+        monkeypatch.setenv("AGENTTRUST_RECOVERY_APPROVER_ROLE", "recovery_approver")
         promoted_url = urls[promoted]
         monkeypatch.setenv("AGENTTRUST_POSTGRES_URL", promoted_url)
         with psycopg.connect(promoted_url) as conn:
@@ -198,3 +201,4 @@ def test_two_target_fastapi_http_quarantine_promotion_and_tenant_isolation(monke
     finally:
         with psycopg.connect(make_conninfo(**admin), autocommit=True) as conn:
             for name in targets: conn.execute(f'DROP DATABASE IF EXISTS "{name}"')
+
