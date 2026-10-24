@@ -136,7 +136,7 @@ def test_authenticated_create_history_detail_compare_export_refresh_and_isolatio
             conn.execute("UPDATE evaluation_results SET result_json=%s WHERE run_id=%s", (json.dumps({"note": "=FORMULA"}), run_ids[0]))
             conn.commit()
         sanitized = api.get(f"http://127.0.0.1:8766/saas/evaluations/{run_ids[0]}/export?format=csv&organization_id={org_a}")
-        assert "'=FORMULA" in sanitized.text
+        assert "'=FORMULA" in sanitized.text()
         page.reload()
         page.get_by_label("Organization").select_option(org_a)
         page.get_by_label("Project").select_option(project_a)
