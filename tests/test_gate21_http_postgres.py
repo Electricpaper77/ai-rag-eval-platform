@@ -91,7 +91,7 @@ def test_two_independent_postgres_session_stores_expiry_and_revocation(monkeypat
 
 def test_authenticated_http_rejects_quarantined_postgres_target(monkeypatch):
     if not os.getenv("AGENTTRUST_POSTGRES_URL"): pytest.fail("Gate 22D requires disposable PostgreSQL; refusing to skip")
-    monkeypatch.delenv("AGENTTRUST_SAAS_DB", raising=False); monkeypatch.setenv("AGENTTRUST_RESTORE_TARGET_DB", "agenttrust")
+    monkeypatch.delenv("AGENTTRUST_SAAS_DB", raising=False); monkeypatch.setenv("AGENTTRUST_RESTORE_TARGET_DB", "quarantine-target")
     monkeypatch.setenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production")
     monkeypatch.setenv("AGENTTRUST_DEPLOYMENT_POLICY", "production"); monkeypatch.setenv("AGENTTRUST_MANAGED_DEPLOYMENT", "true"); monkeypatch.setenv("AGENTTRUST_SHARED_SESSION_STORE", "postgres"); monkeypatch.setenv("AGENTTRUST_OIDC_STATE_ENCRYPTION_KEY", "P7y3zWsvjYfZQTnBjqmAX8MhuXBOT3_5mBJRKeqQpI8=")
     monkeypatch.setattr(saas_router, "verify_id_token", lambda token, config, expected_nonce=None: {"issuer": config.issuer, "subject": "quarantine-http"})
