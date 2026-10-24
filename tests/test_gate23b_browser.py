@@ -7,7 +7,6 @@ from pathlib import Path
 import psycopg
 import pytest
 from fastapi.testclient import TestClient
-from playwright.sync_api import sync_playwright
 
 
 pytestmark = pytest.mark.postgres_integration
@@ -87,6 +86,14 @@ def _headers(cookies):
 
 
 def test_authenticated_create_history_detail_compare_export_refresh_and_isolation(browser_environment):
+    # Keep the general regression collection independent from the browser stack.
+    # Gate 23B installs Playwright explicitly; when this postgres-marked module is
+    # selected without that dependency, fail at execution rather than silently
+    # skipping the mandatory browser journey.
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError as exc:
+        pytest.fail(f"Gate 23B requires Playwright; refusing to skip: {exc}")
     base_url, cookies_a, cookies_b = browser_environment
     evidence = {"schema": "gate23b-browser-v1", "synthetic_only": True, "steps": []}
     with sync_playwright() as pw:
