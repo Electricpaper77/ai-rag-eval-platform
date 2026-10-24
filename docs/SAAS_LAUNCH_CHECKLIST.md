@@ -21,3 +21,8 @@ custody, scheduled operations, independent approval, PITR, backup retention,
 and measured recovery drills remain launch blockers.
 
 Gate 20 is a tested foundation, not commercial launch approval.
+
+Gate 22E status: disposable recovery-drill maintenance, advisory-lock coordination,
+dry-run backup cleanup, journal verification, and observed-only recovery timing
+evidence are implemented. Production scheduling, cloud backup retention/PITR,
+managed key custody, traffic switching, and RPO/RTO drills remain launch blockers.
