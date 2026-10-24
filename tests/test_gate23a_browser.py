@@ -15,9 +15,11 @@ def browser_url():
     if not os.getenv("AGENTTRUST_POSTGRES_URL"):
         pytest.fail("Gate 23A browser acceptance requires disposable PostgreSQL; refusing to skip")
     import saas.router as saas_router
+    import saas.repository as saas_repository
     from saas.postgres_repository import migrate
     from backend.app.main import app
     monkeypatch.setenv("AGENTTRUST_SAAS_DB", "")
+    monkeypatch.setenv("AGENTTRUST_SAAS_BACKEND", "postgres")
     monkeypatch.setenv("AGENTTRUST_SAAS_RUNTIME_MODE", "test")
     monkeypatch.setenv("AGENTTRUST_DEPLOYMENT_POLICY", "test")
     monkeypatch.setenv("AGENTTRUST_OIDC_ISSUER", "https://issuer.example")
@@ -31,6 +33,9 @@ def browser_url():
     monkeypatch.setenv("AGENTTRUST_TEST_HTTP_COOKIES", "true")
     monkeypatch.setenv("AGENTTRUST_SAAS_IDENTITIES_LOCAL_TEST_ONLY", "{}")
     migrate()
+    def sqlite_must_not_be_used(*args, **kwargs):
+        raise AssertionError("SQLite connection opened during PostgreSQL browser acceptance")
+    monkeypatch.setattr(saas_repository, "connect", sqlite_must_not_be_used)
     monkeypatch.setattr(saas_router, "exchange_code", lambda config, code, verifier: "controlled-token")
     monkeypatch.setattr(saas_router, "verify_id_token", lambda token, config, expected_nonce=None: {"issuer": config.issuer, "subject": "browser-user"})
     from uvicorn import Config, Server
@@ -72,6 +77,9 @@ def test_authenticated_workspace_browser_journey(browser_url, tmp_path):
         org = page.request.post(api_base + "/saas/organizations", data={"name":"Browser Tenant"}, headers=headers)
         assert org.ok, org.text()
         organization = org.json()
+        from saas.postgres_repository import connect
+        with connect() as db:
+            assert db.execute("SELECT 1 FROM organizations WHERE id=%s", (organization["id"],)).fetchone()
         project = page.request.post(api_base + "/saas/projects", data={"organization_id":organization["id"],"name":"Browser Project"}, headers=headers)
         assert project.ok, project.text()
         page.reload(); page.get_by_label("Organization").select_option(organization["id"])

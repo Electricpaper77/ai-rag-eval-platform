@@ -8,11 +8,18 @@ ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = Path(__file__).with_name("migrations") / "001_initial.sql"
 def now() -> str: return datetime.now(timezone.utc).isoformat()
 def db_path() -> str: return os.getenv("AGENTTRUST_SAAS_DB", str(ROOT / "saas.sqlite3"))
-def use_postgres() -> bool:
-    # An explicit SQLite path is the deterministic local-test boundary, even
-    # when CI also exposes a disposable PostgreSQL service.
-    if os.getenv("AGENTTRUST_SAAS_DB", "").strip(): return False
-    return bool(os.getenv("AGENTTRUST_POSTGRES_URL", "").strip()) and os.getenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production").strip().lower() not in ("local", "test")
+def selected_backend() -> str:
+    configured = os.getenv("AGENTTRUST_SAAS_BACKEND", "").strip().lower()
+    if configured in {"postgres", "sqlite"}:
+        if configured == "postgres" and not os.getenv("AGENTTRUST_POSTGRES_URL", "").strip():
+            raise RuntimeError("PostgreSQL backend selected but AGENTTRUST_POSTGRES_URL is missing")
+        if configured == "postgres" and os.getenv("AGENTTRUST_SAAS_DB", "").strip():
+            raise RuntimeError("PostgreSQL backend selected with SQLite path configured")
+        return configured
+    if os.getenv("AGENTTRUST_SAAS_DB", "").strip(): return "sqlite"
+    return "postgres" if os.getenv("AGENTTRUST_POSTGRES_URL", "").strip() else "sqlite"
+
+def use_postgres() -> bool: return selected_backend() == "postgres"
 def connect() -> sqlite3.Connection:
     conn = sqlite3.connect(db_path()); conn.row_factory = sqlite3.Row; conn.execute("PRAGMA foreign_keys=ON"); conn.executescript(MIGRATION.read_text(encoding="utf-8")); return conn
 def new_id(prefix: str) -> str: return f"{prefix}_{uuid.uuid4().hex}"
@@ -57,7 +64,7 @@ def list_orgs(user_id: str) -> list[dict[str, Any]]:
         from . import postgres_repository as pg
         with pg.protected_connect() as conn: return pg.list_orgs(conn, user_id)
     conn = connect()
-    rows = conn.execute("SELECT o.id,o.name,m.role FROM organizations o JOIN memberships m ON m.organization_id=o.id WHERE m.user_id=? AND m.active IS NOT 0 ORDER BY o.name", (user_id,)).fetchall()
+    rows = conn.execute("SELECT o.id,o.name,m.role FROM organizations o JOIN memberships m ON m.organization_id=o.id WHERE m.user_id=? ORDER BY o.name", (user_id,)).fetchall()
     return [dict(row) for row in rows]
 
 def list_projects(org_id: str, user_id: str) -> list[dict[str, Any]]:
