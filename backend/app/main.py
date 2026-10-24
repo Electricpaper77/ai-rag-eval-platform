@@ -154,6 +154,14 @@ def saas_workspace_page():
 def saas_workspace_script():
     return FileResponse(FRONTEND_DIR / "workspace.js", media_type="application/javascript")
 
+@app.get("/workspace23e.js", include_in_schema=False)
+def saas_workspace_gate23e_script():
+    return FileResponse(FRONTEND_DIR / "workspace23e.js", media_type="application/javascript")
+
+@app.get("/workspace23e.css", include_in_schema=False)
+def saas_workspace_gate23e_styles():
+    return FileResponse(FRONTEND_DIR / "workspace23e.css", media_type="text/css")
+
 
 @app.on_event("startup")
 async def validate_saas_deployment() -> None:
@@ -584,4 +592,5 @@ def get_leaderboard():
     if not leaderboard_file.exists():
         raise HTTPException(status_code=404, detail="leaderboard.json not found. Run scripts/run_model_eval.py first.")
     return json.loads(leaderboard_file.read_text(encoding="utf-8"))
+
 
