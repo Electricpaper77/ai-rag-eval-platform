@@ -227,12 +227,12 @@ def create_decision_sqlite(conn, organization_id: str, current_run_id: str, user
 def list_decisions(conn, organization_id: str, user_id: str, project_id: str | None, page: int, page_size: int, postgres: bool):
     _require_membership(conn, organization_id, user_id, postgres=postgres)
     p = "%s" if postgres else "?"
-    page = max(1, page); page_size = min(100, max(1, page)); params: list[Any] = [organization_id]
+    page = max(1, page); page_size = min(100, max(1, page_size)); offset = (page - 1) * page_size; params: list[Any] = [organization_id]
     clause = f"organization_id={p}"
     if project_id:
         clause += f" AND project_id={p}"; params.append(project_id)
     total = conn.execute(f"SELECT COUNT(*) FROM evaluation_decisions WHERE {clause}", tuple(params)).fetchone()[0]
-    rows = conn.execute(f"SELECT id,project_id,current_run_id,baseline_run_id,policy_id,policy_version,decision,created_at FROM evaluation_decisions WHERE {clause} ORDER BY created_at DESC LIMIT {p} OFFSET {p}", tuple(params + [page_size, (page-1)*page_size])).fetchall()
+    rows = conn.execute(f"SELECT id,project_id,current_run_id,baseline_run_id,policy_id,policy_version,decision,created_at FROM evaluation_decisions WHERE {clause} ORDER BY created_at DESC LIMIT {page_size} OFFSET {offset}", tuple(params)).fetchall()
     return {"decisions": [dict(zip(["id","project_id","current_run_id","baseline_run_id","policy_id","policy_version","decision","created_at"], tuple(row))) for row in rows], "page": page, "page_size": page_size, "total": total, "total_pages": (total + page_size - 1) // page_size}
 
 
