@@ -9,7 +9,7 @@ from typing import Any
 import psycopg
 from cryptography.fernet import Fernet, InvalidToken
 
-MIGRATIONS = [Path(__file__).with_name("migrations") / name for name in ("002_postgres.sql", "003_lifecycle.sql", "004_recovery_controls.sql", "005_evaluation_decisions.sql")]
+MIGRATIONS = [Path(__file__).with_name("migrations") / name for name in ("002_postgres.sql", "003_lifecycle.sql", "004_recovery_controls.sql", "005_evaluation_decisions.sql", "006_investigation_reviews.sql")]
 REQUEST_DATABASE: ContextVar[str | None] = ContextVar("agenttrust_request_database", default=None)
 def bind_request_database(database: str): return REQUEST_DATABASE.set(database)
 def reset_request_database(token): REQUEST_DATABASE.reset(token)
@@ -224,3 +224,4 @@ def search_runs(conn, organization_id: str, user: str, project_id: str | None = 
         rows = conn.execute(f"SELECT id,project_id,status,provider,sample_count,created_at FROM evaluation_runs WHERE {where} ORDER BY created_at DESC LIMIT %s OFFSET %s", tuple(params + [page_size, offset])).fetchall()
     items = [{"id": row[0], "project_id": row[1], "status": row[2], "provider": row[3], "sample_count": row[4], "created_at": row[5].isoformat() if hasattr(row[5], "isoformat") else row[5]} for row in rows]
     return {"evaluations": items, "page": page, "page_size": page_size, "total": total, "total_pages": (total + page_size - 1) // page_size}
+

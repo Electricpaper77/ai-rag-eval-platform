@@ -1,0 +1,58 @@
+name: Gate 23D Investigation Review
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "saas/**"
+      - "frontend/**"
+      - "tests/test_gate23d_*.py"
+      - "requirements-test.txt"
+      - ".github/workflows/gate23d-investigation-review.yml"
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  investigation-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: gate23d
+          POSTGRES_DB: agenttrust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U postgres -d agenttrust"
+          --health-interval=5s --health-timeout=5s --health-retries=24
+    env:
+      AGENTTRUST_POSTGRES_URL: postgresql://postgres:gate23d@localhost:5432/agenttrust
+      AGENTTRUST_SAAS_DB: ""
+      AGENTTRUST_SAAS_BACKEND: postgres
+      AGENTTRUST_DEPLOYMENT_POLICY: test
+      AGENTTRUST_SAAS_RUNTIME_MODE: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - name: Install shared test dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-test.txt playwright
+      - name: Install Chromium
+        run: python -m playwright install --with-deps chromium
+      - name: Apply versioned PostgreSQL migrations
+        run: python -c "from saas.postgres_repository import migrate; migrate()"
+      - name: Initialize sanitized evidence
+        run: |
+          mkdir -p artifacts/gate23d
+          printf '{"schema":"gate23d-evidence-v1","status":"started","synthetic_only":true}\n' > artifacts/gate23d/run-state.json
+      - name: Run Gate 23D contract tests
+        run: timeout 120s python -m pytest -q tests/test_gate23d_contract.py --maxfail=1
+      - name: Run mandatory PostgreSQL and Chromium integration
+        run: timeout 300s python -m pytest -q tests/test_gate23d_browser.py -m postgres_integration --maxfail=1
+      - name: Upload sanitized Gate 23D evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate23d-investigation-evidence
+          path: artifacts/gate23d/
+          if-no-files-found: error
+

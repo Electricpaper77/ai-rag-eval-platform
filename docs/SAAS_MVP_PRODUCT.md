@@ -19,3 +19,15 @@ malformed, nonfinite, or untrusted metrics are shown as insufficient evidence, n
 inferred or fabricated. Decision history
 and JSON/CSV exports remain organization- and project-scoped and are protected by
 the existing session, CSRF, tenant, and recovery-quarantine controls.
+
+## Gate 23D investigation and release review
+
+The investigation view lists only persisted per-case evidence. When no case rows
+exist it renders `MISSING_EVIDENCE`; aggregate run scores are never converted into
+case findings. Owner/admin reviewers append immutable, server-attributed review
+revisions with `reviewer_confirmed` provenance and idempotency protection. Release
+reviews snapshot the decision, policy version, run references, rationale and
+evidence digest and are explicitly non-deployment records. Exports are tenant
+scoped, sanitized and carry a non-production disclaimer. Gate 23D validation uses
+synthetic PostgreSQL data and Chromium only.
+
