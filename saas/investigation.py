@@ -138,7 +138,7 @@ def create_case_review(case_id: str, organization_id: str, user_id: str, status:
                 if case[8] is None: raise ValueError("case evidence is missing")
                 current = conn.execute("SELECT COALESCE(MAX(revision),0) FROM evaluation_case_review_revisions WHERE case_id=%s", (case_id,)).fetchone()[0]
                 if int(current) != expected_revision: raise ReviewConflict(f"review revision conflict: expected {expected_revision}, current {current}")
-                review_id = _id("review"); ts = now()
+                review_id = _id("review"); ts = _now()
                 conn.execute("INSERT INTO evaluation_case_review_revisions VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (review_id, case_id, organization_id, case[2], case[3], int(current)+1, status, comment, "reviewer_confirmed", user_id, idempotency_key, ts))
                 row = conn.execute("SELECT id,case_id,organization_id,project_id,run_id,revision,status,comment,provenance,reviewer_id,idempotency_key,created_at FROM evaluation_case_review_revisions WHERE id=%s", (review_id,)).fetchone()
                 return _review(row)
@@ -202,7 +202,7 @@ def create_release_review(organization_id: str, project_id: str, user_id: str, d
                 decision = conn.execute("SELECT id,project_id,current_run_id,baseline_run_id,policy_id,policy_version,decision,rationale_json,evidence_refs_json FROM evaluation_decisions WHERE id=%s AND organization_id=%s AND project_id=%s", (decision_id, organization_id, project_id)).fetchone()
                 if not decision: raise KeyError("decision not found")
                 snapshot = {"decision_id": decision[0], "policy_id": decision[4], "policy_version": decision[5], "current_run_id": decision[2], "baseline_run_id": decision[3], "decision": decision[6], "rationale": _json(decision[7]), "evidence_refs": _json(decision[8])}
-                review_id = _id("release"); ts = now(); digest = _digest(snapshot)
+                review_id = _id("release"); ts = _now(); digest = _digest(snapshot)
                 conn.execute("INSERT INTO release_reviews VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", (review_id, organization_id, project_id, decision_id, decision[4], decision[5], decision[2], decision[3], recommendation, decision[6], json.dumps(snapshot["rationale"], sort_keys=True), json.dumps(snapshot["evidence_refs"], sort_keys=True), digest, user_id, idempotency_key, ts))
                 return _release(conn.execute("SELECT id,organization_id,project_id,decision_id,policy_id,policy_version,current_run_id,baseline_run_id,recommendation,decision_status,rationale_json,evidence_refs_json,evidence_digest,reviewer_id,idempotency_key,created_at FROM release_reviews WHERE id=%s", (review_id,)).fetchone())
     from .repository import connect, require_membership
