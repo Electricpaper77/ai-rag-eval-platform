@@ -141,7 +141,7 @@ def test_authenticated_create_history_detail_compare_export_refresh_and_isolatio
         page.get_by_label("Organization").select_option(org_a)
         page.get_by_label("Project").select_option(project_a)
         page.get_by_role("button", name="Results").click()
-        page.get_by_text("completed").wait_for()
+        page.locator("#content").get_by_text("completed").first.wait_for()
         desktop = browser.new_context(viewport={"width": 1440, "height": 900})
         desktop.add_cookies([{"name": k, "value": v, "url": base_url, "secure": False} for k, v in cookies_a.items()])
         desktop_page = desktop.new_page(); desktop_page.goto(base_url); desktop_page.screenshot(path="artifacts/gate23b/workspace-desktop.png", full_page=True)
