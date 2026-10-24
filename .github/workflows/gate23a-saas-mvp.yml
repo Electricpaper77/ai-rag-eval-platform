@@ -36,6 +36,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: gate23a-browser-evidence
-          path: .pytest_tmp/**/workspace-mobile.png
+          path: artifacts/gate23a/workspace-mobile.png
           if-no-files-found: error
 

@@ -27,7 +27,7 @@ def browser_url():
     monkeypatch.setenv("AGENTTRUST_OIDC_AUTHORIZATION_ENDPOINT", "https://issuer.example/authorize")
     monkeypatch.setenv("AGENTTRUST_OIDC_TOKEN_ENDPOINT", "https://issuer.example/token")
     monkeypatch.setenv("AGENTTRUST_OIDC_JWKS_URI", "https://issuer.example/jwks")
-    monkeypatch.setenv("AGENTTRUST_PUBLIC_ORIGIN", "https://testserver")
+    monkeypatch.setenv("AGENTTRUST_PUBLIC_ORIGIN", "http://127.0.0.1:8765")
     monkeypatch.setenv("AGENTTRUST_TEST_HTTP_COOKIES", "true")
     monkeypatch.setenv("AGENTTRUST_SAAS_IDENTITIES_LOCAL_TEST_ONLY", "{}")
     migrate()
@@ -64,7 +64,7 @@ def test_authenticated_workspace_browser_journey(browser_url, tmp_path):
         context.add_cookies([{"name": name, "value": value, "url": base_url, "secure": False} for name, value in cookies.items()])
         page = context.new_page()
         page.goto(base_url)
-        page.screenshot(path=".pytest_tmp/gate23a/workspace-mobile.png", full_page=True)
+        page.screenshot(path="artifacts/gate23a/workspace-mobile.png", full_page=True)
         page.get_by_text("No authorized organizations are available.").wait_for()
         csrf = cookies["agenttrust_csrf"]
         headers = {"Origin": "http://127.0.0.1:8765", "X-CSRF-Token": csrf}

@@ -12,7 +12,7 @@ def use_postgres() -> bool:
     # An explicit SQLite path is the deterministic local-test boundary, even
     # when CI also exposes a disposable PostgreSQL service.
     if os.getenv("AGENTTRUST_SAAS_DB", "").strip(): return False
-    return bool(os.getenv("AGENTTRUST_POSTGRES_URL", "").strip())
+    return bool(os.getenv("AGENTTRUST_POSTGRES_URL", "").strip()) and os.getenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production").strip().lower() not in ("local", "test")
 def connect() -> sqlite3.Connection:
     conn = sqlite3.connect(db_path()); conn.row_factory = sqlite3.Row; conn.execute("PRAGMA foreign_keys=ON"); conn.executescript(MIGRATION.read_text(encoding="utf-8")); return conn
 def new_id(prefix: str) -> str: return f"{prefix}_{uuid.uuid4().hex}"
