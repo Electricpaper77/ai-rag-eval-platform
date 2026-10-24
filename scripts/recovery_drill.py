@@ -65,7 +65,7 @@ def run_end_to_end(args) -> int:
             promotion_finished = time.monotonic_ns(); assert promoted["promoted"] and restore_access_allowed(conn, org_a)
             assert conn.execute("SELECT COUNT(*) FROM projects WHERE organization_id=%s", (org_a,)).fetchone()[0] == 0
             assert conn.execute("SELECT COUNT(*) FROM projects WHERE organization_id=%s", (org_b,)).fetchone()[0] == 1
-        m = recovery_measurement(started/1e9, restore_finished/1e9, reconcile_finished/1e9, backup_at.timestamp(), rto_objective_seconds=args.rto_objective, max_recovery_point_age_seconds=args.rpo_objective)
+        m = recovery_measurement(started/1e9, restore_finished/1e9, promotion_finished/1e9, backup_at.timestamp(), rto_objective_seconds=args.rto_objective, max_recovery_point_age_seconds=args.rpo_objective)
         m["observed"]["backup_seconds"] = (backup_finished-backup_started)/1e9; m["observed"]["promotion_seconds"] = (promotion_finished-reconcile_finished)/1e9
         m["observed"]["reconciliation_seconds"] = (reconcile_finished-reconcile_started)/1e9; m["observed"]["restore_seconds"] = (restore_finished-restore_started)/1e9
         evidence.update({"timestamps_utc":{"backup_created":backup_at.isoformat()},"measurement":m,"integrity":{"tenant_a_deleted":True,"tenant_b_intact":True,"quarantine_before_promotion":True,"authorized_promotion":True},"outcome":"PASS" if m["within_objectives"] else "FAIL"})
