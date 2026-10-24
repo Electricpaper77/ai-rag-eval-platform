@@ -10,7 +10,7 @@
  const text=(tag,value,className)=>{const node=document.createElement(tag);node.textContent=value;if(className)node.className=className;return node};
  const note=(value,error=false)=>{clear();content.append(text('p',value,error?'error':'notice'))};
  const heading=value=>content.append(text('h3',value));
- async function load(){try{orgs=(await api('/saas/organizations')).organizations;fill(orgsEl(),orgs,'No authorized organizations are available.');if(!orgs.length)return note('No authorized organizations are available.');await projectsLoad()}catch(e){note(e.message,true)}}
+ async function load(){try{orgs=(await api('/saas/organizations')).organizations;fill(orgsEl(),orgs,'Select an organization');if(!orgs.length)return note('No authorized organizations are available.');await projectsLoad()}catch(e){note(e.message,true)}}
  function orgsEl(){return org;}
  async function projectsLoad(){const ticket=++generation;try{projects=(await api('/saas/projects?organization_id='+encodeURIComponent(org.value))).projects;if(ticket!==generation)return;fill(project,projects,'No projects are available.');await runsLoad()}catch(e){if(ticket===generation)note(e.message,true)}}
  async function runsLoad(filters={}){const ticket=++generation;const query=new URLSearchParams({page:String(filters.page||page),page_size:'20'});if(project.value)query.set('project_id',project.value);if(filters.search)query.set('search',filters.search);if(filters.status)query.set('status',filters.status);try{const data=await api('/saas/evaluations?organization_id='+encodeURIComponent(org.value)+'&'+query);if(ticket!==generation)return;runs=data.evaluations;page=data.page;totalPages=data.total_pages;render()}catch(e){if(ticket===generation)note(e.message,true)}}
