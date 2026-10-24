@@ -1,0 +1,15 @@
+/* Gate 23A.1: API-backed UI. Uses textContent/DOM APIs for untrusted data. */
+(function(){
+ const org=document.querySelector('[aria-label="Organization"]'), project=document.querySelector('[aria-label="Project"]'), content=document.getElementById('content');
+ if(!org||!project||!content)return; let orgs=[], projects=[], runs=[];
+ const api=async (path, options={})=>{const r=await fetch(path,{credentials:'same-origin',...options}); if(!r.ok) throw Error(r.status===401?'Authenticate through OIDC first':r.status===403?'Not authorized for this organization':`API returned ${r.status}`); return r.json()};
+ const fill=(select,items)=>{select.replaceChildren();items.forEach(x=>{const o=document.createElement('option');o.value=x.id;o.textContent=x.name;select.append(o)})};
+ const note=(text,err=false)=>{content.replaceChildren();const p=document.createElement('p');p.className=err?'error':'notice';p.textContent=text;content.append(p)};
+ async function load(){try{orgs=(await api('/saas/organizations')).organizations;fill(org,orgs);if(!orgs.length)return note('No authorized organizations are available.');await projectsLoad()}catch(e){note(e.message,true)}}
+ async function projectsLoad(){try{projects=(await api('/saas/projects?organization_id='+encodeURIComponent(org.value))).projects;fill(project,projects);await runsLoad()}catch(e){note(e.message,true)}}
+ async function runsLoad(){try{runs=(await api('/saas/evaluations?organization_id='+encodeURIComponent(org.value)+(project.value?'&project_id='+encodeURIComponent(project.value):''))).evaluations;renderDashboard()}catch(e){note(e.message,true)}}
+ function renderDashboard(){content.replaceChildren();const n=document.createElement('div');n.className='notice';n.textContent='Records loaded from the authenticated tenant-scoped API. Synthetic data only; no fabricated metrics.';content.append(n);const g=document.createElement('div');g.className='grid';[['Projects',projects.length],['Evaluations',runs.length],['Latest status',runs[0]?.status||'No persisted runs']].forEach(([a,b])=>{const s=document.createElement('section');s.className='card';const p=document.createElement('span');p.className='muted';p.textContent=a;const h=document.createElement('h3');h.textContent=b;s.append(p,h);g.append(s)});content.append(g)}
+ async function submit(){try{const csrf=document.cookie.split('; ').find(x=>x.startsWith('agenttrust_csrf='))?.split('=')[1]||'';const r=await api('/saas/projects/'+encodeURIComponent(project.value)+'/evaluations',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf,'X-Organization-Id':org.value,'Idempotency-Key':'workspace-'+crypto.randomUUID()},body:'{"prompt":"synthetic groundedness check"}\n'});await runsLoad();note('Persisted run '+r.id+' created by the authenticated API.')}catch(e){note(e.message,true)}}
+ org.addEventListener('change',projectsLoad); project.addEventListener('change',runsLoad); document.getElementById('newEval').addEventListener('click',()=>{const b=document.getElementById('run');if(b)b.click();else note('Open Evaluations to submit a run.')}); load();
+})();
+

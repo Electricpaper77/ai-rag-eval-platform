@@ -51,3 +51,30 @@ def get_run(org_id: str, user_id: str, run_id: str) -> dict[str,Any] | None:
         from . import postgres_repository as pg
         with pg.protected_connect() as conn: return pg.get_run(conn, org_id, user_id, run_id)
     conn=connect(); require_membership(conn,org_id,user_id); row=conn.execute("SELECT r.*, e.result_json, e.evidence_metadata_json FROM evaluation_runs r LEFT JOIN evaluation_results e ON e.run_id=r.id WHERE r.id=? AND r.organization_id=?",(run_id,org_id)).fetchone(); return dict(row) if row else None
+
+def list_orgs(user_id: str) -> list[dict[str, Any]]:
+    if use_postgres():
+        from . import postgres_repository as pg
+        with pg.protected_connect() as conn: return pg.list_orgs(conn, user_id)
+    conn = connect()
+    rows = conn.execute("SELECT o.id,o.name,m.role FROM organizations o JOIN memberships m ON m.organization_id=o.id WHERE m.user_id=? AND m.active IS NOT 0 ORDER BY o.name", (user_id,)).fetchall()
+    return [dict(row) for row in rows]
+
+def list_projects(org_id: str, user_id: str) -> list[dict[str, Any]]:
+    if use_postgres():
+        from . import postgres_repository as pg
+        with pg.protected_connect() as conn: return pg.list_projects(conn, org_id, user_id)
+    conn = connect(); require_membership(conn, org_id, user_id)
+    return [dict(row) for row in conn.execute("SELECT id,organization_id,name FROM projects WHERE organization_id=? ORDER BY name", (org_id,)).fetchall()]
+
+def list_runs(org_id: str, user_id: str, project_id: str | None = None) -> list[dict[str, Any]]:
+    if use_postgres():
+        from . import postgres_repository as pg
+        with pg.protected_connect() as conn: return pg.list_runs(conn, org_id, user_id, project_id)
+    conn = connect(); require_membership(conn, org_id, user_id)
+    if project_id:
+        rows = conn.execute("SELECT id,project_id,status,provider,sample_count,created_at FROM evaluation_runs WHERE organization_id=? AND project_id=? ORDER BY created_at DESC", (org_id, project_id)).fetchall()
+    else:
+        rows = conn.execute("SELECT id,project_id,status,provider,sample_count,created_at FROM evaluation_runs WHERE organization_id=? ORDER BY created_at DESC", (org_id,)).fetchall()
+    return [dict(row) for row in rows]
+

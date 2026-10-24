@@ -184,3 +184,24 @@ def get_run(conn, organization_id: str, user: str, run_id: str) -> dict[str, Any
         if row is None: return None
         keys = ["id","organization_id","project_id","idempotency_key","status","provider","sample_count","created_at","result_json","evidence_metadata_json"]
         return dict(zip(keys, tuple(row)))
+
+def list_orgs(conn, user: str) -> list[dict[str, Any]]:
+    with conn.transaction():
+        rows = conn.execute("SELECT o.id,o.name,m.role FROM organizations o JOIN memberships m ON m.organization_id=o.id WHERE m.user_id=%s AND m.active=TRUE ORDER BY o.name", (user,)).fetchall()
+    return [{"id": row[0], "name": row[1], "role": row[2]} for row in rows]
+
+def list_projects(conn, organization_id: str, user: str) -> list[dict[str, Any]]:
+    with conn.transaction():
+        require_membership(conn, organization_id, user)
+        rows = conn.execute("SELECT id,organization_id,name FROM projects WHERE organization_id=%s ORDER BY name", (organization_id,)).fetchall()
+    return [{"id": row[0], "organization_id": row[1], "name": row[2]} for row in rows]
+
+def list_runs(conn, organization_id: str, user: str, project_id: str | None = None) -> list[dict[str, Any]]:
+    with conn.transaction():
+        require_membership(conn, organization_id, user)
+        if project_id:
+            rows = conn.execute("SELECT id,project_id,status,provider,sample_count,created_at FROM evaluation_runs WHERE organization_id=%s AND project_id=%s ORDER BY created_at DESC", (organization_id, project_id)).fetchall()
+        else:
+            rows = conn.execute("SELECT id,project_id,status,provider,sample_count,created_at FROM evaluation_runs WHERE organization_id=%s ORDER BY created_at DESC", (organization_id,)).fetchall()
+    return [{"id": row[0], "project_id": row[1], "status": row[2], "provider": row[3], "sample_count": row[4], "created_at": row[5].isoformat() if hasattr(row[5], "isoformat") else row[5]} for row in rows]
+

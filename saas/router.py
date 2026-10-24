@@ -4,7 +4,7 @@ import base64
 from typing import Any
 from fastapi import APIRouter, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field
-from .repository import create_org, create_project, create_run, get_run
+from .repository import create_org, create_project, create_run, get_run, list_orgs, list_projects, list_runs
 from .oidc import OIDCConfig, MemorySessionStore, begin_login, consume_login_state, exchange_code, internal_user_key, verify_id_token
 from .deployment import validate_deployment_configuration
 from .lifecycle import export_tenant, delete_tenant
@@ -104,11 +104,26 @@ def organizations(body: OrgIn, request: Request, authorization: str|None=Header(
     require_cookie_csrf(request)
     try: return create_org(identity(authorization, request)["user_id"],body.name)
     except PermissionError as exc: raise HTTPException(503, "database target is quarantined") from exc
+@router.get("/organizations")
+def organizations_list(request: Request, authorization: str|None=Header(default=None)):
+    user = identity(authorization, request)
+    try: return {"organizations": list_orgs(user["user_id"])}
+    except PermissionError as exc: raise HTTPException(503, "database target is quarantined") from exc
 @router.post("/projects")
 def projects(body: ProjectIn, request: Request, authorization: str|None=Header(default=None)):
     require_cookie_csrf(request); user=identity(authorization, request)
     try: return create_project(body.organization_id,user["user_id"],body.name)
     except PermissionError: raise HTTPException(403,"organization admin permission required")
+@router.get("/projects")
+def projects_list(organization_id: str, request: Request, authorization: str|None=Header(default=None)):
+    user = identity(authorization, request)
+    try: return {"projects": list_projects(organization_id, user["user_id"])}
+    except PermissionError as exc: raise HTTPException(403, "organization membership required") from exc
+@router.get("/evaluations")
+def evaluations_list(organization_id: str, request: Request, authorization: str|None=Header(default=None), project_id: str|None=None):
+    user = identity(authorization, request)
+    try: return {"evaluations": list_runs(organization_id, user["user_id"], project_id)}
+    except PermissionError as exc: raise HTTPException(403, "organization membership required") from exc
 @router.post("/projects/{project_id}/evaluations")
 async def evaluations(project_id: str, request: Request, authorization: str|None=Header(default=None), x_organization_id: str|None=Header(default=None), idempotency_key: str|None=Header(default=None)):
     require_cookie_csrf(request); user=identity(authorization, request); org=org_id(user,x_organization_id)
@@ -153,3 +168,4 @@ def organization_delete(organization_id: str, request: Request, confirmation: st
             return delete_tenant(conn, organization_id, user["user_id"], confirmation or "")
     except PermissionError as exc: raise HTTPException(403, str(exc))
     except KeyError as exc: raise HTTPException(404, str(exc))
+

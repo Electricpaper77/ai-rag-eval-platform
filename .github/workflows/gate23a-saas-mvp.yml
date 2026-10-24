@@ -25,5 +25,5 @@ jobs:
         with:
           name: gate23a-browser-evidence
           path: .pytest_tmp/**/workspace-mobile.png
-          if-no-files-found: warn
+          if-no-files-found: error
 
