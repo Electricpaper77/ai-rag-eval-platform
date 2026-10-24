@@ -1,13 +1,18 @@
 """Small PostgreSQL adapter; SQLite remains the deterministic local-test adapter."""
 from __future__ import annotations
 import hashlib, json, os, uuid
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
+from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from typing import Any
 import psycopg
 from cryptography.fernet import Fernet, InvalidToken
 
 MIGRATIONS = [Path(__file__).with_name("migrations") / name for name in ("002_postgres.sql", "003_lifecycle.sql", "004_recovery_controls.sql")]
+REQUEST_DATABASE: ContextVar[str | None] = ContextVar("agenttrust_request_database", default=None)
+def bind_request_database(database: str): return REQUEST_DATABASE.set(database)
+def reset_request_database(token): REQUEST_DATABASE.reset(token)
 def now(): return datetime.now(timezone.utc)
 def migrate():
     """Apply the versioned PostgreSQL baseline once, outside request paths."""
@@ -40,6 +45,9 @@ def migrate():
 def connect():
     url = os.getenv("AGENTTRUST_POSTGRES_URL", "").strip()
     if not url: raise RuntimeError("AGENTTRUST_POSTGRES_URL is required for the PostgreSQL adapter")
+    database = REQUEST_DATABASE.get()
+    if database:
+        values = conninfo_to_dict(url); values["dbname"] = database; url = make_conninfo(**values)
     conn = psycopg.connect(url)
     # Keep integration work bounded; callers still own transaction boundaries.
     conn.execute("SET lock_timeout = '5s'")
@@ -49,7 +57,7 @@ def connect():
 def protected_connect():
     """Acquire a normal SaaS connection, enforcing restore-target quarantine."""
     conn = connect()
-    target = os.getenv("AGENTTRUST_RESTORE_TARGET_DB", "").strip()
+    target = (REQUEST_DATABASE.get() or os.getenv("AGENTTRUST_RESTORE_TARGET_DB", "")).strip()
     if not target:
         return conn
     actual = conn.execute("SELECT current_database()").fetchone()[0]

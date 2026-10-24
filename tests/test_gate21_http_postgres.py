@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from backend.app.main import app
 import saas.router as saas_router
-from saas.postgres_repository import migrate, PostgresSessionStore, connect, hash_secret
+from saas.postgres_repository import migrate, PostgresSessionStore, connect, hash_secret, bind_request_database, reset_request_database, user_id
 
 pytestmark = pytest.mark.postgres_integration
 
@@ -98,3 +98,74 @@ def test_authenticated_http_rejects_quarantined_postgres_target(monkeypatch):
     for key, value in {"AGENTTRUST_OIDC_ISSUER":"https://issuer.example","AGENTTRUST_OIDC_AUDIENCE":"agenttrust","AGENTTRUST_OIDC_JWKS_URI":"https://issuer.example/jwks","AGENTTRUST_OIDC_CLIENT_ID":"client","AGENTTRUST_OIDC_REDIRECT_URI":"https://testserver/saas/auth/callback","AGENTTRUST_OIDC_TOKEN_ENDPOINT":"https://issuer.example/token","AGENTTRUST_OIDC_AUTHORIZATION_ENDPOINT":"https://issuer.example/authorize"}.items(): monkeypatch.setenv(key, value)
     response = TestClient(app, base_url="https://testserver").post("/saas/organizations", json={"name":"blocked"}, headers={"Authorization":"Bearer synthetic"})
     assert response.status_code == 503
+
+def test_two_target_fastapi_http_quarantine_promotion_and_tenant_isolation(monkeypatch, tmp_path):
+    """Real HTTP requests use two isolated PostgreSQL targets and the trusted promotion gate."""
+    if not os.getenv("AGENTTRUST_POSTGRES_URL"): pytest.fail("Gate 22D.8 requires disposable PostgreSQL; refusing to skip")
+    import psycopg
+    from psycopg.conninfo import conninfo_to_dict, make_conninfo
+    from fastapi import FastAPI, Request
+    from saas.lifecycle import DeletionJournal, reconcile_restored_tenant, restore_access_allowed
+    from saas.recovery import RecoveryOrchestrator, write_approval
+    base = conninfo_to_dict(os.environ["AGENTTRUST_POSTGRES_URL"])
+    admin = dict(base, dbname="postgres")
+    suffix = __import__("uuid").uuid4().hex[:8]
+    targets = {"target_a_" + suffix, "target_b_" + suffix}
+    urls = {name: make_conninfo(**dict(base, dbname=name)) for name in targets}
+    with psycopg.connect(make_conninfo(**admin), autocommit=True) as conn:
+        for name in targets: conn.execute(f'CREATE DATABASE "{name}"')
+    try:
+        original_url = os.environ["AGENTTRUST_POSTGRES_URL"]
+        for name in targets:
+            monkeypatch.setenv("AGENTTRUST_POSTGRES_URL", urls[name]); migrate()
+            with connect() as conn:
+                with conn.transaction():
+                    uid = user_id(conn, "https://issuer.example", "two-target-user")
+                    conn.execute("INSERT INTO organizations(id,name,created_at) VALUES (%s,%s,now())", (f"seed_{name}", name))
+                    conn.execute("INSERT INTO memberships(organization_id,user_id,role,active,created_at) VALUES (%s,%s,'owner',TRUE,now())", (f"seed_{name}", uid))
+        monkeypatch.setenv("AGENTTRUST_POSTGRES_URL", original_url)
+        journal = DeletionJournal(tmp_path / "two-target-journal.jsonl")
+        event = journal.append("seed_" + next(iter(targets)), "two-target-user")
+        monkeypatch.setenv("AGENTTRUST_RECOVERY_APPROVAL_KEY", "t" * 32)
+        monkeypatch.setenv("AGENTTRUST_RECOVERY_APPROVERS", "two-target-operator")
+        promoted = next(iter(targets)); promoted_url = urls[promoted]
+        monkeypatch.setenv("AGENTTRUST_POSTGRES_URL", promoted_url)
+        with psycopg.connect(promoted_url) as conn:
+            conn.execute("INSERT INTO tenant_restore_reconciliation(organization_id,journal_digest,reconciled_at) VALUES (%s,%s,now())", ("seed_" + promoted, event["digest"]))
+            conn.commit()
+            approval = tmp_path / "approval.json"
+            write_approval(approval, "backup-two-target", event["digest"], "two-target-operator", target_database=promoted)
+            assert RecoveryOrchestrator(conn, journal, approval, promoted).promote("seed_" + promoted, "backup-two-target", event["digest"])["promoted"]
+            assert restore_access_allowed(conn, "seed_" + promoted)
+        monkeypatch.setenv("AGENTTRUST_DEPLOYMENT_POLICY", "production"); monkeypatch.setenv("AGENTTRUST_MANAGED_DEPLOYMENT", "true"); monkeypatch.setenv("AGENTTRUST_SHARED_SESSION_STORE", "postgres"); monkeypatch.setenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production"); monkeypatch.setenv("AGENTTRUST_PUBLIC_ORIGIN", "https://testserver")
+        for key, value in {"AGENTTRUST_OIDC_ISSUER":"https://issuer.example","AGENTTRUST_OIDC_AUDIENCE":"agenttrust","AGENTTRUST_OIDC_AUTHORIZATION_ENDPOINT":"https://issuer.example/authorize","AGENTTRUST_OIDC_JWKS_URI":"https://issuer.example/jwks","AGENTTRUST_OIDC_CLIENT_ID":"client","AGENTTRUST_OIDC_REDIRECT_URI":"https://testserver/saas/auth/callback","AGENTTRUST_OIDC_TOKEN_ENDPOINT":"https://issuer.example/token"}.items(): monkeypatch.setenv(key, value)
+        monkeypatch.setattr(saas_router, "verify_id_token", lambda token, config, expected_nonce=None: {"issuer": config.issuer, "subject": "two-target-user"})
+        def make_target_app(target):
+            instance = FastAPI()
+            @instance.middleware("http")
+            async def bind_target(request: Request, call_next):
+                token = bind_request_database(target)
+                try: return await call_next(request)
+                finally: reset_request_database(token)
+            instance.include_router(saas_router.router)
+            return instance
+        def request(target, method, path, **kwargs):
+            with TestClient(make_target_app(target), base_url="https://testserver") as client:
+                return getattr(client, method)(path, **kwargs)
+        blocked = next(name for name in targets if name != promoted)
+        headers = {"Authorization":"Bearer controlled"}
+        assert request(blocked, "post", "/saas/organizations", json={"name":"blocked"}, headers=headers).status_code == 503
+        org = request(promoted, "post", "/saas/organizations", json={"name":"Promoted Tenant"}, headers=headers)
+        assert org.status_code == 200, org.text
+        org_id = org.json()["id"]
+        project = request(promoted, "post", "/saas/projects", json={"organization_id":org_id,"name":"Project"}, headers=headers)
+        assert project.status_code == 200
+        run = request(promoted, "post", f"/saas/projects/{project.json()['id']}/evaluations", content='{"prompt":"synthetic"}\n', headers={**headers,"X-Organization-Id":org_id,"Idempotency-Key":"two-target-1"})
+        assert run.status_code == 200 and run.json()["provider"] == "mock"
+        result = request(promoted, "get", f"/saas/evaluations/{run.json()['id']}", headers={**headers,"X-Organization-Id":org_id})
+        assert result.status_code == 200
+        assert request(promoted, "post", "/saas/projects", json={"organization_id":"seed_other","name":"cross"}, headers=headers).status_code == 403
+        assert request(blocked, "post", "/saas/organizations", json={"name":"still blocked"}, headers=headers).status_code == 503
+    finally:
+        with psycopg.connect(make_conninfo(**admin), autocommit=True) as conn:
+            for name in targets: conn.execute(f'DROP DATABASE IF EXISTS "{name}"')
