@@ -4,7 +4,7 @@ import base64
 from typing import Any
 from fastapi import APIRouter, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field
-from .repository import create_org, create_project, create_run, get_run, list_orgs, list_projects, search_runs, use_postgres
+from .repository import create_org, create_project, create_run, get_run, list_orgs, list_projects, search_runs, use_postgres, create_policy, list_policies, create_decision, list_decisions, get_decision
 from .oidc import OIDCConfig, MemorySessionStore, begin_login, consume_login_state, exchange_code, internal_user_key, verify_id_token
 from .deployment import validate_deployment_configuration
 from .lifecycle import export_tenant, delete_tenant
@@ -34,6 +34,16 @@ def login_state_store():
     return LOGIN_STATES
 class OrgIn(BaseModel): name: str = Field(min_length=1,max_length=100)
 class ProjectIn(BaseModel): organization_id: str; name: str = Field(min_length=1,max_length=100)
+class PolicyIn(BaseModel):
+    organization_id: str
+    project_id: str
+    name: str = Field(min_length=1, max_length=100)
+    metrics: dict[str, dict[str, Any]]
+    require_baseline: bool = True
+class DecisionIn(BaseModel):
+    policy_id: str
+    baseline_run_id: str | None = None
+    idempotency_key: str = Field(min_length=1, max_length=100)
 def identity(authorization: str | None, request: Request | None = None) -> dict[str,Any]:
     if request is not None:
         sid = request.cookies.get("agenttrust_session")
@@ -199,6 +209,64 @@ def evaluation_export(run_id: str, request: Request, authorization: str|None=Hea
     output=io.StringIO(); writer=csv.writer(output); writer.writerow(["field", "value"])
     for key, value in payload.items(): writer.writerow([key, _csv_value(value)])
     return Response(content=output.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{run_id}.csv"'})
+def _decision_payload(item: dict[str, Any]) -> dict[str, Any]:
+    result = dict(item)
+    for key in ("rationale", "evidence_refs"):
+        if isinstance(result.get(key), str):
+            try: result[key] = json.loads(result[key])
+            except json.JSONDecodeError: result[key] = None
+    return result
+def _decision_permission_error(exc: PermissionError) -> HTTPException:
+    # A recovery target is not an authorization failure: it must remain
+    # unavailable until the trusted promotion gate permits application access.
+    if os.getenv("AGENTTRUST_RESTORE_TARGET_DB", "").strip():
+        return HTTPException(503, "database target is quarantined")
+    return HTTPException(403, str(exc))
+@router.post("/policies")
+def policy_create(body: PolicyIn, request: Request, authorization: str|None=Header(default=None)):
+    require_cookie_csrf(request); user = identity(authorization, request)
+    try:
+        result = create_policy(body.organization_id, body.project_id, user["user_id"], body.model_dump())
+        result["metrics"] = json.loads(result.pop("metrics_json"))
+        return result
+    except ValueError as exc: raise HTTPException(400, str(exc)) from exc
+    except KeyError as exc: raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc: raise _decision_permission_error(exc) from exc
+@router.get("/policies")
+def policies_list(organization_id: str, project_id: str, request: Request, authorization: str|None=Header(default=None)):
+    user = identity(authorization, request)
+    try: return {"policies": list_policies(organization_id, project_id, user["user_id"])}
+    except PermissionError as exc: raise _decision_permission_error(exc) from exc
+@router.post("/evaluations/{run_id}/decision")
+def decision_create(run_id: str, body: DecisionIn, request: Request, authorization: str|None=Header(default=None), organization_id: str|None=None):
+    require_cookie_csrf(request); user = identity(authorization, request); org = org_id(user, organization_id)
+    try: return _decision_payload(create_decision(org, run_id, user["user_id"], body.model_dump()))
+    except ValueError as exc: raise HTTPException(400, str(exc)) from exc
+    except KeyError as exc: raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc: raise _decision_permission_error(exc) from exc
+@router.get("/decisions")
+def decisions_list(organization_id: str, request: Request, authorization: str|None=Header(default=None), project_id: str|None=None, page: int = 1, page_size: int = 20):
+    user = identity(authorization, request)
+    try: return list_decisions(organization_id, user["user_id"], project_id, page, page_size)
+    except PermissionError as exc: raise _decision_permission_error(exc) from exc
+@router.get("/decisions/{decision_id}")
+def decision_detail(decision_id: str, organization_id: str, request: Request, authorization: str|None=Header(default=None)):
+    user = identity(authorization, request)
+    try: return _decision_payload(get_decision(organization_id, user["user_id"], decision_id))
+    except KeyError as exc: raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc: raise _decision_permission_error(exc) from exc
+@router.get("/decisions/{decision_id}/export")
+def decision_export(decision_id: str, organization_id: str, request: Request, authorization: str|None=Header(default=None), format: str = "json"):
+    user = identity(authorization, request)
+    try: payload = _decision_payload(get_decision(organization_id, user["user_id"], decision_id))
+    except KeyError as exc: raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc: raise _decision_permission_error(exc) from exc
+    if format.lower() == "json":
+        return Response(content=json.dumps(payload, default=str), media_type="application/json", headers={"Content-Disposition": f'attachment; filename="{decision_id}.json"'})
+    if format.lower() != "csv": raise HTTPException(400, "format must be json or csv")
+    output=io.StringIO(); writer=csv.writer(output); writer.writerow(["field", "value"])
+    for key, value in payload.items(): writer.writerow([key, _csv_value(value)])
+    return Response(content=output.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{decision_id}.csv"'})
 @router.get("/organizations/{organization_id}/export")
 def organization_export(organization_id: str, request: Request, authorization: str|None=Header(default=None)):
     user = identity(authorization, request)

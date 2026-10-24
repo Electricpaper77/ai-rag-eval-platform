@@ -43,3 +43,11 @@ authenticated API; no client-side authentication bypass or fabricated metrics ar
 used. Customer-facing hosting, managed identity, billing, and production launch
 remain blocked.
 
+Gate 23C status: evidence-backed evaluation policies, versioned decision history,
+PASS/HOLD/INSUFFICIENT_EVIDENCE outcomes, authorized comparison, and JSON/CSV
+exports are implemented with tenant authorization and recovery quarantine checks.
+The mandatory integration path uses disposable PostgreSQL and Chromium with
+synthetic metrics explicitly recorded by the test input. Production launch still
+requires managed identity, persistence, backup/recovery operations, observability,
+privacy review, and separate validation of any physical GPU/DCGM telemetry.
+

@@ -8,7 +8,7 @@ def test_export_contract_excludes_authentication_material():
 
 def test_lifecycle_schema_is_versioned():
     from saas.postgres_repository import MIGRATIONS
-    assert [path.stem.split("_")[0] for path in MIGRATIONS] == ["002", "003", "004"]
+    assert [path.stem.split("_")[0] for path in MIGRATIONS] == ["002", "003", "004", "005"]
 
 def test_journal_hash_chain_detects_tampering(tmp_path):
     from saas.lifecycle import DeletionJournal
@@ -29,3 +29,4 @@ def test_journal_rejects_conflicting_duplicate_organization(tmp_path):
     with journal.path.open("a", encoding="utf-8") as handle: handle.write(json.dumps(second, sort_keys=True) + "\n")
     import pytest
     with pytest.raises(RuntimeError, match="duplicate"): journal.events()
+

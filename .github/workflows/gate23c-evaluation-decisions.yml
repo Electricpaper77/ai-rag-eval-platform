@@ -1,0 +1,47 @@
+name: Gate 23C Evaluation Decisions
+on:
+  pull_request:
+    branches: [main]
+    paths: ["frontend/**", "saas/**", "tests/test_gate23c_*.py", ".github/workflows/gate23c-evaluation-decisions.yml"]
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  evaluation-decisions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: gate23c
+          POSTGRES_DB: agenttrust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U postgres -d agenttrust"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      AGENTTRUST_POSTGRES_URL: postgresql://postgres:gate23c@localhost:5432/agenttrust
+      AGENTTRUST_SAAS_DB: ""
+      AGENTTRUST_SAAS_BACKEND: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - run: python -m pip install --disable-pip-version-check -r requirements-test.txt playwright
+      - run: python -m playwright install --with-deps chromium
+      - name: Apply PostgreSQL migrations
+        run: python -c "from saas.postgres_repository import migrate; migrate()"
+      - name: Initialize sanitized evidence
+        run: |
+          mkdir -p artifacts/gate23c
+          printf '{"schema":"gate23c-evidence-v1","status":"started","synthetic_only":true}\n' > artifacts/gate23c/run-state.json
+      - name: Contract and authenticated PostgreSQL/Chromium decision journey
+        run: timeout 240s python -m pytest -q tests/test_gate23c_contract.py tests/test_gate23c_browser.py
+      - name: Upload sanitized Gate 23C evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate23c-evaluation-evidence
+          path: artifacts/gate23c/
+          if-no-files-found: error
+
