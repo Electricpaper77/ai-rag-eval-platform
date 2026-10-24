@@ -23,7 +23,7 @@ def _sign(payload: dict[str, Any]) -> str:
 def write_approval(path: Path, backup_digest: str, journal_digest: str, approved_by: str, ttl_seconds: int = 900, target_database: str = "", required_role: str = "recovery_operator", not_before: float | None = None) -> dict[str, Any]:
     approvers = {x.strip() for x in os.getenv("AGENTTRUST_RECOVERY_APPROVERS", "").split(",") if x.strip()}
     if approved_by not in approvers or not target_database or required_role != "recovery_operator" or ttl_seconds < 1 or ttl_seconds > 3600: raise RuntimeError("trusted recovery approval required")
-    payload = {"operation_id": secrets.token_urlsafe(24), "backup_digest": backup_digest, "journal_digest": journal_digest, "approved_by": approved_by, "target_database": target_database, "required_role": required_role, "not_before": not_before, "expires_at": datetime.now(timezone.utc).timestamp() + ttl_seconds, "consumed": False}
+    payload = {"operation_id": secrets.token_urlsafe(24), "requester_id": os.getenv("AGENTTRUST_RECOVERY_REQUESTER", ""), "backup_digest": backup_digest, "journal_digest": journal_digest, "approved_by": approved_by, "target_database": target_database, "required_role": required_role, "not_before": not_before, "expires_at": datetime.now(timezone.utc).timestamp() + ttl_seconds, "consumed": False}
     record = {"payload": payload, "signature": _sign(payload)}
     tmp = path.with_suffix(path.suffix + ".tmp"); tmp.write_text(json.dumps(record, sort_keys=True) + "\n", encoding="utf-8"); os.replace(tmp, path)
     return payload
@@ -71,7 +71,7 @@ class RecoveryOrchestrator:
             if existing and existing[0] == "promoted": return {"promoted": True, "already_promoted": True, "operation_id": signed_payload["operation_id"]}
             approval = validate_approval(self.approval_path, backup_digest, journal_digest, target_database=self.target_database)
             if os.getenv("AGENTTRUST_DEPLOYMENT_POLICY", "").strip().lower() in {"staging", "production"}:
-                require_trusted_deployment_approval(approval.get("requester_id", ""), approval["approved_by"], approval.get("required_role", ""))
+                require_trusted_deployment_approval(approval.get("requester_id", ""), approval["approved_by"], os.getenv("AGENTTRUST_RECOVERY_APPROVER_ROLE", ""))
             self.conn.execute("INSERT INTO recovery_promotions(operation_id,backup_digest,journal_digest,approved_by,expires_at,status,promoted_at) VALUES (%s,%s,%s,%s,to_timestamp(%s),'promoted',now()) ON CONFLICT (operation_id) DO NOTHING", (approval["operation_id"], backup_digest, journal_digest, approval["approved_by"], approval["expires_at"]))
             if not self.conn.execute("SELECT 1 FROM recovery_promotions WHERE operation_id=%s AND status='promoted'", (approval["operation_id"],)).fetchone(): raise RuntimeError("recovery promotion was not recorded")
         validate_approval(self.approval_path, backup_digest, journal_digest, target_database=self.target_database, consume=True)
