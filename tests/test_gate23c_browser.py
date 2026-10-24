@@ -131,7 +131,7 @@ def test_authenticated_scorecard_pass_hold_history_export_and_isolation(decision
         page = context.new_page()
         browser_trace = []
         page.on("request", lambda request: browser_trace.append({"kind": "request", "url": urlsplit(request.url).path + ("?" + urlsplit(request.url).query if urlsplit(request.url).query else "")} ) if "/saas/decisions" in request.url else None)
-        page.on("response", lambda response: browser_trace.append({"kind": "response", "url": urlsplit(response.url).path + ("?" + urlsplit(response.url).query if urlsplit(response.url).query else ""), "status": response.status, "total": response.json().get("total")}) if "/saas/decisions" in response.url and response.ok else None)
+        page.on("response", lambda response: browser_trace.append({"kind": "response", "url": urlsplit(response.url).path + ("?" + urlsplit(response.url).query if urlsplit(response.url).query else ""), "status": response.status, "total": response.json().get("total"), "count": len(response.json().get("decisions", []))}) if "/saas/decisions" in response.url and response.ok else None)
         page.goto(base_url)
         page.wait_for_function("() => Boolean(document.querySelector('[aria-label=Organization]')?.value && document.querySelector('[aria-label=Project]')?.value)")
         page.get_by_label("Organization").select_option(org_id)
