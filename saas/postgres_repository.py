@@ -10,6 +10,10 @@ import psycopg
 from cryptography.fernet import Fernet, InvalidToken
 
 MIGRATIONS = [Path(__file__).with_name("migrations") / name for name in ("002_postgres.sql", "003_lifecycle.sql", "004_recovery_controls.sql", "005_evaluation_decisions.sql")]
+# Gate 21/22 keep the canonical registry stable. Gate 23D is an additive,
+# independently versioned extension and must not rewrite applied history.
+EXTENSION_MIGRATIONS = [Path(__file__).with_name("migrations") / "006_investigation_reviews.sql"]
+ALL_MIGRATIONS = MIGRATIONS + EXTENSION_MIGRATIONS
 REQUEST_DATABASE: ContextVar[str | None] = ContextVar("agenttrust_request_database", default=None)
 def bind_request_database(database: str): return REQUEST_DATABASE.set(database)
 def reset_request_database(token): REQUEST_DATABASE.reset(token)
@@ -29,10 +33,10 @@ def migrate():
             applied = {row[0]: row[1] for row in conn.execute(
                 "SELECT version, checksum FROM agenttrust_schema_migrations ORDER BY version"
             )}
-            expected_versions = [int(path.stem.split("_")[0]) for path in MIGRATIONS]
+            expected_versions = [int(path.stem.split("_")[0]) for path in ALL_MIGRATIONS]
             if applied and sorted(applied) != list(range(min(applied), max(applied) + 1)):
                 raise RuntimeError("PostgreSQL migration history is missing or out of order")
-            for path in MIGRATIONS:
+            for path in ALL_MIGRATIONS:
                 version = int(path.stem.split("_")[0])
                 checksum = hashlib.sha256(path.read_bytes()).hexdigest()
                 if version in applied:
@@ -224,3 +228,4 @@ def search_runs(conn, organization_id: str, user: str, project_id: str | None = 
         rows = conn.execute(f"SELECT id,project_id,status,provider,sample_count,created_at FROM evaluation_runs WHERE {where} ORDER BY created_at DESC LIMIT %s OFFSET %s", tuple(params + [page_size, offset])).fetchall()
     items = [{"id": row[0], "project_id": row[1], "status": row[2], "provider": row[3], "sample_count": row[4], "created_at": row[5].isoformat() if hasattr(row[5], "isoformat") else row[5]} for row in rows]
     return {"evaluations": items, "page": page, "page_size": page_size, "total": total, "total_pages": (total + page_size - 1) // page_size}
+

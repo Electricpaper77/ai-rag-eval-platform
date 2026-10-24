@@ -8,6 +8,7 @@ from .repository import create_org, create_project, create_run, get_run, list_or
 from .oidc import OIDCConfig, MemorySessionStore, begin_login, consume_login_state, exchange_code, internal_user_key, verify_id_token
 from .deployment import validate_deployment_configuration
 from .lifecycle import export_tenant, delete_tenant
+from .investigation import list_cases, create_case_review, list_case_reviews, create_release_review, get_release_review, ReviewConflict
 
 router=APIRouter(prefix="/saas",tags=["saas"])
 LOGIN_STATES: dict[str, dict[str, object]] = {}
@@ -44,6 +45,16 @@ class DecisionIn(BaseModel):
     policy_id: str
     baseline_run_id: str | None = None
     idempotency_key: str = Field(min_length=1, max_length=100)
+class CaseReviewIn(BaseModel):
+    status: str = Field(pattern="^(open|confirmed|rejected|hold)$")
+    comment: str = Field(min_length=1, max_length=4000)
+    expected_revision: int = Field(default=0, ge=0)
+    idempotency_key: str = Field(min_length=1, max_length=120)
+class ReleaseReviewIn(BaseModel):
+    project_id: str
+    decision_id: str
+    recommendation: str = Field(pattern="^(acknowledge|hold)$")
+    idempotency_key: str = Field(min_length=1, max_length=120)
 def identity(authorization: str | None, request: Request | None = None) -> dict[str,Any]:
     if request is not None:
         sid = request.cookies.get("agenttrust_session")
@@ -209,6 +220,55 @@ def evaluation_export(run_id: str, request: Request, authorization: str|None=Hea
     output=io.StringIO(); writer=csv.writer(output); writer.writerow(["field", "value"])
     for key, value in payload.items(): writer.writerow([key, _csv_value(value)])
     return Response(content=output.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{run_id}.csv"'})
+@router.get("/evaluations/{run_id}/cases")
+def evaluation_cases(run_id: str, project_id: str, request: Request, organization_id: str, authorization: str|None=Header(default=None), status: str = "", failure_category: str = "", page: int = 1, page_size: int = 20):
+    user = identity(authorization, request)
+    try:
+        return list_cases(organization_id, project_id, run_id, user["user_id"], status[:40], failure_category[:100], page, page_size)
+    except KeyError as exc: raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc: raise _decision_permission_error(exc) from exc
+@router.post("/cases/{case_id}/reviews")
+def case_review_create(case_id: str, body: CaseReviewIn, request: Request, organization_id: str, authorization: str|None=Header(default=None)):
+    require_cookie_csrf(request); user = identity(authorization, request)
+    try:
+        return create_case_review(case_id, organization_id, user["user_id"], body.status, body.comment, body.expected_revision, body.idempotency_key)
+    except ReviewConflict as exc: raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc: raise HTTPException(400, str(exc)) from exc
+    except KeyError as exc: raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc: raise _decision_permission_error(exc) from exc
+@router.get("/cases/{case_id}/reviews")
+def case_reviews(case_id: str, request: Request, organization_id: str, authorization: str|None=Header(default=None)):
+    user = identity(authorization, request)
+    try: return {"reviews": list_case_reviews(case_id, organization_id, user["user_id"])}
+    except KeyError as exc: raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc: raise _decision_permission_error(exc) from exc
+@router.post("/release-reviews")
+def release_review_create(body: ReleaseReviewIn, request: Request, organization_id: str, authorization: str|None=Header(default=None)):
+    require_cookie_csrf(request); user = identity(authorization, request)
+    try:
+        return create_release_review(organization_id, body.project_id, user["user_id"], body.decision_id, body.recommendation, body.idempotency_key)
+    except ValueError as exc: raise HTTPException(400, str(exc)) from exc
+    except KeyError as exc: raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc: raise _decision_permission_error(exc) from exc
+@router.get("/release-reviews/{review_id}")
+def release_review_detail(review_id: str, request: Request, organization_id: str, authorization: str|None=Header(default=None)):
+    user = identity(authorization, request)
+    try: return get_release_review(review_id, organization_id, user["user_id"])
+    except KeyError as exc: raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc: raise _decision_permission_error(exc) from exc
+@router.get("/release-reviews/{review_id}/export")
+def release_review_export(review_id: str, request: Request, organization_id: str, authorization: str|None=Header(default=None), format: str = "json"):
+    user = identity(authorization, request)
+    try: payload = get_release_review(review_id, organization_id, user["user_id"])
+    except KeyError as exc: raise HTTPException(404, str(exc)) from exc
+    except PermissionError as exc: raise _decision_permission_error(exc) from exc
+    payload["non_production_disclaimer"] = "Review evidence only; this record does not authorize deployment or customer access."
+    if format.lower() == "json":
+        return Response(content=json.dumps(payload, default=str), media_type="application/json", headers={"Content-Disposition": f'attachment; filename="{review_id}.json"'})
+    if format.lower() != "csv": raise HTTPException(400, "format must be json or csv")
+    output=io.StringIO(); writer=csv.writer(output); writer.writerow(["field", "value"])
+    for key, value in payload.items(): writer.writerow([key, _csv_value(value)])
+    return Response(content=output.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{review_id}.csv"'})
 def _decision_payload(item: dict[str, Any]) -> dict[str, Any]:
     result = dict(item)
     for key in ("rationale", "evidence_refs"):

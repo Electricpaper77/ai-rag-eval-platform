@@ -15,3 +15,10 @@ decision creation. The browser scorecard is a view over authenticated API data;
 it does not create identities or invent evaluation results. Disposable PostgreSQL
 and Chromium validate the path; managed production operations remain unverified.
 
+Gate 23D adds tenant-scoped persisted case evidence, append-only reviewer
+annotation revisions, and release-review snapshots. The API distinguishes real
+stored case evidence from `MISSING_EVIDENCE`, derives reviewer identity from the
+authenticated session, and records policy/decision/evidence digests. A release
+review is a non-deployment evidence record. Mandatory validation uses disposable
+PostgreSQL and Chromium with synthetic inputs only.
+

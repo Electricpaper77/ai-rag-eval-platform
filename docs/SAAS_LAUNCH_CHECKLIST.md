@@ -51,3 +51,10 @@ synthetic metrics explicitly recorded by the test input. Production launch still
 requires managed identity, persistence, backup/recovery operations, observability,
 privacy review, and separate validation of any physical GPU/DCGM telemetry.
 
+Gate 23D status: persisted case investigation, append-only reviewer annotations,
+release-review snapshots, and tenant-scoped exports are implemented for synthetic
+non-production validation. Missing per-case source data remains explicitly
+`MISSING_EVIDENCE`; reviewer records do not authorize deployment. Managed reviewer
+identity, production audit retention, external evidence storage, and operational
+release governance remain blockers.
+
