@@ -17,7 +17,7 @@ def browser_url():
     import saas.router as saas_router
     from saas.postgres_repository import migrate
     from backend.app.main import app
-    monkeypatch.delenv("AGENTTRUST_SAAS_DB", raising=False)
+    monkeypatch.setenv("AGENTTRUST_SAAS_DB", "")
     monkeypatch.setenv("AGENTTRUST_SAAS_RUNTIME_MODE", "test")
     monkeypatch.setenv("AGENTTRUST_DEPLOYMENT_POLICY", "test")
     monkeypatch.setenv("AGENTTRUST_OIDC_ISSUER", "https://issuer.example")
