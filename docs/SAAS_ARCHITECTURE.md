@@ -22,3 +22,10 @@ authenticated session, and records policy/decision/evidence digests. A release
 review is a non-deployment evidence record. Mandatory validation uses disposable
 PostgreSQL and Chromium with synthetic inputs only.
 
+\n+Gate 23E adds a browser-only product layer over the existing authenticated API.
+Onboarding actions call the same FastAPI/PostgreSQL routes used by the security
+tests; the client cannot seed evaluations, decisions, cases, or release reviews.
+Responsive and accessibility evidence is disposable Chromium output. Managed
+customer identity, UI hosting, operational persistence, billing, and production
+release governance remain unverified.
+
