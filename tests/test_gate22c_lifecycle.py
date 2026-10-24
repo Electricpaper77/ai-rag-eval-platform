@@ -8,7 +8,7 @@ def test_export_contract_excludes_authentication_material():
 
 def test_lifecycle_schema_is_versioned():
     from saas.postgres_repository import MIGRATIONS
-    assert [path.stem.split("_")[0] for path in MIGRATIONS] == ["002", "003"]
+    assert [path.stem.split("_")[0] for path in MIGRATIONS] == ["002", "003", "004"]
 
 def test_journal_hash_chain_detects_tampering(tmp_path):
     from saas.lifecycle import DeletionJournal

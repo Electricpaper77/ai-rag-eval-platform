@@ -1,13 +1,18 @@
 """Small PostgreSQL adapter; SQLite remains the deterministic local-test adapter."""
 from __future__ import annotations
 import hashlib, json, os, uuid
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
+from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from typing import Any
 import psycopg
 from cryptography.fernet import Fernet, InvalidToken
 
-MIGRATIONS = [Path(__file__).with_name("migrations") / name for name in ("002_postgres.sql", "003_lifecycle.sql")]
+MIGRATIONS = [Path(__file__).with_name("migrations") / name for name in ("002_postgres.sql", "003_lifecycle.sql", "004_recovery_controls.sql")]
+REQUEST_DATABASE: ContextVar[str | None] = ContextVar("agenttrust_request_database", default=None)
+def bind_request_database(database: str): return REQUEST_DATABASE.set(database)
+def reset_request_database(token): REQUEST_DATABASE.reset(token)
 def now(): return datetime.now(timezone.utc)
 def migrate():
     """Apply the versioned PostgreSQL baseline once, outside request paths."""
@@ -40,11 +45,25 @@ def migrate():
 def connect():
     url = os.getenv("AGENTTRUST_POSTGRES_URL", "").strip()
     if not url: raise RuntimeError("AGENTTRUST_POSTGRES_URL is required for the PostgreSQL adapter")
+    database = REQUEST_DATABASE.get()
+    if database:
+        values = conninfo_to_dict(url); values["dbname"] = database; url = make_conninfo(**values)
     conn = psycopg.connect(url)
     # Keep integration work bounded; callers still own transaction boundaries.
     conn.execute("SET lock_timeout = '5s'")
     conn.execute("SET statement_timeout = '15s'")
     conn.commit()
+    return conn
+def protected_connect():
+    """Acquire a normal SaaS connection, enforcing restore-target quarantine."""
+    conn = connect()
+    target = (REQUEST_DATABASE.get() or os.getenv("AGENTTRUST_RESTORE_TARGET_DB", "")).strip()
+    if not target:
+        return conn
+    actual = conn.execute("SELECT current_database()").fetchone()[0]
+    if actual != target or not conn.execute("SELECT 1 FROM recovery_promotions WHERE status='promoted' AND expires_at>now() LIMIT 1").fetchone():
+        conn.close()
+        raise PermissionError("restore target is quarantined or unauthorized")
     return conn
 def user_id(conn, issuer: str, subject: str) -> str:
     value = f"usr_{uuid.uuid5(uuid.NAMESPACE_URL, issuer + '|' + subject).hex}"
@@ -71,12 +90,19 @@ class PostgresSessionStore:
 
 class PostgresLoginStateStore:
     """Shared, expiring OIDC state with one-time transactional consumption."""
-    def __init__(self, connection_factory, encryption_key: bytes):
+    def __init__(self, connection_factory, encryption_key: bytes, key_id: str = "v1", historical_keys: dict[str, bytes] | None = None):
         self.connection_factory = connection_factory
-        self.fernet = Fernet(encryption_key)
+        if not key_id or ":" in key_id or not key_id.replace("_", "").replace("-", "").isalnum():
+            raise ValueError("invalid OIDC state encryption key id")
+        self.key_id = key_id
+        self.keys = {key_id: Fernet(encryption_key)}
+        for historical_id, historical_key in (historical_keys or {}).items():
+            if historical_id in self.keys or not historical_id or ":" in historical_id:
+                raise ValueError("duplicate OIDC state encryption key id")
+            self.keys[historical_id] = Fernet(historical_key)
 
     def put(self, state: str, item: dict[str, object], config, expires_at: float) -> None:
-        payload = self.fernet.encrypt(json.dumps(item, separators=(",", ":")).encode())
+        payload = f"at1:{self.key_id}:" + self.keys[self.key_id].encrypt(json.dumps(item, separators=(",", ":")).encode()).decode()
         with self.connection_factory() as conn:
             with conn.transaction():
                 conn.execute(
@@ -94,7 +120,14 @@ class PostgresLoginStateStore:
         if not row:
             raise ValueError("invalid, expired, or mismatched OIDC login state")
         try:
-            item = json.loads(self.fernet.decrypt(bytes(row[0])).decode())
+            raw = bytes(row[0]).decode()
+            if raw.startswith("at1:"):
+                _, key_id, token = raw.split(":", 2)
+                fernet = self.keys.get(key_id)
+                if fernet is None: raise ValueError("unknown OIDC state encryption key id")
+                item = json.loads(fernet.decrypt(token.encode()).decode())
+            else:  # bounded compatibility for pre-rotation rows
+                item = json.loads(self.keys[self.key_id].decrypt(bytes(row[0])).decode())
         except (InvalidToken, ValueError, TypeError) as exc:
             raise ValueError("invalid OIDC login state payload") from exc
         if now_epoch is not None and float(item["expires_at"]) < now_epoch:
