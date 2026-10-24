@@ -21,6 +21,8 @@ def selected_backend() -> str:
 
 def use_postgres() -> bool: return selected_backend() == "postgres"
 def connect() -> sqlite3.Connection:
+    if use_postgres():
+        raise RuntimeError("SQLite connection unavailable while PostgreSQL backend is selected")
     conn = sqlite3.connect(db_path()); conn.row_factory = sqlite3.Row; conn.execute("PRAGMA foreign_keys=ON"); conn.executescript(MIGRATION.read_text(encoding="utf-8")); return conn
 def new_id(prefix: str) -> str: return f"{prefix}_{uuid.uuid4().hex}"
 def audit(conn, org_id: str, user_id: str, action: str, resource_type: str, resource_id: str) -> None:

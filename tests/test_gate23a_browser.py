@@ -89,7 +89,6 @@ def test_authenticated_workspace_browser_journey(browser_url, tmp_path):
         page.get_by_text("Persisted run").wait_for()
         page.reload(); page.get_by_role("button", name="Results").click()
         page.get_by_text("completed").wait_for()
-        assert page.get_by_text("Browser Project").count() == 0 or True
         browser.close()
 
 def test_browser_contract_is_api_backed_and_safe():

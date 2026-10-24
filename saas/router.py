@@ -4,7 +4,7 @@ import base64
 from typing import Any
 from fastapi import APIRouter, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field
-from .repository import create_org, create_project, create_run, get_run, list_orgs, list_projects, list_runs
+from .repository import create_org, create_project, create_run, get_run, list_orgs, list_projects, list_runs, use_postgres
 from .oidc import OIDCConfig, MemorySessionStore, begin_login, consume_login_state, exchange_code, internal_user_key, verify_id_token
 from .deployment import validate_deployment_configuration
 from .lifecycle import export_tenant, delete_tenant
@@ -14,14 +14,10 @@ LOGIN_STATES: dict[str, dict[str, object]] = {}
 SESSIONS = MemorySessionStore()
 def session_store():
     validate_deployment_configuration()
-    policy = os.getenv("AGENTTRUST_DEPLOYMENT_POLICY", "").strip().lower()
-    if policy in ("production", "staging"):
+    if use_postgres():
         from .postgres_repository import PostgresSessionStore, protected_connect
         return PostgresSessionStore(protected_connect)
-    if os.getenv("AGENTTRUST_SAAS_DB", "").strip() or not os.getenv("AGENTTRUST_POSTGRES_URL", "").strip() or os.getenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production").strip().lower() in ("local", "test"):
-        return SESSIONS
-    from .postgres_repository import PostgresSessionStore, protected_connect
-    return PostgresSessionStore(protected_connect)
+    return SESSIONS
 
 def login_state_store():
     policy = os.getenv("AGENTTRUST_DEPLOYMENT_POLICY", "").strip().lower()
