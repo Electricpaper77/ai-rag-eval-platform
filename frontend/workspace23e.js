@@ -9,7 +9,7 @@
 
   const onboarding = document.createElement("section");
   onboarding.id = "onboarding"; onboarding.className = "onboarding card"; onboarding.setAttribute("aria-labelledby", "onboarding-title");
-  document.querySelector(".main")?.prepend(onboarding);
+  document.querySelector(".workspace-main")?.prepend(onboarding);
   const state = { orgs: [], projects: [], runs: [], decisions: [], cases: [], view: "dashboard", selectedRun: null, caseLoaded: false, releaseReview: null, request: 0, page: 1, totalPages: 1 };
   const csrf = () => document.cookie.split("; ").find((item) => item.startsWith("agenttrust_csrf="))?.split("=")[1] || "";
   const tell = (message) => { announcement.textContent = message; };
