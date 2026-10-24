@@ -31,7 +31,7 @@ jobs:
         run: python -c "from saas.postgres_repository import migrate; migrate()"
       - name: Execute real encrypted PostgreSQL recovery drill
         timeout-minutes: 10
-        run: python scripts/recovery_drill.py --end-to-end --evidence artifacts/gate22e/recovery-drill.json
+        run: python scripts/recovery_drill.py --end-to-end --backup-root artifacts/gate22e/backups --evidence artifacts/gate22e/recovery-drill.json
       - name: Validate recovery evidence
         run: >-
           python -c "import json; p=json.load(open('artifacts/gate22e/recovery-drill.json')); m=p.get('measurement',{}); o=m.get('observed',{}); required=['restore_seconds','reconciliation_seconds','total_seconds','recovery_point_age_seconds']; assert p.get('outcome')=='PASS' and p.get('production_guarantee') is False and all(isinstance(o.get(k),(int,float)) and o[k]>=0 for k in required) and p['subprocesses']['pg_dump'] and p['subprocesses']['pg_restore']; print('recovery evidence validated')"
