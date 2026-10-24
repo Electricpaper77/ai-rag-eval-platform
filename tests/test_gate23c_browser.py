@@ -129,6 +129,9 @@ def test_authenticated_scorecard_pass_hold_history_export_and_isolation(decision
         context.add_cookies([{"name": k, "value": v, "url": base_url, "secure": False} for k, v in cookies_a.items()])
         page = context.new_page(); page.goto(base_url)
         page.wait_for_function("() => Boolean(document.querySelector('[aria-label=Organization]')?.value && document.querySelector('[aria-label=Project]')?.value)")
+        page.get_by_label("Organization").select_option(org_id)
+        page.wait_for_function("() => Boolean(document.querySelector('[aria-label=Project]')?.value)")
+        page.get_by_label("Project").select_option(project_id)
         page.get_by_role("button", name="Scorecards").click()
         scorecard_id = page.get_by_text(first.json()["id"])
         try:
@@ -137,7 +140,7 @@ def test_authenticated_scorecard_pass_hold_history_export_and_isolation(decision
             raise AssertionError(f"scorecard did not render at {page.url}: {page.locator('#content').inner_text()}") from exc
         assert page.get_by_text("PASS").count() >= 1 and page.get_by_text("HOLD").count() >= 1
         page.screenshot(path="artifacts/gate23c/scorecards-mobile.png", full_page=True)
-        page.reload(); page.wait_for_function("() => Boolean(document.querySelector('[aria-label=Organization]')?.value && document.querySelector('[aria-label=Project]')?.value)"); page.get_by_role("button", name="Scorecards").click(); assert page.get_by_text("INSUFFICIENT_EVIDENCE").count() >= 1
+        page.reload(); page.wait_for_function("() => Boolean(document.querySelector('[aria-label=Organization]')?.value && document.querySelector('[aria-label=Project]')?.value)"); page.get_by_label("Organization").select_option(org_id); page.wait_for_function("() => Boolean(document.querySelector('[aria-label=Project]')?.value)"); page.get_by_label("Project").select_option(project_id); page.get_by_role("button", name="Scorecards").click(); assert page.get_by_text("INSUFFICIENT_EVIDENCE").count() >= 1
         context.close(); browser.close()
     os.environ["AGENTTRUST_RESTORE_TARGET_DB"] = "gate23c-quarantined-target"
     try:
