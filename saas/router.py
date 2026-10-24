@@ -89,7 +89,17 @@ def _detail_payload(row: dict[str, Any]) -> dict[str, Any]:
     item["evidence"] = evidence
     item["missing_evidence"] = [name for name, value in (("result", result), ("evidence", evidence)) if value in (None, {}, [])]
     return item
+def _csv_safe_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: _csv_safe_value(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_csv_safe_value(item) for item in value]
+    if isinstance(value, str) and value[:1] in ("=", "+", "-", "@"):
+        return "'" + value
+    return value
+
 def _csv_value(value: Any) -> str:
+    value = _csv_safe_value(value)
     text = json.dumps(value, default=str, sort_keys=True) if isinstance(value, (dict, list)) else str(value if value is not None else "")
     return "'" + text if text[:1] in ("=", "+", "-", "@") else text
 @router.get("/auth/login")
