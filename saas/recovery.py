@@ -41,7 +41,17 @@ def validate_approval(path: Path, backup_digest: str, journal_digest: str, now_e
     if payload.get("not_before") is not None and current < float(payload["not_before"]): raise RuntimeError("restore approval not yet valid")
     if float(payload.get("expires_at", 0)) <= current: raise RuntimeError("restore approval expired")
     if consume:
-        payload["consumed"] = True; path.write_text(json.dumps({"payload": payload, "signature": _sign(payload)}, sort_keys=True) + "\n", encoding="utf-8")
+        payload["consumed"] = True
+        record = json.dumps({"payload": payload, "signature": _sign(payload)}, sort_keys=True) + "\n"
+        temporary = path.with_suffix(path.suffix + ".consume.tmp")
+        try:
+            temporary.write_text(record, encoding="utf-8")
+            os.replace(temporary, path)
+        finally:
+            try:
+                temporary.unlink()
+            except FileNotFoundError:
+                pass
     return payload
 
 def require_recovery_ready(approval_path: Path, backup_digest: str, journal_digest: str, journal_ok: bool | None = None, reconciled: bool | None = None, *, target_database: str = "", journal: Any = None, conn: Any = None, organization_id: str | None = None) -> dict[str, Any]:
