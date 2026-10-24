@@ -120,7 +120,8 @@ def test_two_target_fastapi_http_quarantine_promotion_and_tenant_isolation(monke
             monkeypatch.setenv("AGENTTRUST_POSTGRES_URL", urls[name]); migrate()
             with connect() as conn:
                 with conn.transaction():
-                    uid = user_id(conn, "https://issuer.example", "two-target-user")
+                    uid = "https://issuer.example|two-target-user"
+                    conn.execute("INSERT INTO users(id,issuer,subject,created_at) VALUES (%s,%s,%s,now()) ON CONFLICT (id) DO NOTHING", (uid, "https://issuer.example", "two-target-user"))
                     conn.execute("INSERT INTO organizations(id,name,created_at) VALUES (%s,%s,now())", (f"seed_{name}", name))
                     conn.execute("INSERT INTO memberships(organization_id,user_id,role,active,created_at) VALUES (%s,%s,'owner',TRUE,now())", (f"seed_{name}", uid))
         monkeypatch.setenv("AGENTTRUST_POSTGRES_URL", original_url)
