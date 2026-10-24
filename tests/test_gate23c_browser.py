@@ -81,10 +81,11 @@ def _headers(cookies):
 
 def test_authenticated_scorecard_pass_hold_history_export_and_isolation(decision_environment):
     base_url, cookies_a, cookies_b = decision_environment
+    origin = base_url.split("/saas-workspace.html", 1)[0]
     evidence = {"schema": "gate23c-browser-v1", "synthetic_only": True, "steps": []}
     from playwright.sync_api import sync_playwright
 
-    with TestClient(__import__("backend.app.main", fromlist=["app"]).app, base_url=base_url) as client:
+    with TestClient(__import__("backend.app.main", fromlist=["app"]).app, base_url=origin) as client:
         headers = _headers(cookies_a)
         org = client.post("/saas/organizations", json={"name": "Decision Tenant A"}, headers=headers, cookies=cookies_a)
         assert org.status_code == 200
@@ -135,7 +136,7 @@ def test_authenticated_scorecard_pass_hold_history_export_and_isolation(decision
         context.close(); browser.close()
     os.environ["AGENTTRUST_RESTORE_TARGET_DB"] = "gate23c-quarantined-target"
     try:
-        with TestClient(__import__("backend.app.main", fromlist=["app"]).app, base_url=base_url) as quarantined:
+        with TestClient(__import__("backend.app.main", fromlist=["app"]).app, base_url=origin) as quarantined:
             assert quarantined.get(f"/saas/decisions?organization_id={org_id}", cookies=cookies_a).status_code == 503
     finally:
         os.environ.pop("AGENTTRUST_RESTORE_TARGET_DB", None)

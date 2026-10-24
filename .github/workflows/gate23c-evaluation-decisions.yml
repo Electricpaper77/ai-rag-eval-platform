@@ -31,6 +31,10 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - name: Apply PostgreSQL migrations
         run: python -c "from saas.postgres_repository import migrate; migrate()"
+      - name: Initialize sanitized evidence
+        run: |
+          mkdir -p artifacts/gate23c
+          printf '{"schema":"gate23c-evidence-v1","status":"started","synthetic_only":true}\n' > artifacts/gate23c/run-state.json
       - name: Contract and authenticated PostgreSQL/Chromium decision journey
         run: timeout 240s python -m pytest -q tests/test_gate23c_contract.py tests/test_gate23c_browser.py
       - name: Upload sanitized Gate 23C evidence
