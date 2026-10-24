@@ -132,6 +132,8 @@ def test_authenticated_scorecard_pass_hold_history_export_and_isolation(decision
         page.get_by_label("Organization").select_option(org_id)
         page.wait_for_function("() => Boolean(document.querySelector('[aria-label=Project]')?.value)")
         page.get_by_label("Project").select_option(project_id)
+        browser_decisions = page.request.get(f"{origin}/saas/decisions?organization_id={org_id}&project_id={project_id}")
+        assert browser_decisions.status == 200 and browser_decisions.json()["total"] == 3
         page.get_by_role("button", name="Scorecards").click()
         scorecard_id = page.get_by_text(first.json()["id"])
         try:
