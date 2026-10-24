@@ -14,6 +14,7 @@ def validate_deployment_configuration() -> None:
     runtime = os.getenv("AGENTTRUST_SAAS_RUNTIME_MODE", "").strip().lower()
     postgres = os.getenv("AGENTTRUST_POSTGRES_URL", "").strip()
     sqlite = os.getenv("AGENTTRUST_SAAS_DB", "").strip()
+    backend = os.getenv("AGENTTRUST_SAAS_BACKEND", "").strip().lower()
     identities = os.getenv("AGENTTRUST_SAAS_IDENTITIES_LOCAL_TEST_ONLY", "{}").strip()
     oidc_configured = any(os.getenv(name, "").strip() for name in (
         "AGENTTRUST_OIDC_ISSUER", "AGENTTRUST_OIDC_CLIENT_ID",
@@ -23,6 +24,10 @@ def validate_deployment_configuration() -> None:
     if policy not in DEPLOYMENT_POLICIES:
         if oidc_configured and policy not in {"local", "test", "development"}:
             raise RuntimeError("explicit deployment policy required when OIDC is configured")
+        if backend == "postgres" and (not postgres or sqlite):
+            raise RuntimeError("PostgreSQL backend requires a PostgreSQL URL and no SQLite path")
+        if backend not in {"", "postgres", "sqlite"}:
+            raise RuntimeError("unsupported SaaS backend")
         return
 
     if os.getenv("AGENTTRUST_MANAGED_DEPLOYMENT", "").strip().lower() != "true":
@@ -61,3 +66,4 @@ def validate_deployment_configuration() -> None:
             raise RuntimeError("local/test identity configuration is invalid") from exc
         if configured:
             raise RuntimeError("local/test bearer identities are forbidden by deployment policy")
+

@@ -4,7 +4,7 @@ import base64
 from typing import Any
 from fastapi import APIRouter, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field
-from .repository import create_org, create_project, create_run, get_run
+from .repository import create_org, create_project, create_run, get_run, list_orgs, list_projects, list_runs, use_postgres
 from .oidc import OIDCConfig, MemorySessionStore, begin_login, consume_login_state, exchange_code, internal_user_key, verify_id_token
 from .deployment import validate_deployment_configuration
 from .lifecycle import export_tenant, delete_tenant
@@ -14,14 +14,10 @@ LOGIN_STATES: dict[str, dict[str, object]] = {}
 SESSIONS = MemorySessionStore()
 def session_store():
     validate_deployment_configuration()
-    policy = os.getenv("AGENTTRUST_DEPLOYMENT_POLICY", "").strip().lower()
-    if policy in ("production", "staging"):
+    if use_postgres():
         from .postgres_repository import PostgresSessionStore, protected_connect
         return PostgresSessionStore(protected_connect)
-    if os.getenv("AGENTTRUST_SAAS_DB", "").strip() or not os.getenv("AGENTTRUST_POSTGRES_URL", "").strip() or os.getenv("AGENTTRUST_SAAS_RUNTIME_MODE", "production").strip().lower() in ("local", "test"):
-        return SESSIONS
-    from .postgres_repository import PostgresSessionStore, protected_connect
-    return PostgresSessionStore(protected_connect)
+    return SESSIONS
 
 def login_state_store():
     policy = os.getenv("AGENTTRUST_DEPLOYMENT_POLICY", "").strip().lower()
@@ -91,7 +87,8 @@ def callback(code: str, state: str, response: Response):
     sid=secrets.token_urlsafe(32); csrf=secrets.token_urlsafe(32); store=session_store(); user={"user_id":internal_user_key(claims),"issuer":claims["issuer"],"subject":claims["subject"]}
     if isinstance(store, MemorySessionStore): store.put(sid,user | {"csrf":csrf},time.time()+3600)
     else: store.put(sid,user,time.time()+3600,csrf)
-    response.set_cookie("agenttrust_session",sid,path="/",httponly=True,secure=True,samesite="lax",max_age=3600); response.set_cookie("agenttrust_csrf",csrf,path="/",httponly=False,secure=True,samesite="lax",max_age=3600); return {"authenticated":True,"csrf_token":csrf}
+    secure_cookie = os.getenv("AGENTTRUST_TEST_HTTP_COOKIES", "").strip().lower() != "true"
+    response.set_cookie("agenttrust_session",sid,path="/",httponly=True,secure=secure_cookie,samesite="lax",max_age=3600); response.set_cookie("agenttrust_csrf",csrf,path="/",httponly=False,secure=secure_cookie,samesite="lax",max_age=3600); return {"authenticated":True,"csrf_token":csrf}
 @router.post("/auth/logout")
 def logout(request: Request, response: Response):
     require_cookie_csrf(request)
@@ -104,11 +101,26 @@ def organizations(body: OrgIn, request: Request, authorization: str|None=Header(
     require_cookie_csrf(request)
     try: return create_org(identity(authorization, request)["user_id"],body.name)
     except PermissionError as exc: raise HTTPException(503, "database target is quarantined") from exc
+@router.get("/organizations")
+def organizations_list(request: Request, authorization: str|None=Header(default=None)):
+    user = identity(authorization, request)
+    try: return {"organizations": list_orgs(user["user_id"])}
+    except PermissionError as exc: raise HTTPException(503, "database target is quarantined") from exc
 @router.post("/projects")
 def projects(body: ProjectIn, request: Request, authorization: str|None=Header(default=None)):
     require_cookie_csrf(request); user=identity(authorization, request)
     try: return create_project(body.organization_id,user["user_id"],body.name)
     except PermissionError: raise HTTPException(403,"organization admin permission required")
+@router.get("/projects")
+def projects_list(organization_id: str, request: Request, authorization: str|None=Header(default=None)):
+    user = identity(authorization, request)
+    try: return {"projects": list_projects(organization_id, user["user_id"])}
+    except PermissionError as exc: raise HTTPException(403, "organization membership required") from exc
+@router.get("/evaluations")
+def evaluations_list(organization_id: str, request: Request, authorization: str|None=Header(default=None), project_id: str|None=None):
+    user = identity(authorization, request)
+    try: return {"evaluations": list_runs(organization_id, user["user_id"], project_id)}
+    except PermissionError as exc: raise HTTPException(403, "organization membership required") from exc
 @router.post("/projects/{project_id}/evaluations")
 async def evaluations(project_id: str, request: Request, authorization: str|None=Header(default=None), x_organization_id: str|None=Header(default=None), idempotency_key: str|None=Header(default=None)):
     require_cookie_csrf(request); user=identity(authorization, request); org=org_id(user,x_organization_id)
@@ -153,3 +165,4 @@ def organization_delete(organization_id: str, request: Request, confirmation: st
             return delete_tenant(conn, organization_id, user["user_id"], confirmation or "")
     except PermissionError as exc: raise HTTPException(403, str(exc))
     except KeyError as exc: raise HTTPException(404, str(exc))
+
