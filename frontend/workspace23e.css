@@ -1,6 +1,6 @@
 :root { --navy:#12233f; --ink:#14213b; --muted:#5b6b80; --line:#d7e0eb; --surface:#fff; --bg:#f5f8fc; --blue:#215ed7; --green:#166534; --green-bg:#dcfce7; --amber:#8a5a00; --amber-bg:#fff7d6; --red:#a23f46; --red-bg:#ffe8ea; --focus:#f59e0b; }
 * { box-sizing:border-box; }
-html,body { margin:0; min-width:0; max-width:100%; background:var(--bg); color:var(--ink); font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+html,body { margin:0; min-width:0; max-width:100%; overflow-x:clip; background:var(--bg); color:var(--ink); font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
 button,input,select,textarea { font:inherit; }
 button,a,input,select,textarea { min-height:44px; }
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible { outline:3px solid var(--focus); outline-offset:2px; }
@@ -10,7 +10,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .eyebrow { margin:0; color:#6b7d97; font-size:.72rem; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
 .workspace-sidebar .eyebrow { color:#a9c4ed; }
 .demo-badge { display:inline-block; max-width:100%; overflow-wrap:anywhere; border:1px solid #6689bf; border-radius:999px; color:#cce1ff; font-size:.7rem; padding:5px 8px; }
-.nav { display:flex; flex-direction:column; gap:6px; min-width:0; max-width:100%; }
+.nav { display:flex; flex-direction:column; gap:6px; min-width:0; max-width:100%; width:100%; }
 .nav button { color:#eef5ff; background:transparent; border:0; border-radius:9px; cursor:pointer; padding:10px 12px; text-align:left; }
 .nav button:hover,.nav button.active { background:#244062; }
 .sidebar-note { color:#b6c5dc; font-size:.8rem; margin-top:auto; overflow-wrap:anywhere; }
