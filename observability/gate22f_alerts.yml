@@ -1,0 +1,15 @@
+groups:
+  - name: agenttrust-recovery-disposable
+    rules:
+      - alert: AgentTrustBackupStale
+        expr: agenttrust_recovery_backup_freshness_seconds > 300
+        for: 10m
+        labels: {severity: warning}
+      - alert: AgentTrustRecoveryQuarantined
+        expr: agenttrust_recovery_quarantine == 1
+        for: 15m
+        labels: {severity: critical}
+      - alert: AgentTrustRecoveryDrillFailed
+        expr: increase(agenttrust_recovery_drill_failures_total[1h]) > 0
+        labels: {severity: critical}
+

@@ -15,3 +15,6 @@ Gate 22D adds `scripts/secure_backup.py` for authenticated encrypted disposable 
 Production blockers: managed backup retention, external key custody and rotation, point-in-time recovery, RPO/RTO evidence, alerting, scheduled cleanup/recovery drills, and an independently operated approval workflow remain unimplemented.
 
 Gate 22E adds a bounded local maintenance command (`python scripts/recovery_drill.py --backup-root <dir>`). It is dry-run by default; `--execute` is required for disposable artifact deletion. CI measures observed restore/reconciliation timings only and does not establish production RPO/RTO. Production scheduling, cloud retention, managed key custody, traffic switching, and operator separation remain required.
+
+Gate 22F adds a provider-neutral key-custody contract, disposable rotation/revocation tests, a retention catalog/object-lock simulation, low-cardinality Prometheus examples, and alert-rule validation. The local provider and catalog do not prove KMS/HSM custody, physical immutability, PITR, paging, or production scheduling.
+

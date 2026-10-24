@@ -1,0 +1,8 @@
+# Synthetic/disposable recovery signals only; not production telemetry.
+agenttrust_recovery_backup_freshness_seconds 0
+agenttrust_recovery_restore_duration_seconds 0
+agenttrust_recovery_quarantine 1
+agenttrust_recovery_approval_failures_total 0
+agenttrust_recovery_promotion_failures_total 0
+agenttrust_recovery_drill_failures_total 0
+

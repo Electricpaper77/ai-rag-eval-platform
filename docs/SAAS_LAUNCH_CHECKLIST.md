@@ -26,3 +26,9 @@ Gate 22E status: disposable recovery-drill maintenance, advisory-lock coordinati
 dry-run backup cleanup, journal verification, and observed-only recovery timing
 evidence are implemented. Production scheduling, cloud backup retention/PITR,
 managed key custody, traffic switching, and RPO/RTO drills remain launch blockers.
+
+Gate 22F status: provider-neutral key custody, synthetic key rotation/revocation,
+separation-of-duties validation, retention catalog semantics, and sanitized alert
+examples are tested locally. Managed KMS/HSM, immutable object storage, PITR,
+external paging, production scheduling and operator separation remain blockers.
+
