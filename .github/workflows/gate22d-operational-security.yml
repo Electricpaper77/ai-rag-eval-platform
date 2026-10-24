@@ -29,7 +29,7 @@ jobs:
         run: python -c "from saas.postgres_repository import migrate; migrate()"
       - name: Gate 22D security tests
         timeout-minutes: 5
-        run: python -m pytest -q tests/test_gate22d_operational_security.py tests/test_gate22c_lifecycle.py tests/test_gate22c_postgres_lifecycle.py
+        run: python -m pytest -q tests/test_gate22d_operational_security.py tests/test_gate22c_lifecycle.py tests/test_gate22c_postgres_lifecycle.py tests/test_gate21_http_postgres.py
       - name: Upload sanitized recovery evidence
         if: always()
         uses: actions/upload-artifact@v4
