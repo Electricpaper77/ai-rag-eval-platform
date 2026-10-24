@@ -6,3 +6,14 @@ The browser test uses a disposable local HTTP server and Playwright at CI time. 
 
 Production blockers remain: managed OIDC deployment, customer UI hosting and operations, billing, managed persistence, retention/deletion/export operations, backup/PITR, production RPO/RTO, and physical GPU/DCGM validation.
 
+## Gate 23C evaluation decisions
+
+The workspace now exposes evidence-backed scorecards for synthetic evaluations. An
+organization owner or admin creates an immutable, versioned policy; an authorized
+member evaluates a persisted run against that policy and may compare it with an
+authorized baseline. Decisions are `PASS`, `HOLD`, or `INSUFFICIENT_EVIDENCE`.
+Only explicitly recorded evaluation metrics are eligible for a decision. Missing
+metrics are shown as missing evidence, not inferred or fabricated. Decision history
+and JSON/CSV exports remain organization- and project-scoped and are protected by
+the existing session, CSRF, tenant, and recovery-quarantine controls.
+

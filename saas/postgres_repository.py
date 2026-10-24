@@ -9,7 +9,7 @@ from typing import Any
 import psycopg
 from cryptography.fernet import Fernet, InvalidToken
 
-MIGRATIONS = [Path(__file__).with_name("migrations") / name for name in ("002_postgres.sql", "003_lifecycle.sql", "004_recovery_controls.sql")]
+MIGRATIONS = [Path(__file__).with_name("migrations") / name for name in ("002_postgres.sql", "003_lifecycle.sql", "004_recovery_controls.sql", "005_evaluation_decisions.sql")]
 REQUEST_DATABASE: ContextVar[str | None] = ContextVar("agenttrust_request_database", default=None)
 def bind_request_database(database: str): return REQUEST_DATABASE.set(database)
 def reset_request_database(token): REQUEST_DATABASE.reset(token)
@@ -174,7 +174,18 @@ def create_run(conn, organization_id: str, user: str, project_id: str, idem: str
         if used + len(rows) > quota: raise PermissionError("evaluation quota exceeded")
         run_id = f"run_{uuid.uuid4().hex}"; ts = now()
         conn.execute("INSERT INTO evaluation_runs VALUES (%s,%s,%s,%s,%s,%s,%s,%s)", (run_id,organization_id,project_id,idem,"completed","mock",len(rows),ts))
+        recorded = {}
+        for row in rows:
+            values = row.get("recorded_metrics") if isinstance(row, dict) else None
+            if isinstance(values, dict):
+                for key, value in values.items():
+                    if isinstance(key, str) and isinstance(value, (int, float)) and not isinstance(value, bool):
+                        recorded.setdefault(key, []).append(float(value))
+        quality = {key: sum(values) / len(values) for key, values in recorded.items() if values}
         result={"run_id":run_id,"provider":"mock","benchmark_status":"mock","sample_count":len(rows),"evidence_note":"Local mock only; not production provider execution."}
+        if quality:
+            result["quality_metrics"] = quality
+            result["quality_metrics_source"] = "explicitly recorded synthetic evaluation input"
         conn.execute("INSERT INTO evaluation_results VALUES (%s,%s,%s,%s,%s)", (run_id,organization_id,json.dumps(result),json.dumps({"provider":"mock"}),ts)); conn.execute("INSERT INTO usage_events VALUES (%s,%s,%s,%s,%s,%s,%s)",(f"use_{uuid.uuid4().hex}",organization_id,run_id,len(rows),0,idem,ts)); return {"id":run_id,"status":"completed","provider":"mock","sample_count":len(rows)}
 
 def get_run(conn, organization_id: str, user: str, run_id: str) -> dict[str, Any] | None:
