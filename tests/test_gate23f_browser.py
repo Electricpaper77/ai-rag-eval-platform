@@ -45,11 +45,11 @@ def _ensure_project_selected(page):
     create_org = page.get_by_role("button", name="Create organization")
     if create_org.count():
         create_org.last.click()
-        page.get_by_label("Organization").locator("option:not([disabled])").first.wait_for(state="attached")
+        page.locator('select[aria-label="Organization"]').locator("option:not([disabled])").first.wait_for(state="attached")
 
-    organization = page.get_by_label("Organization")
+    organization = page.locator('select[aria-label="Organization"]')
     assert organization.input_value()
-    project = page.get_by_label("Project")
+    project = page.locator('select[aria-label="Project"]')
     if not project.input_value():
         page.get_by_role("button", name="Create project").last.click()
         project.locator("option:not([disabled])").first.wait_for(state="attached")
