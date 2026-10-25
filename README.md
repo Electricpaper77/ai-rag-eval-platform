@@ -32,7 +32,7 @@ For the application smoke path, start `python -m uvicorn backend.app.main:app --
 
 ## Scope / limitations
 
-This is a release candidate backed by CI and disposable validation environments; it does not claim production ownership or managed-cloud operations. AMD/ROCm hardware validation is implemented, but real GPU execution remains blocked pending access to qualifying AMD hardware.
+This is a release candidate backed by CI and disposable validation environments; it does not claim production ownership or managed-cloud operations. Historical AMD/ROCm references describe prior validation scope only. GPU labels in this release are simulated; no physical NVIDIA DCGM measurements are included.
 
 ## Verify AgentTrust IQ in 5 Minutes
 
@@ -104,7 +104,7 @@ The deterministic evaluator always runs and remains the fallback if Gemini is un
 - [`tests/test_agenttrust_demo.py`](tests/test_agenttrust_demo.py) — demo response and JSONL contract.
 - [`tests/test_eval_harness.py`](tests/test_eval_harness.py) — canonical evaluation artifact contract.
 
-The frozen [Gate 24 MVP v1.0 release-candidate procedure](docs/GATE24_MVP_RELEASE_CANDIDATE.md) documents clean-checkout commands, the synthetic product journey, accessibility/security boundaries, and sanitized evidence requirements. The final [Gate 25 v1.0.0 verification package](docs/GATE25_V1_RELEASE_VERIFICATION.md) replaces obsolete checkout pins with the exact SHA recorded by its release manifest and documents the complete reset/exit-code contract.
+The frozen [Gate 24 MVP v1.0 release-candidate procedure](docs/GATE24_MVP_RELEASE_CANDIDATE.md) documents clean-checkout commands, the synthetic product journey, accessibility/security boundaries, and sanitized evidence requirements. The [Gate 25 v1.1.0-rc.1 verification package](docs/GATE25_V1_RELEASE_VERIFICATION.md) replaces obsolete checkout pins with the exact SHA recorded by its release manifest and documents the complete reset/exit-code contract. See the [v1.1.0-rc.1 release notes](docs/RELEASE_NOTES_V1_1_RC1.md).
 
 ## Project Links
 

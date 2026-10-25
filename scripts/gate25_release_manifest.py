@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -19,6 +20,8 @@ from typing import Any
 
 
 ROOT = Path(__file__).parents[1]
+RELEASE_IDENTITY = "v1.1.0-rc.1"
+RELEASE_IDENTITY_PATTERN = re.compile(r"^v\d+\.\d+\.\d+-rc\.\d+$")
 EVIDENCE_ROOTS = (ROOT / "artifacts" / "gate23g", ROOT / "artifacts" / "gate24")
 SECRET_PATTERNS = (
     "begin private key",
@@ -43,6 +46,17 @@ def _git_sha() -> str:
         return "unknown"
 
 
+def _release_identity() -> str:
+    value = os.environ.get("GATE25_RELEASE_IDENTITY")
+    if not value:
+        raise ValueError("GATE25_RELEASE_IDENTITY is required; refusing historical release fallback")
+    if not RELEASE_IDENTITY_PATTERN.fullmatch(value):
+        raise ValueError(f"invalid release identity: {value!r}")
+    if value != RELEASE_IDENTITY:
+        raise ValueError(f"unexpected release identity: {value!r}; expected {RELEASE_IDENTITY}")
+    return value
+
+
 def _exit(path: Path) -> int:
     if not path.is_file():
         return 1
@@ -65,6 +79,7 @@ def _evidence_files() -> dict[str, str]:
 
 
 def build_manifest(output: Path) -> dict[str, Any]:
+    release_identity = _release_identity()
     source_sha = _env("GATE25_SOURCE_SHA", _git_sha())
     evidence_files = _evidence_files()
     required = {
@@ -84,7 +99,7 @@ def build_manifest(output: Path) -> dict[str, Any]:
     workflow_url = _env("GATE25_WORKFLOW_URL")
     manifest: dict[str, Any] = {
         "schema": "agenttrust-gate25-release-v1",
-        "release": "AgentTrust IQ v1.0.0",
+        "release": f"AgentTrust IQ {release_identity}",
         "release_status": "NON_PRODUCTION_RELEASE_CANDIDATE",
         "source_sha": source_sha,
         "baseline_sha": _env("GATE25_BASELINE_SHA", source_sha),

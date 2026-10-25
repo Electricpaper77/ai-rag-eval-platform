@@ -1,4 +1,4 @@
-name: Gate 25 Non-Production v1.0.0 Release Verification
+name: Gate 25 Non-Production v1.1.0-rc.1 Release Verification
 
 on:
   pull_request:
@@ -14,7 +14,8 @@ on:
       - "docs/GATE23G_INDEPENDENT_ACCEPTANCE.md"
       - "docs/GATE24_MVP_RELEASE_CANDIDATE.md"
       - "docs/GATE25_V1_RELEASE_VERIFICATION.md"
-      - "release/agenttrust-iq-v1.0.0.md"
+      - "docs/RELEASE_NOTES_V1_1_RC1.md"
+      - "release/agenttrust-iq-v1.1.0-rc.1.md"
       - "requirements-test.txt"
       - "pytest.ini"
       - ".github/workflows/gate25-v1-release-verification.yml"
@@ -45,6 +46,7 @@ jobs:
       GATE23G_REQUIRED: "1"
       GATE25_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       GATE25_BASELINE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+      GATE25_RELEASE_IDENTITY: v1.1.0-rc.1
       GATE25_WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       GATE25_BROWSER: Chromium headless
       GATE25_POSTGRES_VERSION: postgres:16 disposable service
@@ -119,7 +121,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gate25-v1-release-verification
+          name: gate25-v1.1.0-rc1-release-verification
           path: |
             artifacts/gate23g/
             artifacts/gate24/

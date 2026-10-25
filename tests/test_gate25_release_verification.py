@@ -33,8 +33,10 @@ def test_gate25_docs_remove_obsolete_checkout_pins() -> None:
 def test_gate25_manifest_is_observed_and_sanitized(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GATE25_SOURCE_SHA", "test-source-sha")
     monkeypatch.setenv("GATE25_BASELINE_SHA", "test-baseline-sha")
+    monkeypatch.setenv("GATE25_RELEASE_IDENTITY", "v1.1.0-rc.1")
     manifest = build_manifest(tmp_path / "manifest.json")
     assert manifest["synthetic_only"] is True
+    assert manifest["release"] == "AgentTrust IQ v1.1.0-rc.1"
     assert manifest["source_sha"] == "test-source-sha"
     assert manifest["commands"]["gate23g_acceptance"]["exit_code"] == 0
     assert manifest["commands"]["gate24_contract"]["exit_code"] == 0
@@ -44,7 +46,28 @@ def test_gate25_manifest_is_observed_and_sanitized(tmp_path: Path, monkeypatch: 
     assert not re.search(r"bearer\s+eyj", serialized)
 
 
+def test_gate25_manifest_rejects_missing_or_wrong_release_identity(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("GATE25_RELEASE_IDENTITY", raising=False)
+    with pytest.raises(ValueError, match="GATE25_RELEASE_IDENTITY is required"):
+        build_manifest(tmp_path / "missing.json")
+
+    monkeypatch.setenv("GATE25_RELEASE_IDENTITY", "v1.0.0")
+    with pytest.raises(ValueError, match="(invalid|unexpected) release identity"):
+        build_manifest(tmp_path / "wrong.json")
+
+
 def test_gate25_capability_boundaries_are_explicit() -> None:
     docs = (ROOT / "docs" / "GATE25_V1_RELEASE_VERIFICATION.md").read_text(encoding="utf-8")
-    for phrase in ("synthetic_test", "implemented", "independently tested", "simulated", "unverified", "NO-GO"):
+    for phrase in (
+        "v1.1.0-rc.1",
+        "GATE25_RELEASE_IDENTITY",
+        "synthetic_test",
+        "implemented",
+        "independently tested",
+        "simulated",
+        "unverified",
+        "NO-GO",
+    ):
         assert phrase.lower() in docs.lower()
