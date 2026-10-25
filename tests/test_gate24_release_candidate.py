@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 
-pytestmark = pytest.mark.release_candidate
+pytestmark = [pytest.mark.release_candidate, pytest.mark.postgres_integration]
 ROOT = Path(__file__).parents[1]
 ARTIFACTS = ROOT / "artifacts" / "gate23g"
 RELEASE_ARTIFACTS = ROOT / "artifacts" / "gate24"
@@ -58,7 +58,10 @@ def test_gate24_gate23g_evidence_is_complete_and_sanitized() -> None:
     assert all(item["scroll_width"] <= item["width"] for item in browser["viewports"])
     for path in ARTIFACTS.glob("*.json"):
         text = path.read_text(encoding="utf-8").lower()
-        assert "synthetic_test" in text or "gate23g" in path.name
+        if path.name == "browser-acceptance.json":
+            assert '"synthetic_only": true' in text
+        else:
+            assert "synthetic_test" in text
         assert "begin private key" not in text
         assert "postgresql://" not in text
         assert not re.search(r"(bearer\s+eyj|password\s*[:=])", text)

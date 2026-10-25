@@ -99,5 +99,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: gate24-mvp-release-candidate
-          path: artifacts/gate23g/ artifacts/gate24/
+          path: |
+            artifacts/gate23g/
+            artifacts/gate24/
           if-no-files-found: error
