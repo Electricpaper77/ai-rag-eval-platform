@@ -15,7 +15,7 @@ import pytest
 from scripts.gate25_release_manifest import build_manifest
 
 
-pytestmark = pytest.mark.release_candidate
+pytestmark = [pytest.mark.release_candidate, pytest.mark.postgres_integration]
 ROOT = Path(__file__).parents[1]
 
 
