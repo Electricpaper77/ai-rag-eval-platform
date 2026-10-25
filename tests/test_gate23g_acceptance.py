@@ -213,7 +213,7 @@ def test_gate23g_chromium_reproducible_demo_accessibility_and_recovery(investiga
         expect(page.get_by_text(run_id)).to_be_visible()
         page.get_by_role("button", name="Inspect result").first.click()
         expect(page.get_by_role("heading", name="Evaluation detail")).to_be_visible()
-        page.get_by_role("button", name="Investigation").click()
+        page.get_by_role("button", name="Investigation", exact=True).click()
         page.get_by_role("button", name="Load persisted cases").click()
         expect(page.get_by_text("fixture-case")).to_be_visible()
         page.get_by_placeholder("Reviewer comment").fill("Browser fixture review; synthetic only.")
