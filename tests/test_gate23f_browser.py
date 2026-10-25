@@ -48,11 +48,24 @@ def _ensure_project_selected(page):
         page.locator('select[aria-label="Organization"]').locator("option:not([disabled])").first.wait_for(state="attached")
 
     organization = page.locator('select[aria-label="Organization"]')
+    if not organization.input_value():
+        organization.select_option(index=0)
     assert organization.input_value()
     project = page.locator('select[aria-label="Project"]')
+    available_projects = project.locator("option:not([disabled])")
+    create_project = page.get_by_role("button", name="Create project")
+    for _ in range(100):
+        if project.input_value() or available_projects.count() or create_project.count():
+            break
+        page.wait_for_timeout(100)
     if not project.input_value():
-        page.get_by_role("button", name="Create project").last.click()
-        project.locator("option:not([disabled])").first.wait_for(state="attached")
+        if available_projects.count():
+            project.select_option(index=0)
+        else:
+            assert create_project.count()
+            create_project.last.click()
+            project.locator("option:not([disabled])").first.wait_for(state="attached")
+            project.select_option(index=0)
     assert project.input_value()
 
 
