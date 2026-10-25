@@ -1,4 +1,4 @@
-# Gate 25 — Non-Production v1.0.0 Release Verification
+# Gate 25 — Non-Production v1.1.0-rc.1 Release Verification
 
 Gate 25 packages the already-validated AgentTrust IQ synthetic MVP. It freezes
 product scope and adds no customer-facing backend capability. The exact source
@@ -34,6 +34,7 @@ export AGENTTRUST_SAAS_DB=
 export AGENTTRUST_SAAS_BACKEND=postgres
 export AGENTTRUST_DEPLOYMENT_POLICY=test
 export AGENTTRUST_SAAS_RUNTIME_MODE=test
+export GATE25_RELEASE_IDENTITY="v1.1.0-rc.1"
 export GATE23G_REQUIRED=1
 python -c 'from saas.postgres_repository import migrate; migrate()'
 timeout 600s python -m pytest -q tests/test_gate23g_acceptance.py -m postgres_integration --maxfail=1
@@ -59,6 +60,7 @@ $env:AGENTTRUST_SAAS_DB = ""
 $env:AGENTTRUST_SAAS_BACKEND = "postgres"
 $env:AGENTTRUST_DEPLOYMENT_POLICY = "test"
 $env:AGENTTRUST_SAAS_RUNTIME_MODE = "test"
+$env:GATE25_RELEASE_IDENTITY = "v1.1.0-rc.1"
 $env:GATE23G_REQUIRED = "1"
 & .\.venv\Scripts\python.exe -c "from saas.postgres_repository import migrate; migrate()"
 & .\.venv\Scripts\python.exe -m pytest -q tests/test_gate23g_acceptance.py -m postgres_integration --maxfail=1
@@ -87,9 +89,11 @@ measurements or physical NVIDIA DCGM data.
 
 `artifacts/gate25/release-manifest.json` records the exact source SHA, baseline,
 workflow URL, environment, commands, exit codes, evidence paths and SHA-256
-digests. It is generated only after the real acceptance files exist and rejects
-known credential patterns. Missing evidence, non-zero exits or skipped mandatory
-tests fail the workflow.
+digests. The manifest requires the explicitly configured
+`GATE25_RELEASE_IDENTITY=v1.1.0-rc.1` and refuses missing, malformed or
+historical identities. It is generated only after the real acceptance files
+exist and rejects known credential patterns. Missing evidence, non-zero exits or
+skipped mandatory tests fail the workflow.
 
 ## Capability boundary and release decision
 
@@ -100,7 +104,7 @@ tests fail the workflow.
 | Simulated | Controlled OIDC provider, mock evaluation provider, GPU telemetry labels |
 | Unverified | Managed OIDC, production key custody, cloud backup/PITR, production RPO/RTO, physical DCGM metrics |
 
-This is a non-production v1.0.0 release candidate. Commercial production remains
+This is a non-production v1.1.0-rc.1 release candidate. Commercial production remains
 **NO-GO** pending managed identity, managed persistence, operational backup and
 retention/deletion, observability and paging, privacy/legal review, billing
 controls, deployment traffic management, recovery drills and physical GPU
