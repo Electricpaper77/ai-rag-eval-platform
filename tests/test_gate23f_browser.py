@@ -140,7 +140,11 @@ def test_retry_and_failure_injection_are_actionable_and_idempotent(investigation
         page.unroute("**/saas/organizations")
 
         page.get_by_role("button", name="Retry").click()
+        page.wait_for_load_state("networkidle")
         _ensure_project_selected(page)
+        page.get_by_role("button", name="Evaluations").click()
+        expect(page.locator("#content-title")).to_have_text("Evaluations")
+        expect(page.get_by_role("button", name="Submit synthetic evaluation")).to_be_visible()
 
         keys = []
         first = True
