@@ -77,7 +77,7 @@ def test_accessible_keyboard_journey_and_truthful_evidence(investigation_environ
         for label, heading in (("Projects", "Projects"), ("Evaluations", "Evaluations"), ("Scorecards", "Reliability scorecards"), ("Investigation", "Case investigation"), ("Release reviews", "Release reviews"), ("Settings", "Settings"), ("Dashboard", "Workspace dashboard")):
             page.get_by_role("button", name=label).scroll_into_view_if_needed()
             page.get_by_role("button", name=label).click()
-            expect(page.get_by_role("heading", name=heading)).to_be_visible()
+            expect(page.locator("#content-title")).to_have_text(heading)
             page.keyboard.press("Tab")
             assert page.evaluate("() => document.activeElement !== document.body")
 
