@@ -104,7 +104,7 @@ The deterministic evaluator always runs and remains the fallback if Gemini is un
 - [`tests/test_agenttrust_demo.py`](tests/test_agenttrust_demo.py) — demo response and JSONL contract.
 - [`tests/test_eval_harness.py`](tests/test_eval_harness.py) — canonical evaluation artifact contract.
 
-The frozen [Gate 24 MVP v1.0 release-candidate procedure](docs/GATE24_MVP_RELEASE_CANDIDATE.md) documents clean-checkout commands, the synthetic product journey, accessibility/security boundaries, and sanitized evidence requirements.
+The frozen [Gate 24 MVP v1.0 release-candidate procedure](docs/GATE24_MVP_RELEASE_CANDIDATE.md) documents clean-checkout commands, the synthetic product journey, accessibility/security boundaries, and sanitized evidence requirements. The final [Gate 25 v1.0.0 verification package](docs/GATE25_V1_RELEASE_VERIFICATION.md) replaces obsolete checkout pins with the exact SHA recorded by its release manifest and documents the complete reset/exit-code contract.
 
 ## Project Links
 

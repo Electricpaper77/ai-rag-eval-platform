@@ -44,3 +44,19 @@
 - This is a non-production portfolio release candidate. Managed identity,
   customer hosting, billing, cloud backup/retention, production RPO/RTO and
   physical NVIDIA DCGM validation remain blocked.
+
+## Gate 25 — v1.0.0 release verification and packaging
+
+- Final packaging uses the real Gate 23G FastAPI/PostgreSQL/Chromium journey and
+  the Gate 24 release contract; it does not add a second product path.
+- The [Gate 25 reproducibility procedure](GATE25_V1_RELEASE_VERIFICATION.md)
+  resolves the tested source SHA at runtime, records command exit codes and
+  SHA-256 evidence digests, and states the Linux-CI versus Windows boundary.
+- The release manifest separates implemented, independently tested, simulated
+  and unverified capabilities. Fixture case rows are `synthetic_test`, mock
+  evaluation output is not provider measurement, and GPU labels are simulated,
+  not physical NVIDIA DCGM.
+- Non-production only: managed OIDC/key custody, production persistence,
+  cloud backup/PITR, retention/deletion operations, observability/paging,
+  billing, customer access, production RPO/RTO and deployment traffic controls
+  remain blockers.

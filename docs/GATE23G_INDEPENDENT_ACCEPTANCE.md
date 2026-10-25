@@ -13,14 +13,17 @@ approximately 2 GB of disposable disk space. Expected command exit codes are
 shown explicitly; any non-zero code is a failed acceptance.
 
 ```bash
+set -eu
 git clone https://github.com/Electricpaper77/ai-rag-eval-platform.git
 cd ai-rag-eval-platform
-git checkout feature/gate23g-independent-product-acceptance
+export GATE25_SOURCE_SHA="$(git ls-remote origin refs/heads/main | cut -f1)"
+git checkout --detach "$GATE25_SOURCE_SHA"
 python -m venv .venv
 . .venv/bin/activate
 python -m pip install -r requirements-test.txt playwright                 # 0
 python -m playwright install --with-deps chromium                          # 0
 npm install --no-save --ignore-scripts axe-core@4.10.2                    # 0
+docker rm -f agenttrust-gate23g-postgres 2>/dev/null || true
 docker run -d --rm --name agenttrust-gate23g-postgres -e POSTGRES_PASSWORD=gate23g \
   -e POSTGRES_DB=agenttrust -p 5432:5432 postgres:16                    # 0; detached
 export AGENTTRUST_POSTGRES_URL=postgresql://postgres:gate23g@localhost:5432/agenttrust
@@ -29,13 +32,17 @@ export AGENTTRUST_SAAS_BACKEND=postgres
 export AGENTTRUST_DEPLOYMENT_POLICY=test
 export AGENTTRUST_SAAS_RUNTIME_MODE=test
 export GATE23G_REQUIRED=1
+trap 'docker rm -f agenttrust-gate23g-postgres >/dev/null 2>&1 || true' EXIT
 python -c 'from saas.postgres_repository import migrate; migrate()'             # 0
 timeout 600s python -m pytest -q tests/test_gate23g_acceptance.py \
   -m postgres_integration --maxfail=1                                        # 0
 ```
 
-PowerShell users should set the same variables with `$env:NAME = "value"` and
-use `docker run -d`; stop and remove the disposable container after the run.
+PowerShell users should set `$ErrorActionPreference = "Stop"`, resolve
+`$env:GATE25_SOURCE_SHA` from `git ls-remote`, use `git checkout --detach`, and
+run `docker rm -f agenttrust-gate23g-postgres` before and after the run. Every
+Python and Docker command must be checked; a non-zero exit is a failed
+acceptance, not a recoverable warning.
 The test fixture supplies a controlled OIDC provider and obtains sessions only
 through `/saas/auth/login` and `/saas/auth/callback`. It never inserts a session
 or identity directly.
@@ -74,10 +81,11 @@ there is no silent skip path when `GATE23G_REQUIRED=1`.
 ## Reset and troubleshooting
 
 Use a new disposable PostgreSQL container/database for every run. If migration
-or authentication state persists, stop and remove only the named disposable
-container, then rerun. A 503 indicates restore quarantine or unavailable
-persistence; a 401/403 indicates authentication or tenant authorization; a 409
-indicates a stale revision and must not be retried with a new mutation key.
+or authentication state persists, remove only the named disposable container,
+then rerun. A 503 indicates restore quarantine or unavailable persistence; a
+401/403 indicates authentication or tenant authorization; a 409 indicates a
+stale revision and must not be retried with a new mutation key. Windows has not
+been counted as Linux CI evidence unless a recorded workflow says so.
 Docker or Chromium installation failures are environment blockers, not passing
 acceptance evidence.
 

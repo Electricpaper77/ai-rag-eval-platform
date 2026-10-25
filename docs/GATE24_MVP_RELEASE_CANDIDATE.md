@@ -28,14 +28,17 @@ Prerequisites: Git, Python 3.11, Node 20, Docker, and a browser-capable local
 runtime. No paid service or credential is required.
 
 ```bash
+set -eu
 git clone https://github.com/Electricpaper77/ai-rag-eval-platform.git
 cd ai-rag-eval-platform
-git checkout 849fc838ee9f2d5098a0dd4a009bf28b2d4309de
+export GATE25_SOURCE_SHA="$(git ls-remote origin refs/heads/main | cut -f1)"
+git checkout --detach "$GATE25_SOURCE_SHA"
 python -m venv .venv
 . .venv/bin/activate
 python -m pip install -r requirements-test.txt playwright
 python -m playwright install --with-deps chromium
 npm install --no-save --ignore-scripts axe-core@4.10.2
+docker rm -f agenttrust-gate24-postgres 2>/dev/null || true
 docker run --name agenttrust-gate24-postgres --rm -d \
   -e POSTGRES_PASSWORD=gate24 -e POSTGRES_DB=agenttrust \
   -p 5432:5432 postgres:16
@@ -45,10 +48,11 @@ export AGENTTRUST_SAAS_BACKEND=postgres
 export AGENTTRUST_DEPLOYMENT_POLICY=test
 export AGENTTRUST_SAAS_RUNTIME_MODE=test
 export GATE23G_REQUIRED=1
+trap 'docker rm -f agenttrust-gate24-postgres >/dev/null 2>&1 || true' EXIT
 python -c "from saas.postgres_repository import migrate; migrate()"
 python -m pytest -q tests/test_gate23g_acceptance.py -m postgres_integration --maxfail=1
 python -m pytest -q tests/test_gate24_release_candidate.py -m release_candidate
-docker stop agenttrust-gate24-postgres
+docker rm -f agenttrust-gate24-postgres
 ```
 
 The command returns exit code `0` only when all required tests and evidence
@@ -62,13 +66,16 @@ before repeating the clean setup.
 Use the same prerequisites and replace environment/export syntax with:
 
 ```powershell
+$ErrorActionPreference = "Stop"
 git clone https://github.com/Electricpaper77/ai-rag-eval-platform.git
 Set-Location ai-rag-eval-platform
-git checkout 849fc838ee9f2d5098a0dd4a009bf28b2d4309de
+$env:GATE25_SOURCE_SHA = (git ls-remote origin refs/heads/main).Split("`t")[0]
+git checkout --detach $env:GATE25_SOURCE_SHA
 py -3.11 -m venv .venv
 & .\.venv\Scripts\python.exe -m pip install -r requirements-test.txt playwright
 & .\.venv\Scripts\python.exe -m playwright install chromium
 npm install --no-save --ignore-scripts axe-core@4.10.2
+docker rm -f agenttrust-gate24-postgres 2>$null; if ($LASTEXITCODE -notin 0,1) { exit $LASTEXITCODE }
 docker run --name agenttrust-gate24-postgres --rm -d -e POSTGRES_PASSWORD=gate24 -e POSTGRES_DB=agenttrust -p 5432:5432 postgres:16
 $env:AGENTTRUST_POSTGRES_URL = "postgresql://postgres:gate24@localhost:5432/agenttrust"
 $env:AGENTTRUST_SAAS_DB = ""
@@ -79,7 +86,7 @@ $env:GATE23G_REQUIRED = "1"
 & .\.venv\Scripts\python.exe -c "from saas.postgres_repository import migrate; migrate()"
 & .\.venv\Scripts\python.exe -m pytest -q tests/test_gate23g_acceptance.py -m postgres_integration --maxfail=1
 & .\.venv\Scripts\python.exe -m pytest -q tests/test_gate24_release_candidate.py -m release_candidate
-docker stop agenttrust-gate24-postgres
+docker rm -f agenttrust-gate24-postgres
 ```
 
 PowerShell preserves the Python exit code; a non-zero command stops the
@@ -117,5 +124,6 @@ real credentials in the environment or artifacts.
   or production GPU performance claim is made.
 
 The workflow writes the final commit SHA, actual test exit codes, sanitized
-manifest and hashes of each evidence file. Its artifact, not this document,
-is the source of truth for final run counts and digests.
+manifest and hashes of each evidence file. Gate 25 adds the final packaging
+workflow and manifest; its artifact, not this document, is the source of truth
+for final run counts and digests.
