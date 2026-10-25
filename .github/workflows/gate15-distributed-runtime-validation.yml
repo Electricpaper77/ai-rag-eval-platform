@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: "3.11"}
       - name: Install regression dependencies
-        run: python -m pip install --disable-pip-version-check -r requirements-lite.txt pytest
+        run: python -m pip install --disable-pip-version-check -r requirements-test.txt
       - name: Record environment and commit
         run: |
           mkdir -p distributed/evidence
