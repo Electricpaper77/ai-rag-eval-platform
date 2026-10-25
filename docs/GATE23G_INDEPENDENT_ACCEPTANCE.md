@@ -55,7 +55,8 @@ The mandatory test suite executes:
 7. 401 unauthenticated access, missing-CSRF rejection, 403/404 cross-tenant
    denial, 409 stale revision, 503 quarantine, malformed JSON and network retry;
 8. sanitized evidence generation with fixture provenance explicitly labeled
-   `synthetic_fixture` rather than provider measurement.
+   `synthetic_test`; the evidence metadata separately states that the row is a
+   fixture and not provider measurement.
 
 The case rows used to demonstrate investigation are inserted as deterministic
 fixture rows and are not claimed to originate from organic evaluation ingestion.

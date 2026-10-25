@@ -51,7 +51,7 @@ def _insert_fixture_case(org_id: str, project_id: str, run_id: str, key: str) ->
         conn.execute(
             "INSERT INTO evaluation_cases VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
             (key, org_id, project_id, run_id, "fixture-case", "failed", "groundedness", 0.1,
-             json.dumps(evidence), digest, "synthetic_fixture", "2026-01-01T00:00:00+00:00"),
+             json.dumps(evidence), digest, "synthetic_test", "2026-01-01T00:00:00+00:00"),
         )
         conn.commit()
 
@@ -113,7 +113,7 @@ def test_gate23g_real_http_journey_security_and_reproducible_evidence(investigat
     case_id = f"gate23g-case-{suffix}"
     _insert_fixture_case(org_id, project_id, run_id, case_id)
     cases = client.get(f"/saas/evaluations/{run_id}/cases?organization_id={org_id}&project_id={project_id}", cookies=cookies_a)
-    assert cases.status_code == 200 and cases.json()["cases"][0]["provenance"] == "synthetic_fixture"
+    assert cases.status_code == 200 and cases.json()["cases"][0]["provenance"] == "synthetic_test"
     review = client.post(
         f"/saas/cases/{case_id}/reviews?organization_id={org_id}",
         json={"status": "confirmed", "comment": "Synthetic fixture reviewed.", "expected_revision": 0, "idempotency_key": f"gate23g-review-{suffix}"},
@@ -159,7 +159,7 @@ def test_gate23g_real_http_journey_security_and_reproducible_evidence(investigat
     evidence = {
         "schema": "gate23g-http-acceptance-v1",
         "synthetic_only": True,
-        "fixture_case_provenance": "synthetic_fixture; not organic provider ingestion",
+        "fixture_case_provenance": "synthetic_test; fixture-only and not organic provider ingestion",
         "journey": ["organization", "project", "evaluation", "persisted_result", "decision", "case", "annotation", "release_review", "json_export", "csv_export", "refreshable_state"],
         "security_statuses": {"unauthorized": 401, "missing_csrf": 403, "stale_revision": 409, "quarantine": 503, "cross_tenant": "403_or_404"},
     }
