@@ -104,6 +104,8 @@ The deterministic evaluator always runs and remains the fallback if Gemini is un
 - [`tests/test_agenttrust_demo.py`](tests/test_agenttrust_demo.py) — demo response and JSONL contract.
 - [`tests/test_eval_harness.py`](tests/test_eval_harness.py) — canonical evaluation artifact contract.
 
+The frozen [Gate 24 MVP v1.0 release-candidate procedure](docs/GATE24_MVP_RELEASE_CANDIDATE.md) documents clean-checkout commands, the synthetic product journey, accessibility/security boundaries, and sanitized evidence requirements.
+
 ## Project Links
 
 - [Static project walkthrough](https://ai-agent-reliability-platform-rtcd.vercel.app/)

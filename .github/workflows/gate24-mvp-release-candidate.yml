@@ -1,0 +1,105 @@
+name: Gate 24 Non-Production MVP Release Candidate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - "backend/**"
+      - "saas/**"
+      - "tests/test_gate23*.py"
+      - "tests/test_gate24*.py"
+      - "requirements-test.txt"
+      - "pytest.ini"
+      - "docs/GATE23*.md"
+      - "docs/GATE24*.md"
+      - ".github/workflows/gate23g-independent-product-acceptance.yml"
+      - ".github/workflows/gate24-mvp-release-candidate.yml"
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  mvp-release-candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: gate24
+          POSTGRES_DB: agenttrust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U postgres -d agenttrust"
+          --health-interval=5s --health-timeout=5s --health-retries=24
+    env:
+      AGENTTRUST_POSTGRES_URL: postgresql://postgres:gate24@localhost:5432/agenttrust
+      AGENTTRUST_SAAS_DB: ""
+      AGENTTRUST_SAAS_BACKEND: postgres
+      AGENTTRUST_DEPLOYMENT_POLICY: test
+      AGENTTRUST_SAAS_RUNTIME_MODE: test
+      GATE23G_REQUIRED: "1"
+      GATE24_BASELINE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+      GATE24_EVIDENCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - uses: actions/setup-node@v4
+        with: {node-version: "20"}
+      - name: Install reproducible test dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-test.txt playwright
+      - name: Install Chromium and axe-core
+        run: |
+          python -m playwright install --with-deps chromium
+          npm install --no-save --ignore-scripts axe-core@4.10.2
+      - name: Apply versioned PostgreSQL migrations
+        run: python -c "from saas.postgres_repository import migrate; migrate()"
+      - name: Initialize sanitized release evidence
+        run: |
+          mkdir -p artifacts/gate23g artifacts/gate24
+          printf '{"schema":"gate24-evidence-v1","status":"started","synthetic_only":true,"commit_sha":"%s"}\n' "$GATE24_EVIDENCE_SHA" > artifacts/gate24/run-state.json
+      - name: Require Gate 23G tests to collect
+        run: |
+          python -m pytest --collect-only -q tests/test_gate23g_acceptance.py -m postgres_integration | tee artifacts/gate24/gate23g-collection.txt
+          test "$(grep -c '::test_gate23g_' artifacts/gate24/gate23g-collection.txt)" -eq 3
+      - name: Run real PostgreSQL and Chromium product acceptance
+        run: |
+          set +e
+          timeout 600s python -m pytest -q tests/test_gate23g_acceptance.py -m postgres_integration --maxfail=1 > artifacts/gate23g/pytest.txt 2>&1
+          status=$?
+          echo "$status" > artifacts/gate23g/pytest.exit
+          cat artifacts/gate23g/pytest.txt
+          exit "$status"
+      - name: Require Gate 24 evidence contract to collect
+        run: |
+          python -m pytest --collect-only -q tests/test_gate24_release_candidate.py -m release_candidate | tee artifacts/gate24/collection.txt
+          test "$(grep -c '::test_gate24_' artifacts/gate24/collection.txt)" -eq 3
+      - name: Build sanitized release manifest
+        run: |
+          set +e
+          python -m pytest -q tests/test_gate24_release_candidate.py -m release_candidate --maxfail=1 > artifacts/gate24/pytest.txt 2>&1
+          status=$?
+          echo "$status" > artifacts/gate24/pytest.exit
+          cat artifacts/gate24/pytest.txt
+          exit "$status"
+      - name: Verify mandatory release evidence
+        run: |
+          test "$(cat artifacts/gate23g/pytest.exit)" -eq 0
+          test "$(cat artifacts/gate24/pytest.exit)" -eq 0
+          test -f artifacts/gate23g/http-acceptance.json
+          test -f artifacts/gate23g/browser-acceptance.json
+          test -f artifacts/gate24/release-manifest.json
+          test "$(find artifacts/gate23g -name 'gate23g-*.png' | wc -l)" -eq 4
+          grep -q '"synthetic_only": true' artifacts/gate24/release-manifest.json
+          grep -q "$GATE24_EVIDENCE_SHA" artifacts/gate24/release-manifest.json
+      - name: Upload sanitized Gate 24 release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate24-mvp-release-candidate
+          path: |
+            artifacts/gate23g/
+            artifacts/gate24/
+          if-no-files-found: error

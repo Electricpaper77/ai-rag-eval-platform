@@ -31,8 +31,6 @@ evidence digest and are explicitly non-deployment records. Exports are tenant
 scoped, sanitized and carry a non-production disclaimer. Gate 23D validation uses
 synthetic PostgreSQL data and Chromium only.
 
-\n+## Gate 23E product UX and demo readiness
-\n+The authenticated workspace now provides a resumable, tenant-scoped first-run
 journey: organization, project, evaluation, policy decision, investigation,
 reviewer annotation, release review, and sanitized export. Progress is derived
 from persisted API records; local storage contains only scoped identifiers and
