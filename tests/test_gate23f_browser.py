@@ -98,19 +98,19 @@ def test_retry_and_failure_injection_are_actionable_and_idempotent(investigation
 
         page.route("**/saas/organizations", lambda route: route.fulfill(status=503, content_type="application/json", body='{"detail":"quarantined"}'))
         page.goto(url)
-        expect(page.get_by_text("Database target is quarantined or unavailable.")).to_be_visible()
+        expect(page.locator(".error")).to_have_text("Database target is quarantined or unavailable.")
         expect(page.get_by_role("button", name="Retry")).to_be_visible()
         page.unroute("**/saas/organizations")
 
         malformed = lambda route: route.fulfill(status=200, content_type="application/json", body="not-json")
         page.route("**/saas/organizations", malformed)
         page.get_by_role("button", name="Retry").click()
-        expect(page.get_by_text("The server returned invalid data. Retry the request.")).to_be_visible()
+        expect(page.locator(".error")).to_have_text("The server returned invalid data. Retry the request.")
         page.unroute("**/saas/organizations")
 
         page.route("**/saas/organizations", lambda route: route.fulfill(status=401, content_type="application/json", body='{"detail":"expired"}'))
         page.get_by_role("button", name="Retry").click()
-        expect(page.get_by_text("Your session expired. Authenticate through OIDC first.")).to_be_visible()
+        expect(page.locator(".error")).to_have_text("Your session expired. Authenticate through OIDC first.")
         page.unroute("**/saas/organizations")
 
         page.get_by_role("button", name="Retry").click()
@@ -133,7 +133,7 @@ def test_retry_and_failure_injection_are_actionable_and_idempotent(investigation
 
         page.route("**/saas/projects/*/evaluations", fail_once)
         page.get_by_role("button", name="Submit synthetic evaluation").click()
-        expect(page.get_by_text("Database target is quarantined or unavailable.")).to_be_visible()
+        expect(page.locator(".error")).to_have_text("Database target is quarantined or unavailable.")
         page.get_by_role("button", name="Retry").click()
         expect(page.get_by_text("Evaluation persisted.")).to_be_visible()
         assert len(keys) == 2 and keys[0] and keys[0] == keys[1]
