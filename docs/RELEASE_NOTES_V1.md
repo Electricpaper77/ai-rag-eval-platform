@@ -14,7 +14,7 @@ AgentTrust IQ v1.0.0 is a portfolio/research release demonstrating reproducible 
 
 ## Verification
 
-See the [architecture](ARCHITECTURE.md), [infrastructure case study](INFRASTRUCTURE_CASE_STUDY.md), [evidence summary](INFRASTRUCTURE_EVIDENCE_SUMMARY.md), and [canonical evidence registry](../evidence/infrastructure/gates.json). The final Gate 19 workflow records the exact tested SHA, fresh HTTP smoke results, regression counts, and artifact digest.
+See the [architecture](ARCHITECTURE.md), [infrastructure case study](INFRASTRUCTURE_CASE_STUDY.md), [evidence summary](INFRASTRUCTURE_EVIDENCE_SUMMARY.md), and [canonical evidence registry](../evidence/infrastructure/gates.json). The [Gate 25 verification package](GATE25_V1_RELEASE_VERIFICATION.md) records the exact tested source SHA, real PostgreSQL/Chromium journey, command exit codes, sanitized evidence paths and SHA-256 digests.
 
 ## Known Limitations
 
@@ -28,3 +28,4 @@ Not claimed:
 - Not claimed: MI300 execution.
 - Not claimed: multi-GPU execution.
 - Not claimed: production-scale infrastructure.
+- Not claimed: production OIDC, production RPO/RTO, cloud PITR, live billing, customer access, or physical NVIDIA DCGM metrics.
