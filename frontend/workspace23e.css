@@ -7,7 +7,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .workspace-shell { min-height:100vh; display:grid; grid-template-columns:240px minmax(0,1fr); }
 .workspace-sidebar { min-width:0; overflow:hidden; background:var(--navy); color:#eef5ff; padding:24px 18px; display:flex; flex-direction:column; gap:20px; }
 .brand-block h1 { font-size:1.25rem; margin:0 0 12px; }
-.eyebrow { margin:0; color:#6b7d97; font-size:.72rem; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
+.eyebrow { margin:0; color:#4b5d75; font-size:.72rem; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
 .workspace-sidebar .eyebrow { color:#a9c4ed; }
 .demo-badge { display:inline-block; max-width:100%; overflow-wrap:anywhere; border:1px solid #6689bf; border-radius:999px; color:#cce1ff; font-size:.7rem; padding:5px 8px; }
 .nav { display:flex; flex-direction:column; gap:6px; min-width:0; max-width:100%; width:100%; }

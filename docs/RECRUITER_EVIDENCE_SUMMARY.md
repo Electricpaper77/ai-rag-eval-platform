@@ -16,3 +16,17 @@
 - Go build/test/vet and `CGO_ENABLED=1 go test -race ./...` all exited 0; evaluator regression exited 0 with 7 passed.
 - GPU honesty: events are explicitly labeled simulated; no physical DCGM measurement is claimed.
 - Cost boundary: local containers only; no paid cloud deployment.
+
+## Gate 23F — Product hardening
+
+- Hardened the authenticated synthetic workspace with actionable 401/403/503,
+  malformed-response and network-loss states, scope-aware stale-response guards,
+  stable idempotency keys across retries, and keyboard/focus transitions.
+- Mandatory Chromium evidence covers 320/390/768/1440px layouts, target-size and
+  accessible-name checks, axe-core WCAG 2A/2AA scanning, cross-tenant denial,
+  quarantine handling and a transient evaluation retry.
+- Evidence is disposable PostgreSQL with a controlled test identity. Case rows
+  are explicitly `synthetic_test`; no provider, customer or physical GPU/DCGM
+  measurement is implied.
+- Production blockers remain managed identity, customer hosting, cloud retention,
+  billing, production RPO/RTO and physical NVIDIA DCGM validation.
