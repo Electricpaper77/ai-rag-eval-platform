@@ -31,3 +31,14 @@ evidence digest and are explicitly non-deployment records. Exports are tenant
 scoped, sanitized and carry a non-production disclaimer. Gate 23D validation uses
 synthetic PostgreSQL data and Chromium only.
 
+\n+## Gate 23E product UX and demo readiness
+\n+The authenticated workspace now provides a resumable, tenant-scoped first-run
+journey: organization, project, evaluation, policy decision, investigation,
+reviewer annotation, release review, and sanitized export. Progress is derived
+from persisted API records; local storage contains only scoped identifiers and
+never evidence or customer content. Missing case data remains `MISSING_EVIDENCE`.
+Gate 23E validates 320px, 390px, 768px, and 1440px Chromium viewports, keyboard
+focus, reduced-motion preferences, refresh persistence, cross-tenant denial, and
+restore quarantine with disposable PostgreSQL and synthetic identities. This is a
+non-production UX demonstration, not a customer-ready deployment.
+

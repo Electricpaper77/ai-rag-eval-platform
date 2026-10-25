@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AgentTrust IQ Gate 23E Workspace</title>
+    <link rel="stylesheet" href="/workspace23e.css" />
+  </head>
+  <body>
+    <div class="workspace-shell">
+      <aside class="workspace-sidebar" aria-label="Workspace sidebar">
+        <div class="brand-block"><p class="eyebrow">AgentTrust IQ</p><h1>Reliability workspace</h1><span class="demo-badge">NON-PRODUCTION · SYNTHETIC DEMO</span></div>
+        <nav class="nav" aria-label="Workspace navigation">
+          <button class="active" data-view="dashboard" type="button">Dashboard</button>
+          <button data-view="projects" type="button">Projects</button>
+          <button data-view="evaluations" type="button">Evaluations</button>
+          <button data-view="results" type="button">Results</button>
+          <button data-view="scorecards" type="button">Scorecards</button>
+          <button data-view="investigation" type="button">Investigation</button>
+          <button data-view="release-reviews" type="button">Release reviews</button>
+          <button data-view="settings" type="button">Settings</button>
+        </nav>
+        <p class="sidebar-note">Synthetic records only. Reviewer evidence does not authorize deployment.</p>
+      </aside>
+      <main class="workspace-main" aria-labelledby="title">
+        <header class="workspace-topbar"><div><p class="eyebrow">Authenticated SaaS workspace</p><h2 id="title">Workspace dashboard</h2><p class="muted">Persisted evaluation evidence for one authorized organization and project.</p></div><div class="workspace-controls"><label>Organization<select aria-label="Organization"></select></label><label>Project<select aria-label="Project"></select></label><button class="primary" id="newEval" type="button">New evaluation</button></div></header>
+        <section class="workspace-status" aria-live="polite" role="status"><span id="announcement">Loading authorized workspace records…</span></section>
+        <section id="content" aria-live="polite" role="region" aria-labelledby="content-title"></section>
+      </main>
+    </div>
+    <script src="/workspace23e.js"></script>
+  </body>
+</html>
+
