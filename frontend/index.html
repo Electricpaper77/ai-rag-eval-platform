@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Model-agnostic AI reliability platform for evaluating RAG and AI-agent systems across groundedness, citations, hallucinations, refusals, prompt injection, PII, latency, and release readiness."
+      content="AgentTrust IQ v1.1.0-rc.1: a non-production synthetic MVP for authenticated AI reliability evaluation, tenant-safe evidence, and reproducible release checks."
     />
-    <meta property="og:title" content="AgentTrust IQ | AI Agent Reliability and LLM Evaluation" />
+    <meta property="og:title" content="AgentTrust IQ v1.1.0-rc.1 | AI Reliability and Evaluation" />
     <meta property="og:description" content="Test, trace, and ship reliable AI agents with replayable JSONL evidence." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://ai-agent-reliability-platform-rtcd.vercel.app/" />
     <link rel="canonical" href="https://ai-agent-reliability-platform-rtcd.vercel.app/" />
-    <title>AgentTrust IQ | AI Agent Reliability and LLM Evaluation</title>
+    <title>AgentTrust IQ v1.1.0-rc.1 | AI Agent Reliability and LLM Evaluation</title>
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -26,6 +26,7 @@
         <a href="#metrics">Metrics</a>
         <a href="#live-eval-console">Demo</a>
         <a href="#proof">Proof</a>
+        <a href="#release-evidence">Release</a>
         <a href="#case-study">Case Study</a>
         <a href="#contact">Contact</a>
       </nav>
@@ -75,7 +76,7 @@
     <main id="top">
       <section class="hero section-shell">
         <div class="hero-copy">
-          <p class="hero-role-badge">AI Agent Reliability Platform</p>
+          <p class="hero-role-badge">AgentTrust IQ · Non-production MVP v1.1.0-rc.1</p>
           <p class="eyebrow">Flagship portfolio project by Zohaib Ahmed</p>
           <h1>Test, trace, and ship reliable AI agents.</h1>
           <p class="subtitle">
@@ -207,10 +208,36 @@
           </div>
         </dl>
         <p class="interview-cloud-proof">
-          <strong>Cloud deployment configuration:</strong> FastAPI backend, Dockerized runtime, Cloud Run
-          deployment configuration, CI/CD checks, JSONL audit logs, latency/throughput metrics, and regression
-          gates.
+          <strong>Deployment configuration proof:</strong> FastAPI backend, Dockerized runtime, CI/CD checks,
+          JSONL audit logs, latency/throughput metrics, and regression gates. These are configuration and
+          disposable-test artifacts, not a production cloud deployment.
         </p>
+      </section>
+
+      <section id="release-evidence" class="section-shell run-evidence" aria-labelledby="release-evidence-title">
+        <div class="section-heading compact">
+          <p class="eyebrow">Current release</p>
+          <h2 id="release-evidence-title">AgentTrust IQ v1.1.0-rc.1</h2>
+          <p>Non-production synthetic SaaS MVP; fixture-derived evidence is labeled synthetic_test.</p>
+        </div>
+        <div class="run-evidence-grid">
+          <article class="run-evidence-card">
+            <h3>Product scope</h3>
+            <p>FastAPI · PostgreSQL · Python · Go · Docker · GitHub Actions, with tenant isolation, evaluations, policy decisions, and evidence export.</p>
+          </article>
+          <article class="run-evidence-card">
+            <h3>Verified evidence</h3>
+            <p>
+              <a href="https://github.com/Electricpaper77/ai-rag-eval-platform/releases/tag/v1.1.0-rc.1" target="_blank" rel="noreferrer">Published prerelease</a>
+              · <a href="https://github.com/Electricpaper77/ai-rag-eval-platform/blob/main/docs/GATE25_V1_RELEASE_VERIFICATION.md" target="_blank" rel="noreferrer">Gate 25 release verification</a>
+              · <a href="https://github.com/Electricpaper77/ai-rag-eval-platform/actions/runs/40171000374" target="_blank" rel="noreferrer">Evidence workflow</a>
+            </p>
+          </article>
+          <article class="run-evidence-card">
+            <h3>Boundaries</h3>
+            <p>Synthetic and disposable environments only. No production customer access, live billing, production RPO/RTO, managed OIDC/PITR, or physical NVIDIA DCGM measurement is claimed.</p>
+          </article>
+        </div>
       </section>
 
       <section
