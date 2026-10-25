@@ -189,11 +189,13 @@ def test_gate23g_chromium_reproducible_demo_accessibility_and_recovery(investiga
         page = context.new_page()
         page.goto(origin + "/saas-workspace23e.html")
         suffix = uuid.uuid4().hex[:10]
+        page.wait_for_function("""() => document.querySelector('select[aria-label="Organization"] option:not([disabled])') || [...document.querySelectorAll('button')].some(button => button.textContent.trim() === 'Create organization')""", timeout=15000)
         if page.get_by_role("button", name="Create organization").count():
             page.locator('input[name="name"]').fill(f"Browser demo {suffix}")
             page.get_by_role("button", name="Create organization").click()
             page.locator('select[aria-label="Organization"] option:not([disabled])').first.wait_for(state="attached")
         org_id = page.locator('select[aria-label="Organization"]').input_value()
+        page.wait_for_function("""() => document.querySelector('select[aria-label="Project"] option:not([disabled])') || [...document.querySelectorAll('button')].some(button => button.textContent.trim() === 'Create project')""", timeout=15000)
         if page.get_by_role("button", name="Create project").count():
             page.locator('input[name="name"]').fill(f"Browser project {suffix}")
             page.get_by_role("button", name="Create project").click()
