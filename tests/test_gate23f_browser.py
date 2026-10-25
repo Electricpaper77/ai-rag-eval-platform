@@ -40,6 +40,22 @@ def _assert_controls_reachable(page):
             assert control.get_attribute("aria-label") or control.text_content() or control.get_attribute("title"), index
 
 
+def _ensure_project_selected(page):
+    """Continue from either a clean or already-persisted authenticated workspace."""
+    create_org = page.get_by_role("button", name="Create organization")
+    if create_org.count():
+        create_org.last.click()
+        page.get_by_label("Organization").locator("option:not([disabled])").first.wait_for(state="attached")
+
+    organization = page.get_by_label("Organization")
+    assert organization.input_value()
+    project = page.get_by_label("Project")
+    if not project.input_value():
+        page.get_by_role("button", name="Create project").last.click()
+        project.locator("option:not([disabled])").first.wait_for(state="attached")
+    assert project.input_value()
+
+
 def test_accessible_keyboard_journey_and_truthful_evidence(investigation_environment, tmp_path):
     base_url, cookies_a, _cookies_b = investigation_environment
     origin = base_url.split("/saas-workspace.html", 1)[0]
@@ -53,10 +69,7 @@ def test_accessible_keyboard_journey_and_truthful_evidence(investigation_environ
         context.add_cookies([{"name": name, "value": value, "url": origin} for name, value in cookies_a.items()])
         page = context.new_page()
         page.goto(url)
-        page.get_by_role("button", name="Create organization").last.click()
-        page.get_by_label("Organization").locator("option:not([disabled])").first.wait_for(state="attached")
-        page.get_by_role("button", name="Create project").last.click()
-        page.get_by_label("Project").locator("option:not([disabled])").first.wait_for(state="attached")
+        _ensure_project_selected(page)
         page.get_by_role("button", name="Submit synthetic evaluation").click()
         page.get_by_text("Evaluation persisted.").wait_for()
         page.get_by_role("button", name="Record policy decision").click()
@@ -114,10 +127,7 @@ def test_retry_and_failure_injection_are_actionable_and_idempotent(investigation
         page.unroute("**/saas/organizations")
 
         page.get_by_role("button", name="Retry").click()
-        page.get_by_role("button", name="Create organization").last.click()
-        page.get_by_label("Organization").locator("option:not([disabled])").first.wait_for(state="attached")
-        page.get_by_role("button", name="Create project").last.click()
-        page.get_by_label("Project").locator("option:not([disabled])").first.wait_for(state="attached")
+        _ensure_project_selected(page)
 
         keys = []
         first = True
