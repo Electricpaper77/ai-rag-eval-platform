@@ -21,8 +21,8 @@ python -m venv .venv
 python -m pip install -r requirements-test.txt playwright                 # 0
 python -m playwright install --with-deps chromium                          # 0
 npm install --no-save --ignore-scripts axe-core@4.10.2                    # 0
-docker run --rm --name agenttrust-gate23g-postgres -e POSTGRES_PASSWORD=gate23g \
-  -e POSTGRES_DB=agenttrust -p 5432:5432 postgres:16                    # background
+docker run -d --rm --name agenttrust-gate23g-postgres -e POSTGRES_PASSWORD=gate23g \
+  -e POSTGRES_DB=agenttrust -p 5432:5432 postgres:16                    # 0; detached
 export AGENTTRUST_POSTGRES_URL=postgresql://postgres:gate23g@localhost:5432/agenttrust
 export AGENTTRUST_SAAS_DB=
 export AGENTTRUST_SAAS_BACKEND=postgres
