@@ -30,3 +30,17 @@
   measurement is implied.
 - Production blockers remain managed identity, customer hosting, cloud retention,
   billing, production RPO/RTO and physical NVIDIA DCGM validation.
+
+## Gate 24 — Non-production MVP v1.0 release candidate
+
+- The release-candidate package freezes feature growth and reuses the real Gate
+  23G FastAPI/PostgreSQL/Chromium journey rather than duplicating product paths.
+- A clean-checkout procedure, Windows PowerShell guidance, bounded exit-code
+  contract, sanitized evidence manifest, four responsive screenshots, keyboard
+  and axe-core checks are required by the Gate 24 workflow.
+- Investigation cases remain explicitly `synthetic_test` fixture rows and are
+  not organic provider observations. All quality and performance claims remain
+  scoped to observed test evidence.
+- This is a non-production portfolio release candidate. Managed identity,
+  customer hosting, billing, cloud backup/retention, production RPO/RTO and
+  physical NVIDIA DCGM validation remain blocked.

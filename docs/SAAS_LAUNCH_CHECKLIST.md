@@ -58,7 +58,6 @@ non-production validation. Missing per-case source data remains explicitly
 identity, production audit retention, external evidence storage, and operational
 release governance remain blockers.
 
-\n+Gate 23E UX evidence: PASS for authenticated synthetic onboarding, persisted
 evaluation-to-release-review navigation, explicit missing-evidence states,
 tenant-scoped error handling, keyboard focus, reduced-motion CSS, and 320/390/768/
 1440px disposable Chromium screenshots. NOT production evidence: managed OIDC,
