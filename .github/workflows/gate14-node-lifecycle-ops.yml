@@ -240,12 +240,72 @@ jobs:
             -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Return one short recovery status."}],"max_tokens":32}' \
             | tee artifacts/gate14/inference-after-drain.json
 
-      - name: Record optional unplanned node-loss scope
+      - name: Execute bounded unplanned worker-node loss and recovery
         shell: bash
         run: |
           set -euo pipefail
-          printf '%s\n' 'UNPLANNED_NODE_LOSS: NOT_EXECUTED (optional kind experiment; planned maintenance proof is required)' \
-            | tee artifacts/gate14/unplanned-node-loss.txt
+          lost_node="$(cat artifacts/gate14/worker-b.txt)"
+          test -n "$lost_node"
+          kubectl get nodes -o json > artifacts/gate14/node-loss-baseline-nodes.json
+          kubectl get pods -n "$NAMESPACE" -o json > artifacts/gate14/node-loss-baseline-pods.json
+          python - "$lost_node" artifacts/gate14/node-loss-baseline-pods.json <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          lost_node = sys.argv[1]
+          payload = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
+          hosted = [
+              item for item in payload.get("items", [])
+              if item.get("metadata", {}).get("labels", {}).get("app") == "agenttrust-gate14"
+              and item.get("spec", {}).get("nodeName") == lost_node
+          ]
+          assert hosted, f"selected loss target {lost_node!r} hosts no Gate 14 workload pod"
+          print(f"NODE_LOSS_TARGET_POD_COUNT: {len(hosted)}")
+          PY
+          kubectl port-forward -n "$NAMESPACE" svc/agenttrust-gate14 18080:8080 > artifacts/gate14/port-forward-node-loss.log 2>&1 &
+          NODE_LOSS_PORT_FORWARD_PID=$!
+          cleanup_node_loss() {
+            docker start "$lost_node" >/dev/null 2>&1 || true
+            kill "$NODE_LOSS_PORT_FORWARD_PID" 2>/dev/null || true
+          }
+          trap cleanup_node_loss EXIT
+          for attempt in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:18080/healthz > /dev/null && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:18080/healthz > artifacts/gate14/node-loss-health-baseline.json
+          docker stop "$lost_node" | tee artifacts/gate14/node-loss-container-stop.txt
+          kubectl delete node "$lost_node" --wait=true --timeout=30s | tee artifacts/gate14/node-loss-node-delete.txt
+          during_ok=false
+          for attempt in $(seq 1 45); do
+            kubectl get nodes -o json > artifacts/gate14/node-loss-during-nodes.json
+            available="$(kubectl get deployment -n "$NAMESPACE" agenttrust-gate14 -o jsonpath='{.status.availableReplicas}' 2>/dev/null || true)"
+            if [ "${available:-0}" -ge 1 ] && curl -fsS http://127.0.0.1:18080/healthz > artifacts/gate14/node-loss-health-during.json; then
+              during_ok=true
+              break
+            fi
+            sleep 2
+          done
+          test "$during_ok" = true
+          curl -fsS -X POST http://127.0.0.1:18080/v1/chat/completions \
+            -H 'Content-Type: application/json' \
+            -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Return one short node-loss continuity status."}],"max_tokens":32}' \
+            > artifacts/gate14/node-loss-inference-during.json
+          docker start "$lost_node" | tee artifacts/gate14/node-loss-container-start.txt
+          kubectl wait --for=condition=Ready "node/$lost_node" --timeout=180s | tee artifacts/gate14/node-loss-node-rejoin.txt
+          kubectl rollout status -n "$NAMESPACE" deployment/agenttrust-gate14 --timeout=180s | tee artifacts/gate14/node-loss-rollout-recovery.txt
+          kubectl get nodes -o json > artifacts/gate14/node-loss-recovered-nodes.json
+          kubectl get pods -n "$NAMESPACE" -o json > artifacts/gate14/node-loss-recovered-pods.json
+          curl -fsS http://127.0.0.1:18080/healthz > artifacts/gate14/node-loss-health-recovered.json
+          python scripts/gate14_node_lifecycle.py node-loss-report \
+            --baseline artifacts/gate14/node-loss-baseline-nodes.json \
+            --during-loss artifacts/gate14/node-loss-during-nodes.json \
+            --recovered artifacts/gate14/node-loss-recovered-nodes.json \
+            --lost-node "$lost_node" \
+            --output artifacts/gate14/node-loss-recovery.json
+          trap - EXIT
+          cleanup_node_loss
 
       - name: Validate live security and operational controls
         shell: bash

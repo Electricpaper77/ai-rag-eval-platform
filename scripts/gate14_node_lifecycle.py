@@ -66,6 +66,51 @@ def validate_placement(pods: Sequence[dict[str, Any]], expected_replicas: int = 
     return {"ready_pods": len(ready), "nodes": nodes, "distributed": True, "pods": list(pods)}
 
 
+def validate_node_loss_recovery(
+    baseline: dict[str, Any],
+    during_loss: dict[str, Any],
+    recovered: dict[str, Any],
+    lost_node: str,
+) -> dict[str, Any]:
+    """Validate sanitized node snapshots from the bounded unplanned-loss drill.
+
+    The drill deliberately accepts one surviving worker during the fault window:
+    service continuity is the safety property, while restoration of the lost
+    worker and the two-replica placement are checked after the node rejoins.
+    """
+
+    def ready_nodes(snapshot: dict[str, Any]) -> set[str]:
+        result = set()
+        for item in snapshot.get("items", []):
+            conditions = {condition.get("type"): condition.get("status") for condition in item.get("status", {}).get("conditions", [])}
+            if conditions.get("Ready") == "True":
+                result.add(item.get("metadata", {}).get("name"))
+        return {node for node in result if node}
+
+    baseline_ready = ready_nodes(baseline)
+    during_ready = ready_nodes(during_loss)
+    recovered_ready = ready_nodes(recovered)
+    if lost_node not in baseline_ready:
+        raise AssertionError(f"lost node {lost_node!r} was not ready at baseline")
+    survivors = baseline_ready - {lost_node}
+    if not survivors.intersection(during_ready):
+        raise AssertionError("no baseline worker remained ready during node loss")
+    if lost_node in during_ready:
+        raise AssertionError(f"lost node {lost_node!r} remained Ready during the fault window")
+    if lost_node not in recovered_ready:
+        raise AssertionError(f"lost node {lost_node!r} did not rejoin Ready after recovery")
+    return {
+        "scenario": "unplanned_worker_node_loss",
+        "lost_node": lost_node,
+        "baseline_ready_nodes": sorted(baseline_ready),
+        "during_loss_ready_nodes": sorted(during_ready),
+        "recovered_ready_nodes": sorted(recovered_ready),
+        "service_continuity": bool(survivors.intersection(during_ready)),
+        "node_rejoin": True,
+        "recovery_validated": True,
+    }
+
+
 def _kubectl(args: Sequence[str]) -> dict[str, Any]:
     completed = subprocess.run(["kubectl", *args], capture_output=True, text=True, check=False)
     if completed.returncode:
@@ -151,11 +196,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     traffic.add_argument("--duration", type=float, default=60)
     traffic.add_argument("--interval", type=float, default=0.2)
     traffic.add_argument("--output", type=Path, required=True)
+    node_loss = subparsers.add_parser("node-loss-report")
+    node_loss.add_argument("--baseline", type=Path, required=True)
+    node_loss.add_argument("--during-loss", type=Path, required=True)
+    node_loss.add_argument("--recovered", type=Path, required=True)
+    node_loss.add_argument("--lost-node", required=True)
+    node_loss.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.command == "placement":
         _write(args.output, collect_placement(args.namespace, args.selector))
-    else:
+    elif args.command == "traffic":
         _write(args.output, run_traffic(args.url, args.duration, args.interval))
+    else:
+        baseline = json.loads(args.baseline.read_text(encoding="utf-8"))
+        during_loss = json.loads(args.during_loss.read_text(encoding="utf-8"))
+        recovered = json.loads(args.recovered.read_text(encoding="utf-8"))
+        _write(args.output, validate_node_loss_recovery(baseline, during_loss, recovered, args.lost_node))
     return 0
 
 

@@ -4,7 +4,10 @@ from pathlib import Path
 
 import yaml
 
-from scripts.gate14_node_lifecycle import summarize_traffic, validate_placement
+from scripts.gate14_node_lifecycle import summarize_traffic, validate_node_loss_recovery, validate_placement
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _documents() -> list[dict]:
@@ -77,3 +80,41 @@ def test_service_continuity_result_is_machine_readable() -> None:
     assert summary["zero_failed_requests"] is True
     assert summary["p50_latency_ms"] == 2.0
     assert summary["p95_latency_ms"] == 2.0
+
+
+def test_unplanned_node_loss_requires_survivor_and_rejoin() -> None:
+    baseline = {
+        "items": [
+            {"metadata": {"name": "worker-a"}, "status": {"conditions": [{"type": "Ready", "status": "True"}]}},
+            {"metadata": {"name": "worker-b"}, "status": {"conditions": [{"type": "Ready", "status": "True"}]}},
+        ]
+    }
+    during_loss = {
+        "items": [
+            {"metadata": {"name": "worker-a"}, "status": {"conditions": [{"type": "Ready", "status": "True"}]}},
+        ]
+    }
+    recovered = baseline
+    report = validate_node_loss_recovery(baseline, during_loss, recovered, "worker-b")
+    assert report["service_continuity"] is True
+    assert report["node_rejoin"] is True
+    assert report["recovery_validated"] is True
+
+
+def test_unplanned_node_loss_rejects_no_survivor() -> None:
+    snapshot = {"items": [{"metadata": {"name": "worker-b"}, "status": {"conditions": [{"type": "Ready", "status": "True"}]}}]}
+    try:
+        validate_node_loss_recovery(snapshot, {"items": []}, snapshot, "worker-b")
+    except AssertionError as exc:
+        assert "no baseline worker remained ready" in str(exc)
+    else:
+        raise AssertionError("node-loss validation must fail closed without a surviving worker")
+
+
+def test_gate14_workflow_executes_bounded_node_loss_recovery() -> None:
+    workflow = (ROOT / ".github/workflows/gate14-node-lifecycle-ops.yml").read_text(encoding="utf-8")
+    assert "docker stop" in workflow
+    assert "kubectl delete node" in workflow
+    assert "docker start" in workflow
+    assert "node-loss-report" in workflow
+    assert "UNPLANNED_NODE_LOSS: NOT_EXECUTED" not in workflow
