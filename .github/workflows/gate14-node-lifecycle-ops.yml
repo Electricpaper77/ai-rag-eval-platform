@@ -351,7 +351,79 @@ jobs:
             --image="$IMAGE" --image-pull-policy=Never \
             --restart=Never --command -- python -c 'import json,urllib.request; response=urllib.request.urlopen("http://agenttrust-gate14:8080/healthz", timeout=5); print(json.dumps({"status": response.status, "body": response.read().decode()})); raise SystemExit(0 if response.status == 200 else 1)' \
             | tee artifacts/gate14/node-loss-incluster-service-health.txt
-          kubectl wait -n "$NAMESPACE" --for=jsonpath='{.status.phase}'=Succeeded pod/gate14-node-loss-service-probe --timeout=30s
+          probe_wait_rc=0
+          kubectl wait -n "$NAMESPACE" --for=jsonpath='{.status.phase}'=Succeeded pod/gate14-node-loss-service-probe --timeout=30s || probe_wait_rc=$?
+          kubectl get pod -n "$NAMESPACE" gate14-node-loss-service-probe -o json \
+            > artifacts/gate14/node-loss-service-probe.json 2>&1 || true
+          kubectl describe pod -n "$NAMESPACE" gate14-node-loss-service-probe \
+            > artifacts/gate14/node-loss-service-probe-describe.txt 2>&1 || true
+          kubectl logs -n "$NAMESPACE" pod/gate14-node-loss-service-probe --all-containers=true \
+            > artifacts/gate14/node-loss-service-probe.log 2>&1 || true
+          kubectl logs -n "$NAMESPACE" pod/gate14-node-loss-service-probe --all-containers=true --previous \
+            > artifacts/gate14/node-loss-service-probe-previous.log 2>&1 || true
+          kubectl get pod -n "$NAMESPACE" gate14-node-loss-service-probe \
+            -o jsonpath='{.spec.nodeName}{"\n"}' \
+            > artifacts/gate14/node-loss-service-probe-node.txt 2>&1 || true
+          kubectl get events -n "$NAMESPACE" --field-selector involvedObject.name=gate14-node-loss-service-probe \
+            --sort-by=.lastTimestamp \
+            > artifacts/gate14/node-loss-service-probe-events.txt 2>&1 || true
+          kubectl get service -n "$NAMESPACE" agenttrust-gate14 -o json \
+            > artifacts/gate14/node-loss-service-probe-service.json 2>&1 || true
+          kubectl get endpointslice -n "$NAMESPACE" -l kubernetes.io/service-name=agenttrust-gate14 -o json \
+            > artifacts/gate14/node-loss-service-probe-endpointslices.json 2>&1 || true
+          python - artifacts/gate14/node-loss-service-probe.json "$probe_wait_rc" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          source = Path(sys.argv[1])
+          try:
+              pod = json.loads(source.read_text(encoding="utf-8"))
+          except (OSError, json.JSONDecodeError):
+              pod = {}
+          statuses = pod.get("status", {}).get("containerStatuses", [])
+          record = {
+              "phase": pod.get("status", {}).get("phase", "Unknown"),
+              "nodeName": pod.get("spec", {}).get("nodeName"),
+              "podIP": pod.get("status", {}).get("podIP"),
+              "containerStatuses": [
+                  {
+                      "name": item.get("name"),
+                      "ready": item.get("ready"),
+                      "state": item.get("state", {}),
+                      "lastState": item.get("lastState", {}),
+                      "restartCount": item.get("restartCount"),
+                  }
+                  for item in statuses
+              ],
+              "waitExitCode": int(sys.argv[2]),
+          }
+          Path("artifacts/gate14/node-loss-service-probe-diagnostics.json").write_text(
+              json.dumps(record, indent=2) + "\n", encoding="utf-8"
+          )
+          PY
+          survivor_ip="$(kubectl get pod -n "$NAMESPACE" "$survivor_pod" -o jsonpath='{.status.podIP}' 2>/dev/null || true)"
+          if [ -n "$survivor_ip" ]; then
+            kubectl exec -n "$NAMESPACE" gate14-node-loss-service-probe -- python - "$survivor_ip" <<'PY' \
+              > artifacts/gate14/node-loss-incluster-connectivity.txt 2>&1 || true
+          import json
+          import socket
+          import sys
+          import urllib.request
+
+          service = socket.gethostbyname("agenttrust-gate14")
+          direct = sys.argv[1]
+          results = {"service_dns": service, "direct_pod_ip": direct}
+          for name, host in (("service", "agenttrust-gate14"), ("direct_pod", direct)):
+              try:
+                  with urllib.request.urlopen(f"http://{host}:8080/healthz", timeout=5) as response:
+                      results[name] = {"status": response.status, "body": response.read().decode()}
+              except Exception as exc:
+                  results[name] = {"error": repr(exc)}
+          print(json.dumps(results, sort_keys=True))
+          PY
+          fi
+          test "$probe_wait_rc" -eq 0
           curl -fsS -X POST http://127.0.0.1:18080/v1/chat/completions \
             -H 'Content-Type: application/json' \
             -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Return one short node-loss continuity status."}],"max_tokens":32}' \
