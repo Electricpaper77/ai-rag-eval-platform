@@ -162,6 +162,12 @@ def test_node_loss_network_diagnostics_probe_all_runtime_destinations() -> None:
     assert "kubectl exec -n \"$NAMESPACE\" gate14-node-loss-network-diagnostic" in workflow
     assert 'f"artifacts/gate14/node-loss-network-{destination}.json"' in workflow
     assert '"direct_pod_ip", "service_cluster_ip", "service_dns"' in workflow
+    assert "gate14-network-probe.py" in workflow
+    assert "< /tmp/gate14-network-probe.py" in workflow
+    assert "node-loss-network-probes.raw.txt" in workflow
+    assert '"exec_exit_code": exec_rc' in workflow
+    assert '"result": "ERROR"' in workflow
+    assert '"http_status": response.status' in workflow
     assert "diagnostic_exec_rc=$?" in workflow
     assert "timeout=5" in workflow
 

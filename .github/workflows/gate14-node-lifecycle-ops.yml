@@ -401,63 +401,82 @@ jobs:
           if [ "$diagnostic_wait_rc" -eq 0 ]; then
             diagnostic_service_ip="$(kubectl get service -n "$NAMESPACE" agenttrust-gate14 -o jsonpath='{.spec.clusterIP}')"
             diagnostic_survivor_ip="$(kubectl get pod -n "$NAMESPACE" "$survivor_pod" -o jsonpath='{.status.podIP}')"
-            python - "$diagnostic_survivor_ip" "$diagnostic_service_ip" <<'PY'
-          import json
-          import sys
-          from pathlib import Path
-
-          direct_ip, cluster_ip = sys.argv[1:]
-          for destination, host in (("direct_pod_ip", direct_ip), ("service_cluster_ip", cluster_ip), ("service_dns", "agenttrust-gate14")):
-              Path(f"artifacts/gate14/node-loss-network-{destination}.json").write_text(
-                  json.dumps({"destination": destination, "host": host, "status": "NOT_EXECUTED"}, indent=2) + "\n",
-                  encoding="utf-8",
-              )
-          PY
-            diagnostic_exec_rc=0
-            kubectl exec -n "$NAMESPACE" gate14-node-loss-network-diagnostic -- \
-              python - "$diagnostic_survivor_ip" "$diagnostic_service_ip" <<'PY' \
-              > artifacts/gate14/node-loss-network-probes.json 2>&1 || diagnostic_exec_rc=$?
+            cat > /tmp/gate14-network-probe.py <<'PY'
           import json
           import socket
           import sys
           import time
-          import urllib.error
           import urllib.request
 
           direct_ip, cluster_ip = sys.argv[1:]
           results = []
-          for name, host in (("direct_pod_ip", direct_ip), ("service_cluster_ip", cluster_ip), ("service_dns", "agenttrust-gate14")):
+          overall_exit = 0
+          for destination, host in (("direct_pod_ip", direct_ip), ("service_cluster_ip", cluster_ip), ("service_dns", "agenttrust-gate14")):
               started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-              result = {"destination": name, "host": host, "started_at": started}
+              result = {
+                  "destination": destination,
+                  "target": host,
+                  "started_at": started,
+                  "result": "ERROR",
+                  "exit_code": 1,
+              }
               try:
-                  if name == "service_dns":
-                      result["resolved_ip"] = socket.gethostbyname(host)
+                  if destination == "service_dns":
+                      result["resolved_address"] = socket.gethostbyname(host)
+                  else:
+                      result["resolved_address"] = host
                   with urllib.request.urlopen(f"http://{host}:8080/healthz", timeout=5) as response:
-                      result.update({"status": response.status, "body": response.read().decode(), "exit_code": 0})
+                      result.update({
+                          "http_status": response.status,
+                          "body": response.read().decode(),
+                          "result": "SUCCESS",
+                          "exit_code": 0,
+                      })
               except Exception as exc:
-                  result.update({"error": repr(exc), "exit_code": 1})
+                  result["error"] = repr(exc)
+                  overall_exit = 1
               result["finished_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
               results.append(result)
           print(json.dumps({"probes": results}, indent=2, sort_keys=True))
+          raise SystemExit(overall_exit)
           PY
-            python - artifacts/gate14/node-loss-network-probes.json "$diagnostic_exec_rc" <<'PY'
+            diagnostic_exec_rc=0
+            kubectl exec -n "$NAMESPACE" gate14-node-loss-network-diagnostic -- \
+              python - "$diagnostic_survivor_ip" "$diagnostic_service_ip" \
+              < /tmp/gate14-network-probe.py \
+              > artifacts/gate14/node-loss-network-probes.raw.txt 2>&1 || diagnostic_exec_rc=$?
+            python - artifacts/gate14/node-loss-network-probes.raw.txt "$diagnostic_exec_rc" <<'PY'
           import json
           import sys
+          import time
           from pathlib import Path
 
           source = Path(sys.argv[1])
           exec_rc = int(sys.argv[2])
+          generated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
           try:
               payload = json.loads(source.read_text(encoding="utf-8"))
               records = {item["destination"]: item for item in payload.get("probes", [])}
           except (OSError, json.JSONDecodeError, TypeError, KeyError):
               records = {}
+          normalized = []
           for destination in ("direct_pod_ip", "service_cluster_ip", "service_dns"):
-              record = records.get(destination, {"destination": destination, "status": "EXEC_FAILED", "exec_exit_code": exec_rc})
+              record = records.get(destination, {
+                  "destination": destination,
+                  "generated_at": generated_at,
+                  "result": "EXEC_FAILED",
+                  "error": "diagnostic exec produced no valid JSON record",
+                  "exit_code": 1,
+              })
               record.setdefault("exec_exit_code", exec_rc)
+              normalized.append(record)
               Path(f"artifacts/gate14/node-loss-network-{destination}.json").write_text(
                   json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8"
               )
+          Path("artifacts/gate14/node-loss-network-probes.json").write_text(
+              json.dumps({"exec_exit_code": exec_rc, "probes": normalized}, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
           PY
             kubectl get endpointslice -n "$NAMESPACE" -l kubernetes.io/service-name=agenttrust-gate14 -o json \
               > artifacts/gate14/node-loss-network-endpointslices-after-probes.json 2>&1 || true
