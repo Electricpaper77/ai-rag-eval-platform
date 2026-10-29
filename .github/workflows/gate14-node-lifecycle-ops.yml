@@ -357,6 +357,16 @@ jobs:
             -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Return one short node-loss continuity status."}],"max_tokens":32}' \
             > artifacts/gate14/node-loss-inference-during.json
           docker start "$lost_node" | tee artifacts/gate14/node-loss-container-start.txt
+          node_reappeared=false
+          for attempt in $(seq 1 60); do
+            if kubectl get node "$lost_node" >/dev/null 2>&1; then
+              node_reappeared=true
+              echo "node_reappeared_attempt=$attempt" | tee artifacts/gate14/node-loss-node-reappearance.txt
+              break
+            fi
+            sleep 2
+          done
+          test "$node_reappeared" = true
           kubectl wait --for=condition=Ready "node/$lost_node" --timeout=180s | tee artifacts/gate14/node-loss-node-rejoin.txt
           kubectl rollout status -n "$NAMESPACE" deployment/agenttrust-gate14 --timeout=180s | tee artifacts/gate14/node-loss-rollout-recovery.txt
           kubectl get nodes -o json > artifacts/gate14/node-loss-recovered-nodes.json

@@ -128,3 +128,11 @@ def test_in_cluster_node_loss_probe_is_allowed_by_gate14_network_policy() -> Non
     assert "--for=jsonpath='{.status.phase}'=Succeeded pod/gate14-node-loss-service-probe" in workflow
     assert "--for=condition=Ready pod/gate14-node-loss-service-probe" not in workflow
     assert "app.kubernetes.io/part-of: agenttrust-iq" in policy
+
+
+def test_node_loss_waits_for_deleted_node_to_reregister_before_ready_check() -> None:
+    workflow = (ROOT / ".github/workflows/gate14-node-lifecycle-ops.yml").read_text(encoding="utf-8")
+    assert 'node_reappeared=false' in workflow
+    assert 'kubectl get node "$lost_node"' in workflow
+    assert 'test "$node_reappeared" = true' in workflow
+    assert 'kubectl wait --for=condition=Ready "node/$lost_node"' in workflow
