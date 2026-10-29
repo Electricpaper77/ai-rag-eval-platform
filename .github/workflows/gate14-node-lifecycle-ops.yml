@@ -288,6 +288,8 @@ jobs:
           PY
           )"
           echo "$survivor_pod" > artifacts/gate14/node-loss-survivor-pod.txt
+          survivor_node="$(kubectl get pod -n "$NAMESPACE" "$survivor_pod" -o jsonpath='{.spec.nodeName}')"
+          echo "$survivor_node" > artifacts/gate14/node-loss-survivor-node.txt
           start_node_loss_port_forward() {
             kubectl port-forward -n "$NAMESPACE" "pod/$survivor_pod" 18080:8080 \
               >> artifacts/gate14/port-forward-node-loss.log 2>&1 &
@@ -371,6 +373,64 @@ jobs:
             > artifacts/gate14/node-loss-service-probe-service.json 2>&1 || true
           kubectl get endpointslice -n "$NAMESPACE" -l kubernetes.io/service-name=agenttrust-gate14 -o json \
             > artifacts/gate14/node-loss-service-probe-endpointslices.json 2>&1 || true
+          date -u +%Y-%m-%dT%H:%M:%SZ > artifacts/gate14/node-loss-network-diagnostics-started-at.txt
+          kubectl get pod -n "$NAMESPACE" -l app=agenttrust-gate14 --show-labels -o json \
+            > artifacts/gate14/node-loss-network-application-pods.json 2>&1 || true
+          kubectl get networkpolicy -n "$NAMESPACE" -o yaml \
+            > artifacts/gate14/node-loss-network-policies.yaml 2>&1 || true
+          kubectl get namespace "$NAMESPACE" -o json \
+            > artifacts/gate14/node-loss-network-namespace.json 2>&1 || true
+          kubectl get service -n "$NAMESPACE" agenttrust-gate14 \
+            -o jsonpath='{.spec.clusterIP}{"\n"}' \
+            > artifacts/gate14/node-loss-network-service-cluster-ip.txt 2>&1 || true
+          diagnostic_create_rc=0
+          kubectl run gate14-node-loss-network-diagnostic -n "$NAMESPACE" \
+            --labels=app.kubernetes.io/part-of=agenttrust-iq-diagnostic \
+            --image="$IMAGE" --image-pull-policy=Never --restart=Never \
+            --command -- python -c 'import time; time.sleep(120)' \
+            --overrides="{\"spec\":{\"nodeName\":\"$survivor_node\",\"containers\":[{\"name\":\"gate14-node-loss-network-diagnostic\",\"image\":\"$IMAGE\",\"imagePullPolicy\":\"Never\",\"command\":[\"python\",\"-c\",\"import time; time.sleep(120)\"]}]}}" \
+            > artifacts/gate14/node-loss-network-diagnostic-create.txt 2>&1 || diagnostic_create_rc=$?
+          diagnostic_wait_rc=0
+          if [ "$diagnostic_create_rc" -eq 0 ]; then
+            kubectl wait -n "$NAMESPACE" --for=jsonpath='{.status.phase}'=Running \
+              pod/gate14-node-loss-network-diagnostic --timeout=30s \
+              > artifacts/gate14/node-loss-network-diagnostic-wait.txt 2>&1 || diagnostic_wait_rc=$?
+          fi
+          kubectl get pod -n "$NAMESPACE" gate14-node-loss-network-diagnostic -o json \
+            > artifacts/gate14/node-loss-network-diagnostic.json 2>&1 || true
+          if [ "$diagnostic_wait_rc" -eq 0 ]; then
+            diagnostic_service_ip="$(kubectl get service -n "$NAMESPACE" agenttrust-gate14 -o jsonpath='{.spec.clusterIP}')"
+            diagnostic_survivor_ip="$(kubectl get pod -n "$NAMESPACE" "$survivor_pod" -o jsonpath='{.status.podIP}')"
+            kubectl exec -n "$NAMESPACE" gate14-node-loss-network-diagnostic -- \
+              python - "$diagnostic_survivor_ip" "$diagnostic_service_ip" <<'PY' \
+              > artifacts/gate14/node-loss-network-probes.json 2>&1 || true
+          import json
+          import socket
+          import sys
+          import time
+          import urllib.error
+          import urllib.request
+
+          direct_ip, cluster_ip = sys.argv[1:]
+          results = []
+          for name, host in (("direct_pod_ip", direct_ip), ("service_cluster_ip", cluster_ip), ("service_dns", "agenttrust-gate14")):
+              started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+              result = {"destination": name, "host": host, "started_at": started}
+              try:
+                  if name == "service_dns":
+                      result["resolved_ip"] = socket.gethostbyname(host)
+                  with urllib.request.urlopen(f"http://{host}:8080/healthz", timeout=5) as response:
+                      result.update({"status": response.status, "body": response.read().decode(), "exit_code": 0})
+              except Exception as exc:
+                  result.update({"error": repr(exc), "exit_code": 1})
+              result["finished_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+              results.append(result)
+          print(json.dumps({"probes": results}, indent=2, sort_keys=True))
+          PY
+            kubectl get endpointslice -n "$NAMESPACE" -l kubernetes.io/service-name=agenttrust-gate14 -o json \
+              > artifacts/gate14/node-loss-network-endpointslices-after-probes.json 2>&1 || true
+          fi
+          date -u +%Y-%m-%dT%H:%M:%SZ > artifacts/gate14/node-loss-network-diagnostics-finished-at.txt
           python - artifacts/gate14/node-loss-service-probe.json "$probe_wait_rc" <<'PY'
           import json
           import sys

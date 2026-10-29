@@ -144,6 +144,19 @@ def test_node_loss_probe_failure_preserves_phase_and_connectivity_diagnostics() 
     assert 'test "$probe_wait_rc" -eq 0' in workflow
 
 
+def test_node_loss_network_diagnostics_probe_all_runtime_destinations() -> None:
+    workflow = (ROOT / ".github/workflows/gate14-node-lifecycle-ops.yml").read_text(encoding="utf-8")
+    assert "gate14-node-loss-network-diagnostic" in workflow
+    assert '"nodeName\\":\\"$survivor_node\\"' in workflow
+    assert "node-loss-network-probes.json" in workflow
+    assert '"direct_pod_ip"' in workflow
+    assert '"service_cluster_ip"' in workflow
+    assert '"service_dns"' in workflow
+    assert "node-loss-network-policies.yaml" in workflow
+    assert "node-loss-network-endpointslices-after-probes.json" in workflow
+    assert "timeout=5" in workflow
+
+
 def test_node_loss_waits_for_deleted_node_to_reregister_before_ready_check() -> None:
     workflow = (ROOT / ".github/workflows/gate14-node-lifecycle-ops.yml").read_text(encoding="utf-8")
     assert 'node_reappeared=false' in workflow
