@@ -269,8 +269,27 @@ jobs:
           PY
           kubectl port-forward -n "$NAMESPACE" svc/agenttrust-gate14 18080:8080 > artifacts/gate14/port-forward-node-loss.log 2>&1 &
           NODE_LOSS_PORT_FORWARD_PID=$!
+          survivor_pod="$(python - "$lost_node" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          lost_node = sys.argv[1]
+          payload = json.loads(Path("artifacts/gate14/node-loss-baseline-pods.json").read_text(encoding="utf-8"))
+          for item in payload.get("items", []):
+              if item.get("spec", {}).get("nodeName") == lost_node:
+                  continue
+              statuses = item.get("status", {}).get("containerStatuses", [])
+              if item.get("status", {}).get("phase") == "Running" and statuses and all(status.get("ready") for status in statuses):
+                  print(item["metadata"]["name"])
+                  break
+          else:
+              raise SystemExit("no surviving Ready workload pod identified")
+          PY
+          )"
+          echo "$survivor_pod" > artifacts/gate14/node-loss-survivor-pod.txt
           start_node_loss_port_forward() {
-            kubectl port-forward -n "$NAMESPACE" svc/agenttrust-gate14 18080:8080 \
+            kubectl port-forward -n "$NAMESPACE" "pod/$survivor_pod" 18080:8080 \
               >> artifacts/gate14/port-forward-node-loss.log 2>&1 &
             NODE_LOSS_PORT_FORWARD_PID=$!
           }
@@ -327,6 +346,10 @@ jobs:
           test "$during_ok" = true
           kubectl get endpointslice -n "$NAMESPACE" -l kubernetes.io/service-name=agenttrust-gate14 -o json \
             > artifacts/gate14/node-loss-during-endpoints.json
+          kubectl run gate14-node-loss-service-probe -n "$NAMESPACE" --image="$IMAGE" --image-pull-policy=Never \
+            --restart=Never --command -- python -c 'import json,urllib.request; response=urllib.request.urlopen("http://agenttrust-gate14:8080/healthz", timeout=5); print(json.dumps({"status": response.status, "body": response.read().decode()})); raise SystemExit(0 if response.status == 200 else 1)' \
+            | tee artifacts/gate14/node-loss-incluster-service-health.txt
+          kubectl wait -n "$NAMESPACE" --for=jsonpath='{.status.phase}'=Succeeded pod/gate14-node-loss-service-probe --timeout=30s
           curl -fsS -X POST http://127.0.0.1:18080/v1/chat/completions \
             -H 'Content-Type: application/json' \
             -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Return one short node-loss continuity status."}],"max_tokens":32}' \
