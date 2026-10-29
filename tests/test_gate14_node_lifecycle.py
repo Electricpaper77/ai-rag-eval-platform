@@ -118,3 +118,13 @@ def test_gate14_workflow_executes_bounded_node_loss_recovery() -> None:
     assert "docker start" in workflow
     assert "node-loss-report" in workflow
     assert "UNPLANNED_NODE_LOSS: NOT_EXECUTED" not in workflow
+
+
+def test_in_cluster_node_loss_probe_is_allowed_by_gate14_network_policy() -> None:
+    workflow = (ROOT / ".github/workflows/gate14-node-lifecycle-ops.yml").read_text(encoding="utf-8")
+    policy = (ROOT / "deploy/operations/gate14-workload.yaml").read_text(encoding="utf-8")
+    assert "kubectl run gate14-node-loss-service-probe" in workflow
+    assert "--labels=app.kubernetes.io/part-of=agenttrust-iq" in workflow
+    assert "--for=jsonpath='{.status.phase}'=Succeeded pod/gate14-node-loss-service-probe" in workflow
+    assert "--for=condition=Ready pod/gate14-node-loss-service-probe" not in workflow
+    assert "app.kubernetes.io/part-of: agenttrust-iq" in policy

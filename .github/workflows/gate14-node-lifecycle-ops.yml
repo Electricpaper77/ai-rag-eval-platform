@@ -346,7 +346,9 @@ jobs:
           test "$during_ok" = true
           kubectl get endpointslice -n "$NAMESPACE" -l kubernetes.io/service-name=agenttrust-gate14 -o json \
             > artifacts/gate14/node-loss-during-endpoints.json
-          kubectl run gate14-node-loss-service-probe -n "$NAMESPACE" --image="$IMAGE" --image-pull-policy=Never \
+          kubectl run gate14-node-loss-service-probe -n "$NAMESPACE" \
+            --labels=app.kubernetes.io/part-of=agenttrust-iq \
+            --image="$IMAGE" --image-pull-policy=Never \
             --restart=Never --command -- python -c 'import json,urllib.request; response=urllib.request.urlopen("http://agenttrust-gate14:8080/healthz", timeout=5); print(json.dumps({"status": response.status, "body": response.read().decode()})); raise SystemExit(0 if response.status == 200 else 1)' \
             | tee artifacts/gate14/node-loss-incluster-service-health.txt
           kubectl wait -n "$NAMESPACE" --for=jsonpath='{.status.phase}'=Succeeded pod/gate14-node-loss-service-probe --timeout=30s
