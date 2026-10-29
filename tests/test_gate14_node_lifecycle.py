@@ -147,6 +147,7 @@ def test_node_loss_probe_failure_preserves_phase_and_connectivity_diagnostics() 
 def test_node_loss_network_diagnostics_probe_all_runtime_destinations() -> None:
     workflow = (ROOT / ".github/workflows/gate14-node-lifecycle-ops.yml").read_text(encoding="utf-8")
     assert "gate14-node-loss-network-diagnostic" in workflow
+    diagnostic = workflow[workflow.index("kubectl run gate14-node-loss-network-diagnostic") : workflow.index("diagnostic_create_rc=$?")]
     assert '"nodeName\\":\\"$survivor_node\\"' in workflow
     assert "--labels=app.kubernetes.io/part-of=agenttrust-iq" in workflow
     assert "agenttrust-iq-diagnostic" not in workflow
@@ -156,6 +157,12 @@ def test_node_loss_network_diagnostics_probe_all_runtime_destinations() -> None:
     assert '"service_dns"' in workflow
     assert "node-loss-network-policies.yaml" in workflow
     assert "node-loss-network-endpointslices-after-probes.json" in workflow
+    assert "--overrides=\"{\\\"spec\\\"" in diagnostic
+    assert diagnostic.index("--overrides=") < diagnostic.index("--command -- python -c 'import time; time.sleep(120)'")
+    assert "kubectl exec -n \"$NAMESPACE\" gate14-node-loss-network-diagnostic" in workflow
+    assert 'f"artifacts/gate14/node-loss-network-{destination}.json"' in workflow
+    assert '"direct_pod_ip", "service_cluster_ip", "service_dns"' in workflow
+    assert "diagnostic_exec_rc=$?" in workflow
     assert "timeout=5" in workflow
 
 

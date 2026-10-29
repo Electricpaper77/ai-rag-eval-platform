@@ -387,8 +387,8 @@ jobs:
           kubectl run gate14-node-loss-network-diagnostic -n "$NAMESPACE" \
             --labels=app.kubernetes.io/part-of=agenttrust-iq \
             --image="$IMAGE" --image-pull-policy=Never --restart=Never \
-            --command -- python -c 'import time; time.sleep(120)' \
             --overrides="{\"spec\":{\"nodeName\":\"$survivor_node\",\"containers\":[{\"name\":\"gate14-node-loss-network-diagnostic\",\"image\":\"$IMAGE\",\"imagePullPolicy\":\"Never\",\"command\":[\"python\",\"-c\",\"import time; time.sleep(120)\"]}]}}" \
+            --command -- python -c 'import time; time.sleep(120)' \
             > artifacts/gate14/node-loss-network-diagnostic-create.txt 2>&1 || diagnostic_create_rc=$?
           diagnostic_wait_rc=0
           if [ "$diagnostic_create_rc" -eq 0 ]; then
@@ -401,9 +401,22 @@ jobs:
           if [ "$diagnostic_wait_rc" -eq 0 ]; then
             diagnostic_service_ip="$(kubectl get service -n "$NAMESPACE" agenttrust-gate14 -o jsonpath='{.spec.clusterIP}')"
             diagnostic_survivor_ip="$(kubectl get pod -n "$NAMESPACE" "$survivor_pod" -o jsonpath='{.status.podIP}')"
+            python - "$diagnostic_survivor_ip" "$diagnostic_service_ip" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          direct_ip, cluster_ip = sys.argv[1:]
+          for destination, host in (("direct_pod_ip", direct_ip), ("service_cluster_ip", cluster_ip), ("service_dns", "agenttrust-gate14")):
+              Path(f"artifacts/gate14/node-loss-network-{destination}.json").write_text(
+                  json.dumps({"destination": destination, "host": host, "status": "NOT_EXECUTED"}, indent=2) + "\n",
+                  encoding="utf-8",
+              )
+          PY
+            diagnostic_exec_rc=0
             kubectl exec -n "$NAMESPACE" gate14-node-loss-network-diagnostic -- \
               python - "$diagnostic_survivor_ip" "$diagnostic_service_ip" <<'PY' \
-              > artifacts/gate14/node-loss-network-probes.json 2>&1 || true
+              > artifacts/gate14/node-loss-network-probes.json 2>&1 || diagnostic_exec_rc=$?
           import json
           import socket
           import sys
@@ -426,6 +439,25 @@ jobs:
               result["finished_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
               results.append(result)
           print(json.dumps({"probes": results}, indent=2, sort_keys=True))
+          PY
+            python - artifacts/gate14/node-loss-network-probes.json "$diagnostic_exec_rc" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          source = Path(sys.argv[1])
+          exec_rc = int(sys.argv[2])
+          try:
+              payload = json.loads(source.read_text(encoding="utf-8"))
+              records = {item["destination"]: item for item in payload.get("probes", [])}
+          except (OSError, json.JSONDecodeError, TypeError, KeyError):
+              records = {}
+          for destination in ("direct_pod_ip", "service_cluster_ip", "service_dns"):
+              record = records.get(destination, {"destination": destination, "status": "EXEC_FAILED", "exec_exit_code": exec_rc})
+              record.setdefault("exec_exit_code", exec_rc)
+              Path(f"artifacts/gate14/node-loss-network-{destination}.json").write_text(
+                  json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+              )
           PY
             kubectl get endpointslice -n "$NAMESPACE" -l kubernetes.io/service-name=agenttrust-gate14 -o json \
               > artifacts/gate14/node-loss-network-endpointslices-after-probes.json 2>&1 || true
@@ -464,7 +496,7 @@ jobs:
           PY
           survivor_ip="$(kubectl get pod -n "$NAMESPACE" "$survivor_pod" -o jsonpath='{.status.podIP}' 2>/dev/null || true)"
           if [ -n "$survivor_ip" ]; then
-            kubectl exec -n "$NAMESPACE" gate14-node-loss-service-probe -- python - "$survivor_ip" <<'PY' \
+            kubectl exec -n "$NAMESPACE" gate14-node-loss-network-diagnostic -- python - "$survivor_ip" <<'PY' \
               > artifacts/gate14/node-loss-incluster-connectivity.txt 2>&1 || true
           import json
           import socket
