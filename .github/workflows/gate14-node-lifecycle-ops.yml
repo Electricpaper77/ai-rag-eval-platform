@@ -385,7 +385,7 @@ jobs:
             > artifacts/gate14/node-loss-network-service-cluster-ip.txt 2>&1 || true
           diagnostic_create_rc=0
           kubectl run gate14-node-loss-network-diagnostic -n "$NAMESPACE" \
-            --labels=app.kubernetes.io/part-of=agenttrust-iq-diagnostic \
+            --labels=app.kubernetes.io/part-of=agenttrust-iq \
             --image="$IMAGE" --image-pull-policy=Never --restart=Never \
             --command -- python -c 'import time; time.sleep(120)' \
             --overrides="{\"spec\":{\"nodeName\":\"$survivor_node\",\"containers\":[{\"name\":\"gate14-node-loss-network-diagnostic\",\"image\":\"$IMAGE\",\"imagePullPolicy\":\"Never\",\"command\":[\"python\",\"-c\",\"import time; time.sleep(120)\"]}]}}" \
