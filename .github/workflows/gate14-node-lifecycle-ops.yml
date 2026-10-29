@@ -248,6 +248,8 @@ jobs:
           test -n "$lost_node"
           kubectl get nodes -o json > artifacts/gate14/node-loss-baseline-nodes.json
           kubectl get pods -n "$NAMESPACE" -o json > artifacts/gate14/node-loss-baseline-pods.json
+          kubectl get endpointslice -n "$NAMESPACE" -l kubernetes.io/service-name=agenttrust-gate14 -o json \
+            > artifacts/gate14/node-loss-baseline-endpoints.json
           python - "$lost_node" artifacts/gate14/node-loss-baseline-pods.json <<'PY'
           import json
           import sys
@@ -261,10 +263,17 @@ jobs:
               and item.get("spec", {}).get("nodeName") == lost_node
           ]
           assert hosted, f"selected loss target {lost_node!r} hosts no Gate 14 workload pod"
+          with open("artifacts/gate14/node-loss-lost-pods.txt", "w", encoding="utf-8") as stream:
+              stream.write("\n".join(item["metadata"]["name"] for item in hosted) + "\n")
           print(f"NODE_LOSS_TARGET_POD_COUNT: {len(hosted)}")
           PY
           kubectl port-forward -n "$NAMESPACE" svc/agenttrust-gate14 18080:8080 > artifacts/gate14/port-forward-node-loss.log 2>&1 &
           NODE_LOSS_PORT_FORWARD_PID=$!
+          start_node_loss_port_forward() {
+            kubectl port-forward -n "$NAMESPACE" svc/agenttrust-gate14 18080:8080 \
+              >> artifacts/gate14/port-forward-node-loss.log 2>&1 &
+            NODE_LOSS_PORT_FORWARD_PID=$!
+          }
           cleanup_node_loss() {
             docker start "$lost_node" >/dev/null 2>&1 || true
             kill "$NODE_LOSS_PORT_FORWARD_PID" 2>/dev/null || true
@@ -277,6 +286,34 @@ jobs:
           curl -fsS http://127.0.0.1:18080/healthz > artifacts/gate14/node-loss-health-baseline.json
           docker stop "$lost_node" | tee artifacts/gate14/node-loss-container-stop.txt
           kubectl delete node "$lost_node" --wait=true --timeout=30s | tee artifacts/gate14/node-loss-node-delete.txt
+          kill "$NODE_LOSS_PORT_FORWARD_PID" 2>/dev/null || true
+          endpoint_ready=false
+          for attempt in $(seq 1 45); do
+            kubectl get endpointslice -n "$NAMESPACE" -l kubernetes.io/service-name=agenttrust-gate14 -o json \
+              > artifacts/gate14/node-loss-during-endpoints.json
+            if python - <<'PY'
+          import json
+          from pathlib import Path
+
+          lost = set(Path("artifacts/gate14/node-loss-lost-pods.txt").read_text(encoding="utf-8").split())
+          payload = json.loads(Path("artifacts/gate14/node-loss-during-endpoints.json").read_text(encoding="utf-8"))
+          ready = [
+              endpoint
+              for item in payload.get("items", [])
+              for endpoint in item.get("endpoints", [])
+              if endpoint.get("conditions", {}).get("ready") is True
+              and endpoint.get("targetRef", {}).get("name") not in lost
+          ]
+          raise SystemExit(0 if ready else 1)
+          PY
+            then
+              endpoint_ready=true
+              break
+            fi
+            sleep 2
+          done
+          test "$endpoint_ready" = true
+          start_node_loss_port_forward
           during_ok=false
           for attempt in $(seq 1 45); do
             kubectl get nodes -o json > artifacts/gate14/node-loss-during-nodes.json
@@ -288,6 +325,8 @@ jobs:
             sleep 2
           done
           test "$during_ok" = true
+          kubectl get endpointslice -n "$NAMESPACE" -l kubernetes.io/service-name=agenttrust-gate14 -o json \
+            > artifacts/gate14/node-loss-during-endpoints.json
           curl -fsS -X POST http://127.0.0.1:18080/v1/chat/completions \
             -H 'Content-Type: application/json' \
             -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Return one short node-loss continuity status."}],"max_tokens":32}' \
@@ -297,6 +336,8 @@ jobs:
           kubectl rollout status -n "$NAMESPACE" deployment/agenttrust-gate14 --timeout=180s | tee artifacts/gate14/node-loss-rollout-recovery.txt
           kubectl get nodes -o json > artifacts/gate14/node-loss-recovered-nodes.json
           kubectl get pods -n "$NAMESPACE" -o json > artifacts/gate14/node-loss-recovered-pods.json
+          kubectl get endpointslice -n "$NAMESPACE" -l kubernetes.io/service-name=agenttrust-gate14 -o json \
+            > artifacts/gate14/node-loss-recovered-endpoints.json
           curl -fsS http://127.0.0.1:18080/healthz > artifacts/gate14/node-loss-health-recovered.json
           python scripts/gate14_node_lifecycle.py node-loss-report \
             --baseline artifacts/gate14/node-loss-baseline-nodes.json \
