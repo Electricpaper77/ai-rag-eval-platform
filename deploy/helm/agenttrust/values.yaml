@@ -35,6 +35,7 @@ inference:
   logPath: /tmp/inference_runs.jsonl
 
 env:
+  AGENTTRUST_ARTIFACT_DIR: /tmp/agenttrust_artifacts
   AGENT_EXECUTION_AUDIT_LOG: /mnt/agenttrust/agent_execution/cancellation.jsonl
   AGENT_EXECUTION_AUDIT_OUTBOX_DB: /mnt/agenttrust/agent_execution/audit_outbox/cancellation.sqlite3
 
