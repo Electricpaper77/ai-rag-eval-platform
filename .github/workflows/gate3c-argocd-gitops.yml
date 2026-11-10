@@ -100,7 +100,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/gate3c
-          docker pull redis:8.2.3-alpine
+          docker pull --platform=linux/amd64 redis:8.2.3-alpine
           kind load docker-image redis:8.2.3-alpine --name "$CLUSTER_NAME"
           docker image inspect redis:8.2.3-alpine \
             --format='{{.Id}} {{json .RepoDigests}}' \
