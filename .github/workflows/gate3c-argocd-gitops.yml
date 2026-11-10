@@ -247,6 +247,130 @@ jobs:
             -- python -c "import json,urllib.request; h=urllib.request.urlopen('http://agenttrust:8080/healthz',timeout=10); assert h.status==200; q=urllib.request.Request('http://agenttrust:8080/v1/chat/completions',data=json.dumps({'model':'mock','messages':[{'role':'user','content':'gate3c post reconcile'}]}).encode(),headers={'content-type':'application/json'}); b=json.loads(urllib.request.urlopen(q,timeout=15).read()); assert b['choices'][0]['message']['role']=='assistant'; print('healthz',h.status); print('chat',b)" \
             | tee artifacts/gate3c/post-reconciliation-inference.txt
 
+      - name: Verify durable cancellation audit recovery
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/gate3c
+          kubectl get pvc agenttrust -n "$NAMESPACE" -o json \
+            > artifacts/gate3c/audit-pvc.json
+          kubectl get deployment "$RELEASE" -n "$NAMESPACE" -o json \
+            > artifacts/gate3c/audit-deployment.json
+          python - <<'PY' | tee artifacts/gate3c/cancellation-audit-config.txt
+          import json
+          from pathlib import Path
+
+          pvc = json.loads(Path("artifacts/gate3c/audit-pvc.json").read_text())
+          deployment = json.loads(Path("artifacts/gate3c/audit-deployment.json").read_text())
+          assert pvc["status"]["phase"] == "Bound", pvc["status"]
+          spec = deployment["spec"]["template"]["spec"]
+          container = next(item for item in spec["containers"] if item["name"] == "agenttrust")
+          claim_names = {
+              item.get("persistentVolumeClaim", {}).get("claimName")
+              for item in spec["volumes"]
+          }
+          assert "agenttrust" in claim_names, claim_names
+          mounts = {item["mountPath"]: item["name"] for item in container["volumeMounts"]}
+          assert mounts.get("/mnt/agenttrust") == next(
+              item["name"] for item in spec["volumes"]
+              if item.get("persistentVolumeClaim", {}).get("claimName") == "agenttrust"
+          ), mounts
+          env = {item["name"]: item.get("value") for item in container["env"]}
+          expected = {
+              "AGENT_EXECUTION_AUDIT_LOG": "/mnt/agenttrust/agent_execution/cancellation.jsonl",
+              "AGENT_EXECUTION_AUDIT_OUTBOX_DB": "/mnt/agenttrust/agent_execution/audit_outbox/cancellation.sqlite3",
+          }
+          for name, value in expected.items():
+              assert env.get(name) == value, (name, env.get(name))
+              assert env[name].startswith("/mnt/agenttrust/"), (name, env[name])
+          command = " ".join(container.get("command", []) + container.get("args", []))
+          assert "scripts.agent_execution_app:app" in command, command
+          print("pvc_phase=Bound")
+          print("audit_log_path=" + expected["AGENT_EXECUTION_AUDIT_LOG"])
+          print("audit_outbox_path=" + expected["AGENT_EXECUTION_AUDIT_OUTBOX_DB"])
+          print("startup_entrypoint=scripts.agent_execution_app:app")
+          PY
+
+          selector='app.kubernetes.io/name=agenttrust,app.kubernetes.io/instance=agenttrust'
+          old_pod="$(kubectl get pods -n "$NAMESPACE" -l "$selector" \
+            -o jsonpath='{.items[0].metadata.name}')"
+          test -n "$old_pod"
+          old_uid="$(kubectl get pod "$old_pod" -n "$NAMESPACE" -o jsonpath='{.metadata.uid}')"
+          audit_id="gate3c-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          kubectl exec -n "$NAMESPACE" "$old_pod" -- env GATE3C_AUDIT_ID="$audit_id" python -c '
+          import os
+          from datetime import datetime, timezone
+          from backend.app.agent_execution import CancellationAuditOutbox
+          audit_id = os.environ["GATE3C_AUDIT_ID"]
+          event = {
+              "event": "agent_run_cancelled",
+              "run_id": "gate3c-restart-recovery-probe",
+              "actor_id": "gate3c-workflow",
+              "scope": "process",
+              "reason_code": "operator_requested",
+              "timestamp": datetime.now(timezone.utc).isoformat(),
+              "audit_id": audit_id,
+          }
+          outbox = CancellationAuditOutbox()
+          outbox.enqueue([event])
+          import sqlite3
+          with sqlite3.connect(outbox.path) as database:
+              count = database.execute(
+                  "SELECT COUNT(*) FROM pending_cancellation_audits WHERE audit_id = ?",
+                  (audit_id,),
+              ).fetchone()[0]
+          assert count == 1, count
+          print("pending_audit_created=1")
+          '
+          printf 'old_pod=%s\n' "$old_pod" | tee artifacts/gate3c/cancellation-audit-restart.txt
+          kubectl delete pod "$old_pod" -n "$NAMESPACE" --wait=true
+          kubectl rollout status -n "$NAMESPACE" deployment/"$RELEASE" --timeout=180s
+          new_pod=""
+          for _ in $(seq 1 90); do
+            candidate="$(kubectl get pods -n "$NAMESPACE" -l "$selector" \
+              -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+            if [[ -n "$candidate" && "$candidate" != "$old_pod" ]]; then
+              candidate_uid="$(kubectl get pod "$candidate" -n "$NAMESPACE" -o jsonpath='{.metadata.uid}' 2>/dev/null || true)"
+              if [[ -n "$candidate_uid" && "$candidate_uid" != "$old_uid" ]]; then
+                new_pod="$candidate"
+                break
+              fi
+            fi
+            sleep 2
+          done
+          test -n "$new_pod"
+          printf 'new_pod=%s\n' "$new_pod" | tee -a artifacts/gate3c/cancellation-audit-restart.txt
+          kubectl exec -n "$NAMESPACE" "$new_pod" -- env GATE3C_AUDIT_ID="$audit_id" python -c '
+          import json, os, sqlite3
+          from pathlib import Path
+          from backend.app.agent_execution import CancellationAuditOutbox
+          audit_id = os.environ["GATE3C_AUDIT_ID"]
+          log_path = Path(os.environ["AGENT_EXECUTION_AUDIT_LOG"])
+          outbox = CancellationAuditOutbox()
+          matches = []
+          if log_path.exists():
+              for line in log_path.read_text(encoding="utf-8").splitlines():
+                  try:
+                      record = json.loads(line)
+                  except json.JSONDecodeError:
+                      continue
+                  if record.get("audit_id") == audit_id:
+                      matches.append(record)
+          with sqlite3.connect(outbox.path) as database:
+              pending = database.execute(
+                  "SELECT COUNT(*) FROM pending_cancellation_audits WHERE audit_id = ?",
+                  (audit_id,),
+              ).fetchone()[0]
+              total_pending = database.execute(
+                  "SELECT COUNT(*) FROM pending_cancellation_audits"
+              ).fetchone()[0]
+          assert len(matches) == 1, len(matches)
+          assert pending == 0, pending
+          assert total_pending == 0, total_pending
+          print("matching_audit_records=1")
+          print("pending_outbox_rows=0")
+          '
+          echo 'restart_recovery=PASS' | tee -a artifacts/gate3c/cancellation-audit-restart.txt
+
       - name: Verify live security regression controls
         run: |
           set -euo pipefail

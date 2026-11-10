@@ -24,6 +24,12 @@ spec:
           value: "1"
         - name: networkPolicy.enabled
           value: "true"
+        - name: persistence.enabled
+          value: "true"
+        - name: env.AGENT_EXECUTION_AUDIT_LOG
+          value: /mnt/agenttrust/agent_execution/cancellation.jsonl
+        - name: env.AGENT_EXECUTION_AUDIT_OUTBOX_DB
+          value: /mnt/agenttrust/agent_execution/audit_outbox/cancellation.sqlite3
         - name: inference.artifactRoot
           value: /tmp/inference_events
         - name: inference.logPath

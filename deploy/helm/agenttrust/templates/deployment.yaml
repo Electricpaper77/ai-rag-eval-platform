@@ -20,6 +20,8 @@ spec:
         runAsNonRoot: true
         runAsUser: 10001
         runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
       {{- with .Values.nodeSelector }}
@@ -37,7 +39,8 @@ spec:
         - name: agenttrust
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["python", "-m", "scripts.gate1_inference"]
+          command: ["python", "-m", "uvicorn"]
+          args: ["scripts.agent_execution_app:app", "--host", "0.0.0.0", "--port", "8080"]
           ports:
             - name: http
               containerPort: 8080
