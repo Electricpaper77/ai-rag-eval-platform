@@ -290,32 +290,35 @@ jobs:
             -o jsonpath='{.items[0].metadata.name}')"
           test -n "$old_pod"
           old_uid="$(kubectl get pod "$old_pod" -n "$NAMESPACE" -o jsonpath='{.metadata.uid}')"
-          audit_id="gate3c-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          kubectl exec -n "$NAMESPACE" "$old_pod" -- env GATE3C_AUDIT_ID="$audit_id" python -c '
-          import os
-          from datetime import datetime, timezone
-          from backend.app.agent_execution import CancellationAuditOutbox
-          audit_id = os.environ["GATE3C_AUDIT_ID"]
-          event = {
-              "event": "agent_run_cancelled",
-              "run_id": "gate3c-restart-recovery-probe",
-              "actor_id": "gate3c-workflow",
-              "scope": "process",
-              "reason_code": "operator_requested",
-              "timestamp": datetime.now(timezone.utc).isoformat(),
-              "audit_id": audit_id,
-          }
+          run_id="gate3c-restart-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          audit_id="$(kubectl exec -n "$NAMESPACE" "$old_pod" -- env GATE3C_RUN_ID="$run_id" python -c '
+          import json, os, sqlite3
+          from backend.app.agent_execution import CancellationAuditOutbox, CancellationController
+          run_id = os.environ["GATE3C_RUN_ID"]
+          def fail_audit(_event):
+              raise OSError("intentional Gate 3C audit sink failure")
+          controller = CancellationController(audit_writer=fail_audit)
+          controller.begin_run(run_id, actor_id="gate3c-workflow")
+          try:
+              controller.disable(actor_id="gate3c-workflow")
+          except OSError:
+              pass
+          else:
+              raise AssertionError("injected audit failure was not propagated")
           outbox = CancellationAuditOutbox()
-          outbox.enqueue([event])
-          import sqlite3
           with sqlite3.connect(outbox.path) as database:
-              count = database.execute(
-                  "SELECT COUNT(*) FROM pending_cancellation_audits WHERE audit_id = ?",
-                  (audit_id,),
-              ).fetchone()[0]
-          assert count == 1, count
-          print("pending_audit_created=1")
-          '
+              rows = database.execute(
+                  "SELECT audit_id, event_json FROM pending_cancellation_audits"
+              ).fetchall()
+          matching = [(audit_id, json.loads(event)) for audit_id, event in rows
+                      if json.loads(event).get("run_id") == run_id]
+          assert len(matching) == 1, len(matching)
+          assert matching[0][1].get("event") == "agent_run_cancelled"
+          print(matching[0][0])
+          ')"
+          test -n "$audit_id"
+          printf 'pending_audit_created=1\naudit_id=%s\n' "$audit_id" \
+            | tee artifacts/gate3c/cancellation-audit-restart.txt
           printf 'old_pod=%s\n' "$old_pod" | tee artifacts/gate3c/cancellation-audit-restart.txt
           kubectl delete pod "$old_pod" -n "$NAMESPACE" --wait=true
           kubectl rollout status -n "$NAMESPACE" deployment/"$RELEASE" --timeout=180s
@@ -358,12 +361,14 @@ jobs:
               total_pending = database.execute(
                   "SELECT COUNT(*) FROM pending_cancellation_audits"
               ).fetchone()[0]
+          print("audit_log_exists=" + str(log_path.exists()))
+          print("matching_audit_records=" + str(len(matches)))
+          print("pending_outbox_rows_for_probe=" + str(pending))
+          print("pending_outbox_rows_total=" + str(total_pending))
           assert len(matches) == 1, len(matches)
           assert pending == 0, pending
           assert total_pending == 0, total_pending
-          print("matching_audit_records=1")
-          print("pending_outbox_rows=0")
-          '
+          ' 2>&1 | tee -a artifacts/gate3c/cancellation-audit-restart.txt
           echo 'restart_recovery=PASS' | tee -a artifacts/gate3c/cancellation-audit-restart.txt
 
       - name: Verify live security regression controls
