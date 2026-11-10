@@ -100,16 +100,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/gate3c
-          docker pull --platform=linux/amd64 redis:8.2.3-alpine
-          kind load docker-image redis:8.2.3-alpine --name "$CLUSTER_NAME"
-          docker image inspect redis:8.2.3-alpine \
-            --format='{{.Id}} {{json .RepoDigests}}' \
-            | tee artifacts/gate3c/redis-image-local.txt
           kubectl create namespace argocd
           kubectl apply --server-side --force-conflicts -n argocd \
             -f "https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml"
           kubectl patch deployment argocd-redis -n argocd --type=strategic \
-            -p '{"spec":{"template":{"spec":{"containers":[{"name":"redis","image":"redis:8.2.3-alpine","imagePullPolicy":"IfNotPresent"}]}}}}'
+            -p '{"spec":{"template":{"spec":{"containers":[{"name":"redis","image":"redis:8.2.3-alpine","imagePullPolicy":"Always"}]}}}}'
           kubectl get deployment argocd-redis -n argocd \
             -o jsonpath='{.spec.template.spec.containers[?(@.name=="redis")].image}{" "}{.spec.template.spec.containers[?(@.name=="redis")].imagePullPolicy}{"\n"}' \
             | tee artifacts/gate3c/redis-deployment-image.txt
