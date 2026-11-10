@@ -171,7 +171,7 @@ jobs:
           kubectl run -n "$NAMESPACE" gate3c-client \
             --labels=app.kubernetes.io/part-of=agenttrust-iq \
             --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never \
-            -- python -c "import json,urllib.request; h=urllib.request.urlopen('http://agenttrust:8080/healthz',timeout=10); assert h.status==200; print('healthz',h.status); q=urllib.request.Request('http://agenttrust:8080/v1/chat/completions',data=json.dumps({'model':'mock','messages':[{'role':'user','content':'gate3c gitops'}]}).encode(),headers={'content-type':'application/json'}); b=json.loads(urllib.request.urlopen(q,timeout=15).read()); assert b['choices'][0]['message']['role']=='assistant'; print('chat',b)" \
+            -- python -c "import json,urllib.request; h=urllib.request.urlopen('http://agenttrust:8080/healthz',timeout=10); assert h.status==200; print('healthz',h.status); q=urllib.request.Request('http://agenttrust:8080/v1/chat/completions',data=json.dumps({'model':'mock','messages':[{'role':'user','content':'gate3c gitops'}],'gpu_availability':False}).encode(),headers={'content-type':'application/json'}); b=json.loads(urllib.request.urlopen(q,timeout=15).read()); assert b['choices'][0]['message']['role']=='assistant'; print('chat',b)" \
             | tee artifacts/gate3c/initial-inference.txt
 
       - name: Introduce and observe real drift
@@ -239,7 +239,7 @@ jobs:
           kubectl run -n "$NAMESPACE" gate3c-client-post-reconcile \
             --labels=app.kubernetes.io/part-of=agenttrust-iq \
             --rm -i --restart=Never --image="$IMAGE" --image-pull-policy=Never \
-            -- python -c "import json,urllib.request; h=urllib.request.urlopen('http://agenttrust:8080/healthz',timeout=10); assert h.status==200; q=urllib.request.Request('http://agenttrust:8080/v1/chat/completions',data=json.dumps({'model':'mock','messages':[{'role':'user','content':'gate3c post reconcile'}]}).encode(),headers={'content-type':'application/json'}); b=json.loads(urllib.request.urlopen(q,timeout=15).read()); assert b['choices'][0]['message']['role']=='assistant'; print('healthz',h.status); print('chat',b)" \
+            -- python -c "import json,urllib.request; h=urllib.request.urlopen('http://agenttrust:8080/healthz',timeout=10); assert h.status==200; q=urllib.request.Request('http://agenttrust:8080/v1/chat/completions',data=json.dumps({'model':'mock','messages':[{'role':'user','content':'gate3c post reconcile'}],'gpu_availability':False}).encode(),headers={'content-type':'application/json'}); b=json.loads(urllib.request.urlopen(q,timeout=15).read()); assert b['choices'][0]['message']['role']=='assistant'; print('healthz',h.status); print('chat',b)" \
             | tee artifacts/gate3c/post-reconciliation-inference.txt
 
       - name: Verify durable cancellation audit recovery
@@ -401,6 +401,12 @@ jobs:
           kubectl get all -n argocd -o yaml > artifacts/gate3c/argocd-resources.yaml 2>&1 || true
           kubectl get all,networkpolicy -n "$NAMESPACE" -o yaml \
             > artifacts/gate3c/agenttrust-final-resources.yaml 2>&1 || true
+          kubectl get pvc -n "$NAMESPACE" -o yaml \
+            > artifacts/gate3c/persistent-volume-claims.yaml 2>&1 || true
+          kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/part-of=agenttrust-iq -o yaml \
+            > artifacts/gate3c/agenttrust-pods.yaml 2>&1 || true
+          kubectl logs -n "$NAMESPACE" deployment/agenttrust --all-containers=true --tail=300 \
+            > artifacts/gate3c/agenttrust-final.log 2>&1 || true
           kubectl get events -A --sort-by=.lastTimestamp \
             > artifacts/gate3c/events.txt 2>&1 || true
           kubectl logs -n argocd statefulset/argocd-application-controller --tail=500 \
