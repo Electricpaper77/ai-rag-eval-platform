@@ -38,7 +38,10 @@ def test_default_chart_renders_secure_inference_resources() -> None:
     assert _resource(resources, "Deployment")
     assert _resource(resources, "Service")
     assert _resource(resources, "NetworkPolicy")
-    assert not any(resource["kind"] == "PersistentVolumeClaim" for resource in resources)
+    pvc = _resource(resources, "PersistentVolumeClaim")
+    assert pvc["metadata"]["name"] == "agenttrust"
+    assert pvc["spec"]["accessModes"] == ["ReadWriteOnce"]
+    assert pvc["spec"]["resources"]["requests"]["storage"] == "1Gi"
 
     deployment = _resource(resources, "Deployment")
     pod_spec = deployment["spec"]["template"]["spec"]
@@ -48,6 +51,8 @@ def test_default_chart_renders_secure_inference_resources() -> None:
         "runAsNonRoot": True,
         "runAsUser": 10001,
         "runAsGroup": 10001,
+        "fsGroup": 10001,
+        "fsGroupChangePolicy": "OnRootMismatch",
         "seccompProfile": {"type": "RuntimeDefault"},
     }
     assert container["securityContext"] == {
@@ -57,7 +62,11 @@ def test_default_chart_renders_secure_inference_resources() -> None:
     }
     assert container["readinessProbe"]["httpGet"]["path"] == "/healthz"
     assert container["livenessProbe"]["httpGet"]["path"] == "/healthz"
-    assert {mount["mountPath"] for mount in container["volumeMounts"]} >= {"/tmp"}
+    assert {mount["mountPath"] for mount in container["volumeMounts"]} >= {"/tmp", "/mnt/agenttrust"}
+    assert any(
+        volume.get("persistentVolumeClaim", {}).get("claimName") == "agenttrust"
+        for volume in pod_spec["volumes"]
+    )
     env = {item["name"]: item["value"] for item in container["env"]}
     assert env["INFERENCE_ARTIFACTS_ROOT"].startswith("/tmp/")
     assert env["INFERENCE_LOG_PATH"].startswith("/tmp/")
