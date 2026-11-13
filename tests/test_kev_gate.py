@@ -1,6 +1,6 @@
 from pathlib import Path
 import pytest
-from scripts.kev_gate import Package, ScanUnavailable, _exit_code, advisory_match, scan, version_in_range
+from scripts.kev_gate import Package, ScanUnavailable, _exit_code, advisory_match, inventory_packages, scan, version_in_range
 
 @pytest.fixture(autouse=True)
 def inventory(monkeypatch):
@@ -42,6 +42,14 @@ def test_unknown_version_and_complex_boundary_are_not_safe():
     assert version_in_range("2.2.0",events) is False and version_in_range("3.0.5",events) is True and version_in_range("2.5.0",[{"introduced":"0"}]) is None
 
 def test_catalog_correlation_schema_and_commit_sha():
-    report=scan(Path("."),catalog(),query,detail,"commit-sha"); assert report["scanned_commit_sha"]=="commit-sha"; assert report["catalog_timestamp"]=="fixture"; assert {"schema_version","scan_status","catalog_source","elapsed_ms","packages","findings","errors","unsupported_ecosystems","inventory_limitations"}<=report.keys()
+    report=scan(Path("."),catalog(),query,detail,"commit-sha"); assert report["scanned_commit_sha"]=="commit-sha"; assert report["catalog_timestamp"]=="fixture"; assert {"schema_version","scan_status","catalog_source","elapsed_ms","packages","findings","errors","unsupported_ecosystems","inventory_limitations","dependency_inventory_source","dependency_inventory_scope","application_package_count","scanner_test_package_count","scanner_test_dependencies"}<=report.keys()
     assert advisory_match(Package("gpustack","2.1.1","fixture",True),advisory(),"CVE-2026-102895") is True
 
+def test_missing_runtime_requirements_fails_closed(tmp_path):
+    with pytest.raises(ScanUnavailable, match="requirements.txt"):
+        inventory_packages(tmp_path)
+
+def test_unavailable_inventory_fails_closed(monkeypatch):
+    monkeypatch.setattr("scripts.kev_gate.inventory_packages", lambda _: (_ for _ in ()).throw(ScanUnavailable("resolver unavailable")))
+    with pytest.raises(ScanUnavailable, match="resolver unavailable"):
+        scan(Path("."), catalog(), query, detail, "commit-sha")
