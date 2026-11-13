@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail-closed CISA KEV gate using bounded OSV package queries."""
 from __future__ import annotations
-import argparse, json, re, subprocess, sys, tempfile, time, urllib.error, urllib.request
+import argparse, hashlib, json, platform, re, subprocess, sys, tempfile, time, urllib.error, urllib.request
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Callable
@@ -14,6 +14,7 @@ TIMEOUT_SECONDS = 15
 MAX_CATALOG_ENTRIES = 2000
 MAX_PACKAGE_QUERIES = 500
 MAX_RELEVANT_ADVISORIES = 500
+MAX_OSV_PAGES = 5
 SCANNER_TEST_PACKAGES = {"pytest", "packaging", "iniconfig", "pluggy"}
 
 class ScanUnavailable(RuntimeError): pass
@@ -70,6 +71,13 @@ def inventory_packages(root: Path) -> list[Package]:
             if not isinstance(name, str) or not isinstance(version, str): raise ValueError("pip resolver report has incomplete package metadata")
             scope = "scanner_or_test" if _normalise(name) in SCANNER_TEST_PACKAGES else "application_runtime"
             packages.append(Package(name, version, "pip resolver: requirements.txt", _normalise(name) in direct, scope))
+        identities = {}
+        for package in packages:
+            key = _normalise(package.name)
+            previous = identities.get(key)
+            if previous and previous.version != package.version:
+                raise ValueError(f"conflicting resolved versions for {package.name}")
+            identities[key] = package
         return packages
     except (subprocess.SubprocessError, json.JSONDecodeError, KeyError, ValueError, OSError) as exc: raise ScanUnavailable(f"unable to inventory installed packages: {exc}") from exc
 
@@ -100,6 +108,10 @@ def advisory_match(package: Package, advisory: dict, expected_cve: str) -> bool 
     for affected in advisory.get("affected", []):
         identity = affected.get("package", {})
         if identity.get("ecosystem") == "PyPI" and _normalise(identity.get("name", "")) == _normalise(package.name):
+            explicit_versions = affected.get("versions")
+            if explicit_versions is not None:
+                if not isinstance(explicit_versions, list) or not all(isinstance(item, str) for item in explicit_versions): return None
+                matches.append(package.version in explicit_versions)
             for version_range in affected.get("ranges", []):
                 if version_range.get("type") == "ECOSYSTEM": matches.append(version_in_range(package.version, version_range.get("events", [])))
     if not matches: return None
@@ -110,12 +122,25 @@ def advisory_match(package: Package, advisory: dict, expected_cve: str) -> bool 
 def _query_package(package: Package, query_loader: Callable[[dict], tuple[int, dict | None]]) -> list[dict]:
     payload = {"package": {"ecosystem": "PyPI", "name": package.name}}
     if _version(package.version) is not None: payload["version"] = package.version
-    status, response = query_loader(payload)
-    if status == 404: return []
-    if status != 200 or response is None: raise ScanUnavailable(f"malformed OSV query response for {package.name}")
-    if response == {}: return []
-    if "vulns" not in response or not isinstance(response["vulns"], list): raise ScanUnavailable(f"malformed OSV query response for {package.name}")
-    return response["vulns"]
+    vulnerabilities = []
+    seen_tokens = set()
+    for _ in range(MAX_OSV_PAGES):
+        status, response = query_loader(payload)
+        if status != 200 or response is None: raise ScanUnavailable(f"unavailable OSV query response for {package.name}: HTTP {status}")
+        if response == {}: return vulnerabilities
+        page_vulns = response.get("vulns", [])
+        if not isinstance(page_vulns, list): raise ScanUnavailable(f"malformed OSV query response for {package.name}")
+        vulnerabilities.extend(page_vulns)
+        token = response.get("next_page_token")
+        if token is None: return vulnerabilities
+        if not isinstance(token, str) or not token or token in seen_tokens: raise ScanUnavailable(f"invalid or repeated OSV page token for {package.name}")
+        seen_tokens.add(token)
+        payload["page_token"] = token
+    raise ScanUnavailable(f"OSV pagination exceeded bounded page limit for {package.name}")
+
+def _inventory_digest(packages: list[Package]) -> str:
+    rows = [{"name": p.name, "version": p.version, "direct": p.direct, "scope": p.scope} for p in sorted(packages, key=lambda item: (_normalise(item.name), item.version))]
+    return hashlib.sha256(json.dumps(rows, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
 
 def scan(root: Path, catalog: dict, query_loader: Callable[[dict], tuple[int, dict | None]] | None = None,
          advisory_loader: Callable[[str], tuple[int, dict | None]] | None = None, commit_sha: str = "unknown") -> dict:
@@ -145,14 +170,14 @@ def scan(root: Path, catalog: dict, query_loader: Callable[[dict], tuple[int, di
         except ScanUnavailable as exc: errors.append({"type": "relevant_advisory_unavailable", "cve": cve, "package": name, "error": str(exc)})
     status = "unavailable" if errors else "affected" if any(f["status"] == "confirmed_affected" for f in findings) else "unknown" if any(f["status"] == "unknown" for f in findings) else "pass"
     package_rows = [asdict(p) for p in packages]
-    return {"schema_version": 3, "scanned_commit_sha": commit_sha, "scan_status": status, "catalog_source": CISA_URL, "catalog_timestamp": catalog.get("catalogVersion"), "elapsed_ms": round((time.perf_counter()-started)*1000, 3), "dependency_inventory_source": "requirements.txt resolved with pip --dry-run --report", "dependency_inventory_scope": "application_runtime", "application_package_count": sum(p.scope == "application_runtime" for p in packages), "scanner_test_package_count": sum(p.scope == "scanner_or_test" for p in packages), "scanner_test_dependencies": [row for row in package_rows if row["scope"] == "scanner_or_test"], "packages": package_rows, "findings": findings, "errors": errors, "unsupported_ecosystems": ["non-PyPI packages are not inventoried"], "inventory_limitations": ["Root requirements.txt is the Docker runtime source; packages explicitly declared there are treated as runtime inputs", "Uninstalled optional/GPU ecosystems are not covered"]}
+    return {"schema_version": 3, "scanned_commit_sha": commit_sha, "scan_status": status, "catalog_source": CISA_URL, "catalog_timestamp": catalog.get("catalogVersion"), "elapsed_ms": round((time.perf_counter()-started)*1000, 3), "python_version": platform.python_version(), "dependency_inventory_source": "requirements.txt resolved with pip --dry-run --report", "dependency_inventory_scope": "application_runtime", "dependency_inventory_digest": _inventory_digest(packages), "application_package_count": sum(p.scope == "application_runtime" for p in packages), "scanner_test_package_count": sum(p.scope == "scanner_or_test" for p in packages), "scanner_test_dependencies": [row for row in package_rows if row["scope"] == "scanner_or_test"], "packages": package_rows, "findings": findings, "errors": errors, "unsupported_ecosystems": ["non-PyPI packages are not inventoried"], "inventory_limitations": ["Root requirements.txt is the Docker runtime source; packages explicitly declared there are treated as runtime inputs", "Uninstalled optional/GPU ecosystems are not covered"]}
 
 def _exit_code(report: dict) -> int: return 1 if report["scan_status"] == "affected" else 2 if report["scan_status"] in {"unavailable", "unknown"} else 0
 
 def main() -> int:
     parser=argparse.ArgumentParser(); parser.add_argument("--root", type=Path, default=Path.cwd()); parser.add_argument("--output", type=Path, default=Path("artifacts/kev/kev_report.json")); parser.add_argument("--commit-sha", default="unknown"); args=parser.parse_args()
     try: report=scan(args.root, fetch_catalog(), commit_sha=args.commit_sha)
-    except ScanUnavailable as exc: report={"schema_version":3,"scanned_commit_sha":args.commit_sha,"scan_status":"unavailable","catalog_source":CISA_URL,"catalog_timestamp":None,"elapsed_ms":None,"dependency_inventory_source":"requirements.txt resolved with pip --dry-run --report","dependency_inventory_scope":"application_runtime","application_package_count":0,"scanner_test_package_count":0,"scanner_test_dependencies":[],"packages":[],"findings":[],"errors":[{"type":"mandatory_scan_failure","error":str(exc)}],"unsupported_ecosystems":["non-PyPI packages are not inventoried"],"inventory_limitations":["Root requirements.txt is the Docker runtime source; packages explicitly declared there are treated as runtime inputs","Uninstalled optional/GPU ecosystems are not covered"]}
+    except ScanUnavailable as exc: report={"schema_version":3,"scanned_commit_sha":args.commit_sha,"scan_status":"unavailable","catalog_source":CISA_URL,"catalog_timestamp":None,"elapsed_ms":None,"python_version":platform.python_version(),"dependency_inventory_source":"requirements.txt resolved with pip --dry-run --report","dependency_inventory_scope":"application_runtime","dependency_inventory_digest":None,"application_package_count":0,"scanner_test_package_count":0,"scanner_test_dependencies":[],"packages":[],"findings":[],"errors":[{"type":"mandatory_scan_failure","error":str(exc)}],"unsupported_ecosystems":["non-PyPI packages are not inventoried"],"inventory_limitations":["Root requirements.txt is the Docker runtime source; packages explicitly declared there are treated as runtime inputs","Uninstalled optional/GPU ecosystems are not covered"]}
     args.output.parent.mkdir(parents=True, exist_ok=True); args.output.write_text(json.dumps(report, indent=2)+"\n", encoding="utf-8"); print(json.dumps(report, indent=2)); return _exit_code(report)
 
 if __name__ == "__main__": raise SystemExit(main())
