@@ -100,7 +100,9 @@ def _query_package(package: Package, query_loader: Callable[[dict], tuple[int, d
     if _version(package.version) is not None: payload["version"] = package.version
     status, response = query_loader(payload)
     if status == 404: return []
-    if status != 200 or response is None or "vulns" not in response or not isinstance(response["vulns"], list): raise ScanUnavailable(f"malformed OSV query response for {package.name}")
+    if status != 200 or response is None: raise ScanUnavailable(f"malformed OSV query response for {package.name}")
+    if response == {}: return []
+    if "vulns" not in response or not isinstance(response["vulns"], list): raise ScanUnavailable(f"malformed OSV query response for {package.name}")
     return response["vulns"]
 
 def scan(root: Path, catalog: dict, query_loader: Callable[[dict], tuple[int, dict | None]] | None = None,
