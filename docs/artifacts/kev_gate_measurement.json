@@ -1,0 +1,12 @@
+{
+  "artifact": "AgentTrust IQ CISA KEV gate focused measurement",
+  "schema_version": 2,
+  "scope": "CVE-2026-102895 / PyPI gpustack; synthetic, no exploit execution",
+  "test_command": "python -m pytest -q tests/test_kev_gate.py",
+  "test_result": {"expected_cases": 10, "reported_passed": 10, "reported_failed": 0},
+  "labeled_cases": {"vulnerable_gpustack": "affected/blocking", "patched_gpustack": "confirmed_unaffected", "unrelated_package": "not_detected", "missing_version": "unknown", "incomplete_version_range": "unknown", "missing_catalog": "unavailable", "advisory_mismatch": "unavailable", "advisory_service_failure": "unavailable"},
+  "accuracy": {"true_positives": 1, "false_negatives": 0, "true_negatives": 2, "false_positives": 0, "accuracy_on_labeled_cases": 1.0, "false_positive_rate": 0.0},
+  "runtime": {"focused_pytest_seconds": 0.29, "live_kev_scan_seconds": null},
+  "limitations": ["Live CISA and advisory retrieval must be validated by GitHub Actions; sandbox DNS is unavailable.", "Metrics are synthetic regression evidence, not production or physical GPU validation."]
+}
+
