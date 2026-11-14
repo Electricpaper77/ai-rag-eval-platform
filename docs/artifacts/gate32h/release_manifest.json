@@ -1,0 +1,38 @@
+{
+  "package": "AgentTrust IQ Gate 32H recruiter evidence",
+  "publication_status": "prepared_not_published",
+  "source_repository": "https://github.com/Electricpaper77/ai-rag-eval-platform.git",
+  "source_sha": "deddce135660a5ffb9c62864ac485aa1b910cab1",
+  "historical_canonical_artifacts": {
+    "hiring_eval.jsonl": "docs/artifacts/eval_runs/hiring_eval.jsonl",
+    "hiring_eval_summary.json": "docs/artifacts/eval_runs/hiring_eval_summary.json"
+  },
+  "new_run_artifacts": {
+    "hiring_eval.jsonl": {
+      "local_path": "docs/artifacts/gate32h/hiring_eval.jsonl",
+      "sha256": "74DF6E5A7A582C9F337B7E4052672973AF490FD5D5C723E7D5858DB7859D91D6"
+    },
+    "hiring_eval_summary.json": {
+      "local_path": "docs/artifacts/gate32h/hiring_eval_summary.json",
+      "sha256": "4E044EE40DD4026DCDF69BFF2465091981FB3CD7003C61274590CAF7D1415559"
+    },
+    "provenance.json": {
+      "local_path": "docs/artifacts/gate32h/provenance.json",
+      "sha256": "03B3A3218C9BC157142B98844FB7ECA72B871C60D3A5E7C3F920657A6CB7DFF1"
+    },
+    "recruiter_case_study.md": {
+      "local_path": "docs/artifacts/gate32h/recruiter_case_study.md",
+      "sha256": "6F81D22B2F9E2CBB0FC0D09C7D91BD05ABF95DE563A41E9563D744E638322822"
+    }
+  },
+  "metrics": {
+    "historical_canonical": "6/6 passed; 0.159 ms local deterministic evaluator p95",
+    "gate32h_reproduction": "6/6 passed; 0.245 ms local deterministic evaluator p95",
+    "production_claim_allowed": false
+  },
+  "publication_requirements": [
+    "Upload or host the four package files at recruiter-accessible URLs.",
+    "Preserve the historical-versus-new-run distinction.",
+    "Do not present fixture latency as provider, API, RAG, GPU, or production telemetry."
+  ]
+}
