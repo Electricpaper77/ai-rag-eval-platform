@@ -6,7 +6,7 @@ Homepage headline metrics use only **Canonical controlled hiring run** (6 determ
 - Type: `canonical`; cases: 6; passed: 6; failed: 0
 - Execution: no external provider; deterministic fixture harness. local deterministic evaluator runtime; not model, API, RAG, or end-to-end latency
 - Artifacts: `docs/artifacts/eval_runs/hiring_eval.jsonl`, `docs/artifacts/eval_runs/hiring_eval_summary.json`
-- Reproduce: `python -c "from app.eval_harness import run_eval_harness; run_eval_harness(output_path='artifacts/gate32h/repro_hiring_eval.jsonl', summary_path='artifacts/gate32h/repro_hiring_eval_summary.json', run_id='gate32h-repro')"` (writes non-canonical output paths)
+- Reproduce: `python -c "from app.eval_harness import run_eval_harness; run_eval_harness(output_path='artifacts/gate32h/repro_hiring_eval.jsonl', summary_path='artifacts/gate32h/repro_hiring_eval_summary.json', run_id='gate32h-repro')"`
 
 ## Supplemental deterministic security coverage
 - Type: `simulated`; cases: 40; passed: 40; failed: 0
