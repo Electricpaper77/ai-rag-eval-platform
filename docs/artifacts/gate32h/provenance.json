@@ -1,0 +1,54 @@
+{
+  "gate": "32H",
+  "source_repository": "https://github.com/Electricpaper77/ai-rag-eval-platform.git",
+  "source_sha": "deddce135660a5ffb9c62864ac485aa1b910cab1",
+  "branch": "main",
+  "working_tree_classification": "EOL-DIRTY, CONTENT-VERIFIED",
+  "generated_at_utc": "2026-11-14T10:08:40Z",
+  "python": "3.11.9",
+  "environment": ".venv\\Scripts\\python.exe",
+  "dependencies": {
+    "fastapi": "0.162.7",
+    "pytest": "9.2.0",
+    "pydantic": "2.14.3",
+    "PyYAML": "6.0.3",
+    "httpx": "0.28.1",
+    "psycopg": "3.3.9"
+  },
+  "command": "\\.venv\\Scripts\\python.exe -c \"from app.eval_harness import run_eval_harness; run_eval_harness(output_path=..., summary_path=..., run_id='gate32h-repro-20261114')\"",
+  "evaluator_source": "app/eval_harness.py",
+  "evaluator_source_sha256": "3B94D3DB90A2FD95613BBF7DC72AAD22249FB5E1439ADF48B120CE47631F5504",
+  "dataset_identity": "DEFAULT_HIRING_EVAL_CASES in app/eval_harness.py",
+  "dataset_sha256": "3B94D3DB90A2FD95613BBF7DC72AAD22249FB5E1439ADF48B120CE47631F5504",
+  "threshold_file": "eval_thresholds.yaml",
+  "threshold_sha256": "ECF573A2AF0C49A57014676AAA028B1A58B9452A125CDA433556823F18561F09",
+  "fixture_provenance": "deterministic fixture; estimated_mock_no_vendor_api; no external provider",
+  "production_claim_allowed": false,
+  "artifacts": {
+    "hiring_eval.jsonl": {
+      "sha256": "74DF6E5A7A582C9F337B7E4052672973AF490FD5D5C723E7D5858DB7859D91D6",
+      "records": 7,
+      "case_records": 6
+    },
+    "hiring_eval_summary.json": {
+      "sha256": "4E044EE40DD4026DCDF69BFF2465091981FB3CD7003C61274590CAF7D1415559"
+    }
+  },
+  "metrics": {
+    "total_cases": 6,
+    "passed_cases": 6,
+    "eval_pass_rate": 1.0,
+    "hallucination_rate": 0.0,
+    "citation_precision": 1.0,
+    "refusal_accuracy": 1.0,
+    "latency_p95_ms": 0.245,
+    "cost_estimate_label": "estimated_mock_no_vendor_api"
+  },
+  "threshold_decision": "PASS",
+  "limitations": [
+    "Latency is local deterministic evaluator runtime, not model, API, RAG, end-to-end, GPU, or production latency.",
+    "No external model provider or physical GPU was used.",
+    "The repository remains EOL-dirty even though content is verified equivalent.",
+    "The documented module command is stale; the callable runner was invoked directly."
+  ]
+}
