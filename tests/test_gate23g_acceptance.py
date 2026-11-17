@@ -56,6 +56,56 @@ def _insert_fixture_case(org_id: str, project_id: str, run_id: str, key: str) ->
         conn.commit()
 
 
+def _focus_snapshot(page, label: str) -> None:
+    snapshot = page.evaluate("""(label) => {
+        const visible = (element) => {
+            const style = getComputedStyle(element);
+            return style.visibility !== "hidden" && style.display !== "none" &&
+                !!(element.offsetWidth || element.offsetHeight || element.getClientRects().length);
+        };
+        const focusable = [...document.querySelectorAll(
+            'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+        )].filter(visible).map((element) => ({
+            tag: element.tagName,
+            id: element.id,
+            text: (element.textContent || "").trim(),
+            aria: element.getAttribute("aria-label"),
+            disabled: element.disabled === true,
+        }));
+        const active = document.activeElement;
+        const heading = document.querySelector("#content h3");
+        return {
+            label,
+            readyState: document.readyState,
+            hasFocus: document.hasFocus(),
+            active: active ? active.outerHTML.slice(0, 500) : null,
+            heading: heading ? {text: heading.textContent, tabIndex: heading.tabIndex} : null,
+            focusable,
+        };
+    }""", label)
+    print(f"GATE37C_FOCUS {json.dumps(snapshot, sort_keys=True)}", flush=True)
+
+
+def _install_focus_telemetry(page) -> None:
+    page.evaluate("""() => {
+        window.__gate37cFocusEvents = [];
+        for (const type of ["focus", "blur", "focusin", "focusout"]) {
+            document.addEventListener(type, (event) => {
+                window.__gate37cFocusEvents.push({
+                    type,
+                    target: event.target?.outerHTML?.slice(0, 500) || null,
+                    time: performance.now(),
+                });
+            }, true);
+        }
+    }""")
+
+
+def _print_focus_events(page, label: str) -> None:
+    events = page.evaluate("""(label) => ({label, events: window.__gate37cFocusEvents || []})""", label)
+    print(f"GATE37C_EVENTS {json.dumps(events, sort_keys=True)}", flush=True)
+
+
 def test_gate23g_real_http_journey_security_and_reproducible_evidence(investigation_environment):
     """Create, persist, inspect, investigate, review, export and isolate two tenants."""
     _base_url, cookies_a, cookies_b = investigation_environment
@@ -187,7 +237,9 @@ def test_gate23g_chromium_reproducible_demo_accessibility_and_recovery(investiga
         context = browser.new_context(viewport={"width": 1440, "height": 900})
         context.add_cookies([{"name": name, "value": value, "url": origin} for name, value in cookies.items()])
         page = context.new_page()
+        _install_focus_telemetry(page)
         page.goto(origin + "/saas-workspace23e.html")
+        _focus_snapshot(page, "after-goto")
         suffix = uuid.uuid4().hex[:10]
         page.wait_for_function("""() => document.querySelector('select[aria-label="Organization"] option:not([disabled])') || [...document.querySelectorAll('button')].some(button => button.textContent.trim() === 'Create organization')""", timeout=15000)
         if page.get_by_role("button", name="Create organization").count():
@@ -232,11 +284,19 @@ def test_gate23g_chromium_reproducible_demo_accessibility_and_recovery(investiga
         download = download_info.value
         assert download.suggested_filename.endswith(".json")
         page.reload()
+        _focus_snapshot(page, "after-reload")
         expect(page.get_by_text("Journey complete for this tenant/project.")).to_be_visible()
+        _focus_snapshot(page, "after-completion-visible")
+        _print_focus_events(page, "before-tab")
         evidence["refresh"] = True
 
         page.keyboard.press("Tab")
+        _focus_snapshot(page, "after-tab")
+        _print_focus_events(page, "after-tab")
         assert page.evaluate("() => document.activeElement && document.activeElement !== document.body")
+        page.keyboard.press("Shift+Tab")
+        _focus_snapshot(page, "after-shift-tab")
+        _print_focus_events(page, "after-shift-tab")
         axe_path = Path("node_modules/axe-core/axe.min.js").resolve()
         assert axe_path.exists(), f"axe-core missing: {axe_path}"
         page.add_script_tag(path=str(axe_path))
