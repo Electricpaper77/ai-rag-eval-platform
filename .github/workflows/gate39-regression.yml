@@ -1,0 +1,55 @@
+name: Gate 39 regression
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate39-regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install approved application dependencies
+        run: python -m pip install --disable-pip-version-check --no-cache-dir -r requirements-lite.txt
+
+      - name: Install explicit test dependencies
+        run: python -m pip install --disable-pip-version-check --no-cache-dir pytest httpx
+
+      - name: Record resolved environment
+        run: |
+          mkdir -p work/gate39-ci
+          python --version | tee work/gate39-ci/python-version.txt
+          python -m pip freeze | tee work/gate39-ci/pip-freeze.txt
+
+      - name: Run unchanged Gate 39 regression suites
+        id: pytest
+        shell: bash
+        run: |
+          set +e
+          python -m pytest -q \
+            tests/test_gate39_reliability_benchmark.py \
+            tests/test_incident_response.py \
+            tests/test_eval_compare.py \
+            --junitxml=work/gate39-ci/pytest-junit.xml 2>&1 | tee work/gate39-ci/pytest-output.txt
+          status=${PIPESTATUS[0]}
+          echo "exit_code=${status}" >> "$GITHUB_OUTPUT"
+          exit "${status}"
+
+      - name: Upload Gate 39 test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate39-regression-${{ github.sha }}
+          path: work/gate39-ci/
+          if-no-files-found: error
