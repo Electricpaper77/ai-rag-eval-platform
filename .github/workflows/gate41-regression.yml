@@ -2,6 +2,11 @@ name: Gates 39-41 Ubuntu regression
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - gate41-benchmark-review
+    paths:
+      - .github/workflows/gate41-regression.yml
 
 permissions:
   contents: read
