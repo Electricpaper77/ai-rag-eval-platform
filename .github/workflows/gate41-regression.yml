@@ -28,6 +28,8 @@ jobs:
       - name: Install application and test dependencies
         run: |
           python -m pip install --disable-pip-version-check --no-cache-dir -r requirements-lite.txt
+          python -m pip install --disable-pip-version-check --no-cache-dir \
+            chromadb==0.4.24 prometheus-client==0.20.0 numpy==1.26.4
           python -m pip install --disable-pip-version-check --no-cache-dir pytest httpx
 
       - name: Capture source and resolved environment
