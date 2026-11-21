@@ -47,7 +47,7 @@ jobs:
             tests/test_kev_gate.py \
             tests/test_gate39_reliability_benchmark.py \
             tests/test_quality_latency_economics_benchmark.py \
-            tests/test_incident_response.py \
+            tests/test_reliability_engineering.py \
             tests/test_eval_compare.py \
             --junitxml=work/gate41-regression/pytest-junit.xml 2>&1 | tee work/gate41-regression/pytest-output.txt
           status=${PIPESTATUS[0]}
